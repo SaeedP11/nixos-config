@@ -19,16 +19,6 @@
     options = "grp:alt_shift_toggle";
   };
 
-  services.displayManager.sddm = with pkgs; {
-    enable = true;
-    wayland.enable = true;
-    package = kdePackages.sddm;
-    theme = "sddm-astronaut-theme";
-  };
-
-  systemd.services.display-manager.environment.QML2_IMPORT_PATH =
-    "${pkgs.kdePackages.qtmultimedia}/lib/qt-6/qml";
-
   programs.dconf.enable = true;
 
   environment.sessionVariables = {

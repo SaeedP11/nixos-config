@@ -62,12 +62,12 @@
   # optional but makes mounting behavior explicit rather than guessed.
   fileSystems."/" = {
     device = "/dev/disk/by-label/NIXROOT";
-    # fsType = "ext4";
+    fsType = "ext4";
   };
 
   fileSystems."/boot" = {
     device = "/dev/disk/by-label/NIXBOOT";
-    # fsType = "vfat";
+    fsType = "vfat";
   };
 
   # Enables DHCP on each ethernet and wireless interface. In case of scripted networking

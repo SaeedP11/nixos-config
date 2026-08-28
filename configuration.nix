@@ -21,6 +21,7 @@
     ./modules/users.nix
     ./modules/packages.nix
     ./modules/fonts.nix
+    ./modules/sddm.nix
   ];
 
   # This value determines the NixOS release from which the default

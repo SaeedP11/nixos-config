@@ -6,7 +6,7 @@
     qylock.url = "github:Darkkal44/qylock";
   };
 
-  outputs = { self, nixpkgs, ... }:
+  outputs = { self, nixpkgs, qylock, ... }:
   {
     nixosConfigurations.nixos = nixpkgs.lib.nixosSystem {
       system = "x86_64-linux";
