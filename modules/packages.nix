@@ -82,5 +82,6 @@
     pnpm
     insomnia
     file-roller
+    zip
   ];
 }
