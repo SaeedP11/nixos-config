@@ -33,8 +33,6 @@
     alacritty
     xdg-utils
     wl-clipboard
-    swayidle
-    swaylock
     swww
     imagemagick
     gnome-themes-extra
