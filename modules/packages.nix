@@ -46,7 +46,6 @@
     fontconfig
     freetype
     libglvnd
-    sddm-astronaut
     mako
     networkmanagerapplet
     gnome-control-center
@@ -83,6 +82,5 @@
     pnpm
     insomnia
     file-roller
-    kdePackages.qtmultimedia
   ];
 }
