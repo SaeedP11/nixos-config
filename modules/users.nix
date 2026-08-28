@@ -43,6 +43,7 @@ in
       telegram-desktop
       aria2
       randomWallpaperScript
+      loupe
     ];
     shell = pkgs.fish;
     home = "/home/saeedp11";
