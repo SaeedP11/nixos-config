@@ -7,9 +7,4 @@
     enable = true;
     enableOnBoot = false;
   };
-
-  services.ollama = {
-    enable = true;
-    acceleration = "cuda";
-  };
 }

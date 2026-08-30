@@ -7,11 +7,21 @@
   };
 
   outputs = { self, nixpkgs, qylock, ... }:
-  {
-    nixosConfigurations.nixos = nixpkgs.lib.nixosSystem {
+  { 
+    nixosConfigurations.desktop = nixpkgs.lib.nixosSystem {
       system = "x86_64-linux";
       modules = [
         ./configuration.nix
+        ./modules/amd.nix
+        qylock.nixosModules.default
+      ];
+    };
+    
+    nixosConfigurations.laptop = nixpkgs.lib.nixosSystem {
+      system = "x86_64-linux";
+      modules = [
+        ./configuration.nix
+        ./modules/nvidia.nix
         qylock.nixosModules.default
       ];
     };
