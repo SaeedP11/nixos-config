@@ -29,12 +29,14 @@
     SDL_VIDEODRIVER = "wayland";
     CLUTTER_BACKEND = "wayland";
     EGL_PLATFORM = "wayland";
-    # GTK dark theme
-    GTK_THEME = "Adwaita:dark";
-    # Tell applications that the desktop prefers dark mode
-    ADW_DISABLE_PORTAL = "0";
-    # Qt
-    QT_STYLE_OVERRIDE = "adwaita-dark";
+    # Dark/light is switched live via darkman (see modules/theme.nix) instead
+    # of being pinned here. Deliberately NOT setting GTK_THEME or
+    # QT_STYLE_OVERRIDE: both are read once at process start and would
+    # override the live-updatable settings.ini / gsettings values below,
+    # permanently locking every app into dark mode regardless of the
+    # current darkman state.
+    # Qt: bridge Qt5/Qt6 apps onto the GTK theme so they inherit whichever
+    # mode GTK is currently in (updates on next Qt app launch).
     QT_QPA_PLATFORMTHEME = "gtk3";
     QT_WAYLAND_DISABLE_WINDOWDECORATION = "1";
     # Electron
@@ -49,7 +51,13 @@
     wlr.enable = true;
     extraPortals = with pkgs; [ xdg-desktop-portal-wlr xdg-desktop-portal-gtk ];
     config = {
-      common.default = [ "wlr" "gtk" ];
+      common = {
+        default = [ "wlr" "gtk" ];
+        # Route the appearance/color-scheme portion of the Settings
+        # interface through darkman (modules/theme.nix) so GTK4/libadwaita,
+        # Firefox, and portal-aware Electron apps follow dark/light live.
+        "org.freedesktop.impl.portal.Settings" = [ "darkman" ];
+      };
     };
   };
 
