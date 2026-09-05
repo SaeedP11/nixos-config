@@ -4,35 +4,20 @@
 { config, lib, pkgs, ... }:
 
 let
-  randomWallpaperScript = pkgs.writeShellScriptBin "randomWallpaper" ''
+  # Shared "actually apply this wallpaper" logic: sets it via swww,
+  # regenerates wallust colors (respecting the current darkman dark/light
+  # mode), and refreshes waybar in place. Both randomWallpaper and
+  # wallpaper-picker call this, so the reload-safety fixes only need to
+  # live in one place.
+  setWallpaperScript = pkgs.writeShellScriptBin "set-wallpaper" ''
     #!/usr/bin/env bash
-    # Picks a random wallpaper, applies it, and refreshes wallust + waybar.
-    #
-    # Fixes vs. the original version:
-    #  - No more unconditional `pkill waybar` before checking a wallpaper was
-    #    even found — that left waybar dead with no way to recover if the
-    #    wallpaper dir was empty/unreadable.
-    #  - `wallust run "$WALLPAPER"` is quoted (unquoted paths break on
-    #    filenames with spaces, which then failed `wallust` and, because of
-    #    the old `&&`, silently skipped relaunching waybar too).
-    #  - waybar is refreshed with `SIGUSR2` (in-place reload) instead of
-    #    kill-then-relaunch, so there's never a window where it's just gone.
-    #    If it's not running for some unrelated reason, this starts it
-    #    fresh instead of leaving it dead.
-    #  - Respects whatever dark/light mode darkman is currently in (via the
-    #    same dark16/softlight palettes the theme-switch hooks use), instead
-    #    of always resetting to wallust.toml's default palette regardless of
-    #    the current theme.
     set -uo pipefail
 
-    WALLPAPER_DIR="$HOME/Pictures/wallpapers"
-
-    WALLPAPER=$(find "$WALLPAPER_DIR" -type f \( -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" -o -iname "*.gif" \) 2>/dev/null | shuf -n 1)
-
-    if [ -z "$WALLPAPER" ]; then
-        echo "No wallpaper found in $WALLPAPER_DIR" >&2
+    if [ $# -lt 1 ] || [ ! -f "$1" ]; then
+        echo "Usage: set-wallpaper <path-to-image>" >&2
         exit 1
     fi
+    WALLPAPER="$1"
 
     if ! swww img "$WALLPAPER" --transition-type wipe --transition-duration 2; then
         echo "swww failed to set: $WALLPAPER" >&2
@@ -50,12 +35,72 @@ let
         echo "wallust failed on: $WALLPAPER" >&2
     fi
 
-    # Always make sure waybar is actually up, regardless of whether wallust
-    # succeeded above.
+    # Always make sure waybar is actually up, regardless of whether
+    # wallust succeeded above.
     if ! pkill -SIGUSR2 waybar 2>/dev/null; then
         waybar &
         disown
     fi
+  '';
+
+  randomWallpaperScript = pkgs.writeShellScriptBin "randomWallpaper" ''
+    #!/usr/bin/env bash
+    set -uo pipefail
+
+    WALLPAPER_DIR="$HOME/Pictures/wallpapers"
+
+    WALLPAPER=$(find "$WALLPAPER_DIR" -type f \( -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" -o -iname "*.gif" \) 2>/dev/null | shuf -n 1)
+
+    if [ -z "$WALLPAPER" ]; then
+        echo "No wallpaper found in $WALLPAPER_DIR" >&2
+        exit 1
+    fi
+
+    exec set-wallpaper "$WALLPAPER"
+  '';
+
+  # Wallpaper picker for BOTH contexts:
+  #  - Run from an actual terminal (stdin+stdout are a TTY) -> fzf, fuzzy
+  #    search by filename, with a live thumbnail preview rendered by
+  #    chafa (works in plain Alacritty, no Sixel/Kitty-graphics needed).
+  #  - Run with no terminal attached (e.g. a niri keybind) -> a fuzzel
+  #    popup showing a real thumbnail icon per wallpaper.
+  # Same underlying file list and the same set-wallpaper apply step
+  # either way, so both paths behave identically once you pick a file.
+  wallpaperPickerScript = pkgs.writeShellScriptBin "wallpaper-picker" ''
+    #!/usr/bin/env bash
+    set -uo pipefail
+
+    WALLPAPER_DIR="$HOME/Pictures/wallpapers"
+
+    mapfile -t files < <(find "$WALLPAPER_DIR" -type f \( -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" -o -iname "*.gif" \) 2>/dev/null | sort)
+
+    if [ ''${#files[@]} -eq 0 ]; then
+        echo "No wallpaper found in $WALLPAPER_DIR" >&2
+        exit 1
+    fi
+
+    if [ -t 0 ] && [ -t 1 ]; then
+        selected=$(printf '%s\n' "''${files[@]}" | fzf \
+            --prompt="Wallpaper> " \
+            --preview 'chafa --size=''${FZF_PREVIEW_COLUMNS}x''${FZF_PREVIEW_LINES} {}' \
+            --preview-window=right:60%)
+    else
+        lines=()
+        for f in "''${files[@]}"; do
+            lines+=("$(basename "$f")"$'\0'icon$'\x1f'"$f")
+        done
+        index=$(printf '%s\n' "''${lines[@]}" | fuzzel --dmenu --index --placeholder "Wallpaper")
+        if [ -z "''${index:-}" ]; then
+            exit 0
+        fi
+        selected="''${files[$index]}"
+    fi
+
+    if [ -z "''${selected:-}" ]; then
+        exit 0
+    fi
+    exec set-wallpaper "$selected"
   '';
 in
 {
@@ -72,7 +117,11 @@ in
       docker-compose # docker CLI/daemon itself come from virtualisation.docker
       telegram-desktop
       aria2
+      setWallpaperScript
       randomWallpaperScript
+      wallpaperPickerScript
+      fzf
+      chafa
       loupe
     ];
     shell = pkgs.fish;
