@@ -83,5 +83,6 @@
     insomnia
     file-roller
     zip
+    pipx
   ];
 }
