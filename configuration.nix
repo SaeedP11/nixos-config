@@ -25,6 +25,7 @@
     ./modules/theme.nix
     ./modules/idle.nix
     ./modules/notifications.nix
+    ./modules/media-keys.nix
   ];
 
   # This value determines the NixOS release from which the default
