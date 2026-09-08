@@ -137,7 +137,7 @@ in
     path = with pkgs; [ imagemagick findutils coreutils ];
     serviceConfig = {
       Type = "oneshot";
-      ExecStart = "-e/bin/wallpaper-thumbs sync";
+      ExecStart = "${pkgs.wallpaper-tools}/bin/wallpaper-thumbs sync";
       StandardOutput = "null";
       Nice = 10;
       IOSchedulingClass = "idle";
