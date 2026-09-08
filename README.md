@@ -1,54 +1,92 @@
-# saeedp11's NixOS config — reorganized
+# saeedp11's NixOS configuration
+
+Flake-based NixOS configuration for two machines, with Home Manager for the
+parts of `~` that were previously placed by hand.
 
 ## Layout
 
 ```
-flake.nix                    # pins nixpkgs to nixos-25.05
-configuration.nix            # just the imports list + stateVersion
-hardware-configuration.nix   # your hardware scan, unmodified apart from noted fixes
-modules/
-  boot.nix           bootloader, nix.settings, nix gc/optimise, allowUnfree
-  networking.nix     hostname, NetworkManager, timezone, locale, ssh, mtr
-  power.nix          logind, auto-cpufreq, upower, zram, fstrim
-  desktop-niri.nix   niri, sddm, xkb, portals, session vars, audio/bt/mount services, polkit
-  virtualisation.nix docker, ollama
-  programs.nix       git, fish, starship, bat, neovim, firefox, nekoray, gnupg
-  users.nix          your user account + the wallpaper script
-  packages.nix       environment.systemPackages
-  fonts.nix          font packages + defaults
+flake.nix              inputs + the two nixosConfigurations
+lib/default.nix        mkHost + shared vars (username, stateVersion)
+
+hosts/
+  shared/hardware-configuration.nix   generated hardware scan, shared for now
+  desktop/default.nix                 AMD CPU
+  laptop/default.nix                  Intel CPU, NVIDIA, battery, ollama
+
+modules/nixos/
+  default.nix          everything BOTH machines get
+  core/                nix daemon, boot, locale, networking, power, storage
+  hardware/            cpu/{amd,intel}, gpu/nvidia, bluetooth, laptop
+  desktop/             niri, portals, audio, services, sddm, lockscreen,
+                       theme, idle, notifications, media-keys, fonts
+  programs/            shell, cli, gui, dev, misc
+  services/            docker, ollama
+  users.nix            the account only
+
+modules/home/saeedp11/ Home Manager: git identity, mako, darkman + hooks,
+                       wallust templates, user packages
+pkgs/                  sddm-astronaut-themed, wallpaper-tools
+overlays/              exposes pkgs/ as ordinary pkgs.* attributes
+assets/                sddm background
 ```
 
-Every setting from your original two files is preserved — this is a
-reshuffle, not a rewrite. To install it:
+## Rebuilding
 
-1. Copy this whole folder over `/etc/nixos/` (back up the original first).
-2. `sudo nixos-rebuild switch --flake /etc/nixos#nixos`
-   (or drop `flake.nix` and keep using `nixos-rebuild switch` the
-   channel-based way, if you'd rather not switch to flakes yet — the
-   `modules/*.nix` split works either way).
+```bash
+sudo nixos-rebuild switch --flake .#laptop      # or .#desktop
+```
 
-## Actual behavior changes (not just reshuffling)
+Because each host now sets its own `networking.hostName`, the short form
+also works once a machine has been switched to its matching configuration:
 
-- **`hardware.graphics.enable = true;`** was added. It was commented out
-  in your original (leftover from an AMD setup) — without it your
-  Wayland/OpenGL/Vulkan stack was relying on the nvidia driver to pull
-  in userspace GL bits implicitly, which is fragile.
-- **`zramSwap.enable = true;`** and **`services.fstrim.enable = true;`**
-  added in `power.nix` — cheap wins for a laptop with an SSD/NVMe.
-- **`nix.gc.automatic`**, **`nix.optimise.automatic`**, and
-  **`boot.loader.systemd-boot.configurationLimit = 10;`** added in
-  `boot.nix` — keeps your Nix store and `/boot` from growing unbounded.
-- **Removed duplicate `nekoray`** from `environment.systemPackages`
-  (already installed via `programs.nekoray.enable`).
-- **Removed `docker`** from your user's package list (already provided
-  system-wide by `virtualisation.docker.enable`); kept `docker-compose`.
-- Commented-out `fsType` lines added to `fileSystems."/"` and
-  `"/boot"` in case you want to fill those in explicitly.
+```bash
+sudo nixos-rebuild switch --flake .
+```
 
-## Optional next steps (not applied here)
+Other useful entry points:
 
-- Move per-user preferences (git identity, fish/starship config,
-  session variables, waybar/niri dotfiles) into Home Manager once you're
-  ready — cleaner separation between "system" and "my dotfiles."
-- If you want reproducible pinning without giving up channels entirely,
-  you can skip `flake.nix` for now and just keep the `modules/` split.
+```bash
+nix build .#wallpaper-tools    # build a repo package on its own
+nix fmt                        # nixfmt-rfc-style
+nix develop                    # nixfmt + nil
+```
+
+## What is and is not managed here
+
+`~/.config` is a separate git repository
+([SaeedP11/dotconfig](https://github.com/SaeedP11/dotconfig)) which tracks
+**niri/**, **waybar/**, **alacritty/** and **wallust/wallust.toml**. Home
+Manager deliberately does not touch any of those — taking them over would
+turn files that repo tracks into read-only store symlinks.
+
+Home Manager owns only what was tracked *nowhere* before:
+
+| Path | Why |
+| --- | --- |
+| `~/.config/mako/config` | was hand-placed |
+| `~/.config/darkman/config.toml` | was hand-placed |
+| `~/.local/share/{dark,light}-mode.d/*.sh` | 8 hook scripts, hand-placed |
+| `~/.config/wallust/templates/colors-{mako,alacritty,fuzzel}.*` | untracked in dotconfig |
+| `~/.config/git/config` | identity moved off the system config |
+
+Intentionally left unmanaged, because something rewrites them at runtime:
+
+- `~/.config/gtk-{3,4}.0/settings.ini` — the darkman `10-gtk` hook writes these
+- `~/.config/{waybar,alacritty,mako,fuzzel}/wallust-colors.*` — `wallust run` writes these
+- `~/.config/fish` — not migrated yet
+
+## Adding a machine
+
+1. `nixos-generate-config --show-hardware-config > hosts/<name>/hardware-configuration.nix`
+2. Write `hosts/<name>/default.nix` importing the CPU/GPU modules it needs.
+3. Add `<name> = mkHost { hostName = "<name>"; };` to `flake.nix`.
+
+## Notes
+
+- `qylock` deliberately does **not** follow this flake's nixpkgs: it is built
+  against nixos-unstable and pinning it to 25.05 breaks its Quickshell build.
+  The cost is a second nixpkgs in `flake.lock`.
+- `hosts/shared/hardware-configuration.nix` is shared by both machines. That
+  only works because both label their partitions `NIXROOT`/`NIXBOOT`. Split it
+  per host (step 1 above) when convenient.

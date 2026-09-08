@@ -3,27 +3,47 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.05";
+
+    home-manager = {
+      url = "github:nix-community/home-manager/release-25.05";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    # Deliberately NOT following nixpkgs: qylock is built against
+    # nixos-unstable and pinning it to 25.05 breaks its Quickshell build.
+    # The cost is a second nixpkgs in flake.lock.
     qylock.url = "github:Darkkal44/qylock";
   };
 
-  outputs = { self, nixpkgs, qylock, ... }:
-  { 
-    nixosConfigurations.desktop = nixpkgs.lib.nixosSystem {
-      system = "x86_64-linux";
-      modules = [
-        ./configuration.nix
-        ./modules/amd.nix
-        qylock.nixosModules.default
-      ];
+  outputs =
+    inputs@{ self, nixpkgs, ... }:
+    let
+      inherit (import ./lib { inherit inputs; }) mkHost;
+
+      forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" ];
+      pkgsFor = system: nixpkgs.legacyPackages.${system};
+    in
+    {
+      nixosConfigurations = {
+        desktop = mkHost { hostName = "desktop"; };
+        laptop = mkHost { hostName = "laptop"; };
+      };
+
+      # Packages defined by this repo, buildable directly:
+      #   nix build .#wallpaper-tools
+      packages = forAllSystems (system: import ./pkgs { pkgs = pkgsFor system; });
+
+      overlays.default = import ./overlays;
+
+      formatter = forAllSystems (system: (pkgsFor system).nixfmt-rfc-style);
+
+      devShells = forAllSystems (system: {
+        default = (pkgsFor system).mkShellNoCC {
+          packages = with (pkgsFor system); [
+            nixfmt-rfc-style
+            nil
+          ];
+        };
+      });
     };
-    
-    nixosConfigurations.laptop = nixpkgs.lib.nixosSystem {
-      system = "x86_64-linux";
-      modules = [
-        ./configuration.nix
-        ./modules/nvidia.nix
-        qylock.nixosModules.default
-      ];
-    };
-  };
 }
