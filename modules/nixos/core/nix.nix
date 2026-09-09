@@ -1,5 +1,5 @@
 # The Nix daemon itself: features, store hygiene, and package policy.
-{ ... }:
+{ inputs, ... }:
 
 {
   nix.settings.experimental-features = [
@@ -17,6 +17,11 @@
 
   nixpkgs.config.allowUnfree = true;
 
-  # Custom packages from ../../../pkgs, reachable as ordinary pkgs.* attrs.
-  nixpkgs.overlays = [ (import ../../../overlays) ];
+  nixpkgs.overlays = [
+    # Custom packages from ../../../pkgs, reachable as ordinary pkgs.* attrs.
+    (import ../../../overlays)
+
+    # waybar from nixos-unstable; that file explains why.
+    (import ../../../overlays/waybar.nix { inherit inputs; })
+  ];
 }
