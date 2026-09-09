@@ -19,7 +19,9 @@
 #
 # Also deliberately untouched:
 #   ~/.config/gtk-{3,4}.0/settings.ini  -- rewritten at runtime by the
-#     darkman 10-gtk hook, so it cannot be a read-only symlink.
+#     darkman 10-gtk hook, so it cannot be a read-only symlink. Its
+#     neighbour gtk-3.0/gtk.css is not rewritten by anything and *is*
+#     owned here, by ./gtk.nix.
 #   ~/.config/{waybar,alacritty,mako,fuzzel}/wallust-colors.*  -- generated
 #     by `wallust run`, same reason.
 #   ~/.config/fish                      -- not yet migrated.
@@ -32,6 +34,7 @@
     ./darkman.nix
     ./wallust.nix
     ./waybar.nix
+    ./gtk.nix
     ./packages.nix
   ];
 
