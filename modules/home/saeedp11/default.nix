@@ -11,6 +11,12 @@
 # describe as having to be "placed by hand" on a fresh install. Those are
 # now reproducible; the rest stays in dotconfig.
 #
+# "Tracked" there means tracked, not merely present: dotconfig's .gitignore
+# is "*" plus "!.gitignore", so a file sitting inside a directory that repo
+# owns can still be in no repository at all. waybar/scripts/theme-status.sh
+# was exactly that, which is why ./waybar.nix claims that one file out of an
+# otherwise dotconfig-owned directory.
+#
 # Also deliberately untouched:
 #   ~/.config/gtk-{3,4}.0/settings.ini  -- rewritten at runtime by the
 #     darkman 10-gtk hook, so it cannot be a read-only symlink.
@@ -25,6 +31,7 @@
     ./mako.nix
     ./darkman.nix
     ./wallust.nix
+    ./waybar.nix
     ./packages.nix
   ];
 
