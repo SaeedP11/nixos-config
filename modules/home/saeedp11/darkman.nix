@@ -11,7 +11,7 @@
 # need to be placed by hand". 20-reload-bar.sh and 25-thunar.sh are
 # byte-identical between the two modes, so both directories point at one
 # shared copy.
-{ ... }:
+{ lib, ... }:
 
 let
   # darkman runs every executable in ~/.local/share/<mode>-mode.d in name
@@ -58,4 +58,24 @@ in
   '';
 
   xdg.dataFile = hooksFor "dark" // hooksFor "light";
+
+  # Home Manager moves any pre-existing file aside as <name>.hm-bak in place
+  # rather than deleting it (backupFileExtension, set in ../../../lib/default.nix).
+  # In most directories that is harmless. In these two it is not: darkman runs
+  # *every executable file* in the mode directory, so a backup sitting next to
+  # the hook it was replaced by is a second copy that runs immediately after
+  # the managed one. That is what the first activation of this module left
+  # behind, and it went unnoticed for a week -- every dark/light switch was
+  # regenerating the wallust palette twice, rewriting the GTK settings twice
+  # and signalling waybar twice.
+  #
+  # Nix has no way to say "this file must not exist", so prune the backups
+  # after linking. Scoped to *.hm-bak in the two hook directories, so nothing
+  # a person deliberately put there is touched.
+  home.activation.pruneDarkmanHookBackups = lib.hm.dag.entryAfter [ "linkGeneration" ] ''
+    for d in "$HOME/.local/share/dark-mode.d" "$HOME/.local/share/light-mode.d"; do
+      [ -d "$d" ] || continue
+      run rm -f $VERBOSE_ARG "$d"/*.hm-bak
+    done
+  '';
 }
