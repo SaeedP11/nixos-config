@@ -24,9 +24,9 @@
 let
   # Shared "actually apply this wallpaper" logic: sets it via swww,
   # regenerates wallust colors (respecting the current darkman dark/light
-  # mode), and refreshes waybar in place. Both randomWallpaper and
-  # wallpaper-picker call this, so the reload-safety fixes only need to
-  # live in one place.
+  # mode), repaints the SDDM greeter from the same image, and refreshes
+  # waybar in place. Both randomWallpaper and wallpaper-picker call this, so
+  # the reload-safety fixes only need to live in one place.
   setWallpaperScript = writeShellScriptBin "set-wallpaper" ''
     #!/usr/bin/env bash
     set -uo pipefail
@@ -51,6 +51,15 @@ let
 
     if ! wallust run "$WALLPAPER" "''${palette_args[@]}"; then
         echo "wallust failed on: $WALLPAPER" >&2
+    fi
+
+    # Repaint the login screen from the same wallpaper. Resolved from PATH
+    # like every other tool here, so on a host without the SDDM module the
+    # command is simply absent and this is a no-op. It pins its own palette
+    # rather than reusing the mode above: the greeter is what you see at
+    # boot, before any session -- and so any dark/light mode -- exists.
+    if command -v sddm-sync-theme >/dev/null 2>&1; then
+        sddm-sync-theme "$WALLPAPER"
     fi
 
     # Always make sure waybar is actually up, regardless of whether

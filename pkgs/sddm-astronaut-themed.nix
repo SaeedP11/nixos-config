@@ -3,33 +3,45 @@
 # Split out of the SDDM module so the module only *selects* a theme and this
 # file owns how it is built. The background has to be injected with an
 # overrideAttrs rather than passed as a theme option: the upstream theme
-# resolves `Background` relative to its own directory in the store, so the
-# image must physically exist inside the package.
-{ sddm-astronaut }:
+# resolves a relative `Background` against its own directory in the store, so
+# the image must physically exist inside the package.
+#
+# Two layers of configuration end up in the greeter, because SDDM reads
+# `Themes/<theme>.conf` and then `Themes/<theme>.conf.user` on top of it:
+#
+#   base conf   -- what this file writes. Always present, always valid, and
+#                  what a machine that has never set a wallpaper renders.
+#   .conf.user  -- a symlink out of the store into ./sddm-wallust's state
+#                  directory, rewritten from the current wallpaper on every
+#                  change. Absent until the first wallpaper change, at which
+#                  point it starts overriding the layer below.
+{
+  lib,
+  formats,
+  sddm-astronaut,
+  sddm-wallust,
+}:
 
 let
-  # The greeter's palette is the same seed the session starts from — see the
-  # fuzzel fallback colors in ../modules/nixos/desktop/theme.nix. wallust
-  # re-derives everything else from the wallpaper once a session is up, but
-  # SDDM runs before any of that exists, so it uses the seed directly and the
-  # login screen matches the first frame of the desktop rather than being a
-  # separate look.
+  theme = "jake_the_dog";
+
+  # Seed palette for the base conf, i.e. what the greeter looks like before
+  # wallust has ever run against a wallpaper. Deliberately the same three
+  # values the session's own pre-wallust fallback uses -- see the fuzzel seed
+  # colors in ../modules/nixos/desktop/theme.nix -- so a fresh machine's login
+  # screen matches the first frame of its desktop.
   bg = "#1c1c1e";
   surface = "#2f2f33"; # one step up from bg, for raised rows in the session menu
   fg = "#e6e6e6";
   muted = "#818182"; # fg at 50% over bg, i.e. the seed's placeholder color
   accent = "#8899ff";
-in
-(sddm-astronaut.override {
-  embeddedTheme = "jake_the_dog";
 
   # Upstream's jake_the_dog.conf is an indigo palette (#d8d8ff / #6c6caa /
-  # #242455). Every color key it defines is overridden here, because a partial
-  # override leaves the untouched keys at those indigo defaults and the form
-  # ends up wearing two palettes at once.
-  themeConfig = {
-    Background = "Backgrounds/sddm-bg.jpg";
-
+  # #242455). Every color key it defines is set here, because overriding only
+  # some of them leaves the rest at those indigo defaults and the form ends up
+  # wearing two palettes at once. The roles map exactly onto the wallust
+  # template in ./sddm-wallust, so the two layers stay interchangeable.
+  palette = {
     HeaderTextColor = fg;
     DateTextColor = fg;
     TimeTextColor = fg;
@@ -87,11 +99,60 @@ in
     HoverSessionButtonTextColor = accent;
     HoverVirtualKeyboardButtonTextColor = accent;
   };
+
+  # Written into the base conf alongside the colors. Relative, so it resolves
+  # inside the store copy of the theme; the runtime layer replaces it with an
+  # absolute path into the state directory.
+  baseSettings = palette // {
+    Background = "Backgrounds/sddm-bg.jpg";
+  };
+
+  # Seed for the runtime file, so the .conf.user symlink is never dangling
+  # even before the first wallpaper change. Same values as the base conf, so
+  # the two layers agree until wallust has something to say.
+  defaultColorsFile = (formats.ini { }).generate "sddm-theme-colors.conf" { General = baseSettings; };
+
+  basePath = "$out/share/sddm/themes/sddm-astronaut-theme";
+  baseConf = "${basePath}/Themes/${theme}.conf";
+
+  # Substituted into the upstream conf rather than appended to it: the file
+  # already defines every one of these keys, and SDDM's reader gives no
+  # guarantee about which of two duplicates wins.
+  sedArgs = lib.concatMapStringsSep " \\\n        " (
+    k: "-e 's|^${k}=.*|${k}=\"${baseSettings.${k}}\"|'"
+  ) (builtins.attrNames baseSettings);
+in
+(sddm-astronaut.override {
+  embeddedTheme = theme;
+  # Left null on purpose. Upstream would use this to write the .conf.user,
+  # which is the file the runtime layer needs to own.
+  themeConfig = null;
 }).overrideAttrs
   (oldAttrs: {
     installPhase = oldAttrs.installPhase + ''
-      chmod u+w $out/share/sddm/themes/sddm-astronaut-theme/Backgrounds/
-      cp ${../assets/sddm-bg.jpg} \
-        $out/share/sddm/themes/sddm-astronaut-theme/Backgrounds/sddm-bg.jpg
+      chmod u+w ${basePath}/Backgrounds/ ${basePath}/Themes/ ${baseConf}
+      cp ${../assets/sddm-bg.jpg} ${basePath}/Backgrounds/sddm-bg.jpg
+
+      # sed is silent when a pattern matches nothing, which would leave a key
+      # quietly sitting at upstream's indigo default. Fail the build instead.
+      for key in ${lib.concatStringsSep " " (builtins.attrNames baseSettings)}; do
+        grep -q "^$key=" ${baseConf} || {
+          echo "sddm-astronaut-themed: '$key' is not a key of ${theme}.conf;" \
+               "upstream renamed or dropped it" >&2
+          exit 1
+        }
+      done
+
+      sed -i ${sedArgs} \
+        ${baseConf}
+
+      # Hand the override layer to the runtime. Dangling until the NixOS
+      # module's tmpfiles rule seeds it on the next activation, which is why
+      # every value it can carry also exists in the base conf above.
+      ln -sfn ${sddm-wallust.colorsFile} ${baseConf}.user
     '';
+
+    passthru = (oldAttrs.passthru or { }) // {
+      inherit defaultColorsFile;
+    };
   })
