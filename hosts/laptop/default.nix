@@ -10,6 +10,9 @@
     ../../modules/nixos/hardware/laptop.nix
 
     ../../modules/nixos/services/ollama.nix
+
+    # Shares the VPN with the console and the TV over the wired port.
+    ../../modules/nixos/services/vpn-share.nix
   ];
 
   networking.hostName = hostName;
