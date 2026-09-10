@@ -429,6 +429,86 @@ window-rule {
     open-on-workspace "messenger"
 }
 
+// PER-APPLICATION COLUMN WIDTHS.
+//
+// niri opens every new window at the layout's default-column-width, which
+// is `proportion 1.0` above -- one window, whatever it is, fills the
+// screen. That is right for the things you look at and wrong for
+// everything you put beside something else, so the rules below sort this
+// session's programs into four kinds: full, two thirds, half, and "let the
+// window decide". Anything not named here keeps the full-width default.
+//
+// The three proportions are deliberately the same 1/3, 1/2 and 2/3 that
+// preset-column-widths cycles through, so Mod+R steps a window from its
+// default to the next preset rather than to some fourth size that only
+// exists here.
+//
+// PROPORTIONS RATHER THAN PIXELS, because the outputs are not all the same
+// shape: DP-4 above is rotated 90 degrees and is therefore 1080x1920
+// logical, where a width tuned in pixels for a 1920-wide landscape output
+// would be wrong. A window rule cannot match on output, so the width has to
+// be one that means the same thing on all of them.
+//
+// THE PATTERNS MATCH THE WAYLAND app_id, which is not always the name of
+// the .desktop file: Alacritty capitalises it, GTK apps generally use their
+// application ID (org.gnome.Calculator), and several Qt and GTK3 apps use
+// the plain binary name instead. Where those two forms differ, or where the
+// real value could not be confirmed without launching the program, the
+// pattern accepts both rather than silently matching nothing -- a window
+// rule whose app-id is wrong fails by doing nothing at all.
+
+// Full width. The window *is* the task: nothing is meant to sit beside it.
+window-rule {
+    match app-id=r#"firefox$"#
+    match app-id=r#"(?i)^vlc$"#
+    match app-id=r#"(?i)^u?mpv$"#
+
+    default-column-width { proportion 1.0; }
+}
+
+// Two thirds. Editors and API clients: wide enough for the sidebar plus a
+// full line of code, with a third of the screen left for a terminal.
+window-rule {
+    match app-id=r#"code$"#
+    match app-id=r#"^Insomnia$"#
+
+    default-column-width { proportion 0.66667; }
+}
+
+// Half. The everyday two-up windows -- a terminal against an editor, a file
+// manager against a terminal, a chat against a browser.
+window-rule {
+    match app-id=r#"(?i)^alacritty$"#
+    match app-id=r#"(?i)^thunar$"#
+    match app-id=r#"(?i)^org\.telegram\.desktop$"#
+    match app-id=r#"(?i)^nekoray$"#
+    match app-id=r#"^(org\.gnome\.Settings|gnome-control-center)$"#
+    match app-id=r#"^(org\.gnome\.SystemMonitor|gnome-system-monitor)$"#
+    match app-id=r#"^(org\.gnome\.FileRoller|file-roller)$"#
+    match app-id=r#"^org\.gnome\.baobab$"#
+    match app-id=r#"^org\.gnome\.Loupe$"#
+
+    default-column-width { proportion 0.5; }
+}
+
+// Auto: an empty default-column-width hands the choice back to the window,
+// which is what these want. They are single-purpose dialogs that already
+// ask for a sensible size and look absurd stretched across half a monitor.
+window-rule {
+    match app-id=r#"^(org\.gnome\.Calculator|gnome-calculator)$"#
+    match app-id=r#"^org\.gnome\.Characters$"#
+    match app-id=r#"^org\.gnome\.clocks$"#
+    match app-id=r#"^org\.gnome\.Calendar$"#
+    match app-id=r#"^org\.gnome\.font-viewer$"#
+    match app-id=r#"^org\.gnome\.Snapshot$"#
+    match app-id=r#"^(org\.pulseaudio\.)?pavucontrol$"#
+    match app-id=r#"^blueman-(manager|adapters)$"#
+    match app-id=r#"^nm-connection-editor$"#
+    match app-id=r#"^(network\.cycles\.wdisplays|wdisplays)$"#
+
+    default-column-width {}
+}
+
 binds {
     // Keys consist of modifiers separated by + signs, followed by an XKB key name
     // in the end. To find an XKB name for a particular key, you may use a program
