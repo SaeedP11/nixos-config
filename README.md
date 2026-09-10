@@ -24,8 +24,9 @@ modules/nixos/
   services/            docker, ollama
   users.nix            the account only
 
-modules/home/saeedp11/ Home Manager: git identity, mako, darkman + hooks,
-                       wallust templates, user packages
+modules/home/saeedp11/ Home Manager: niri, waybar, alacritty, zellij, mako,
+                       gtk, wallust, darkman + hooks, fish + starship,
+                       mimeapps, git identity, user packages
 pkgs/                  sddm-astronaut-themed, wallpaper-tools
 overlays/              exposes pkgs/ as ordinary pkgs.* attributes
 assets/                sddm background
@@ -54,27 +55,42 @@ nix develop                    # nixfmt + nil
 
 ## What is and is not managed here
 
-`~/.config` is a separate git repository
-([SaeedP11/dotconfig](https://github.com/SaeedP11/dotconfig)) which tracks
-**niri/**, **waybar/**, **alacritty/** and **wallust/wallust.toml**. Home
-Manager deliberately does not touch any of those — taking them over would
-turn files that repo tracks into read-only store symlinks.
+This repository is the single source of truth for `~/.config`. It used to
+share that job with a separate git repository
+([SaeedP11/dotconfig](https://github.com/SaeedP11/dotconfig)) that tracked
+**niri/**, **waybar/**, **alacritty/**, **starship.toml** and
+**wallust/wallust.toml**; that repository is retired and Home Manager owns
+those files now.
 
-Home Manager owns only what was tracked *nowhere* before:
-
-| Path | Why |
+| Path | Module |
 | --- | --- |
-| `~/.config/mako/config` | was hand-placed |
-| `~/.config/darkman/config.toml` | was hand-placed |
-| `~/.local/share/{dark,light}-mode.d/*.sh` | 8 hook scripts, hand-placed |
-| `~/.config/wallust/templates/colors-{mako,alacritty,fuzzel}.*` | untracked in dotconfig |
-| `~/.config/git/config` | identity moved off the system config |
+| `~/.config/niri/config.kdl` | `niri.nix` — compositor, binds, autostarts; generated, see below |
+| `~/.config/waybar/{config.jsonc,style.css,scripts/}` | `waybar.nix` |
+| `~/.config/alacritty/alacritty.toml` | `alacritty.nix` |
+| `~/.config/zellij/config.kdl` | `zellij.nix` |
+| `~/.config/mako/config` | `mako.nix` |
+| `~/.config/gtk-3.0/gtk.css` | `gtk.nix` — every GTK3 tray menu |
+| `~/.config/wallust/{wallust.toml,templates/*}` | `wallust.nix` |
+| `~/.config/darkman/config.toml`, `~/.local/share/{dark,light}-mode.d/*.sh` | `darkman.nix` |
+| `~/.config/fish/config.fish`, `~/.config/starship.toml` | `shell.nix` |
+| `~/.config/mimeapps.list` | `xdg.nix` |
+| `~/.config/git/config` | `git.nix` |
 
-Intentionally left unmanaged, because something rewrites them at runtime:
+Intentionally left unmanaged, because something rewrites them at runtime and
+a read-only store symlink would break it:
 
 - `~/.config/gtk-{3,4}.0/settings.ini` — the darkman `10-gtk` hook writes these
 - `~/.config/{waybar,alacritty,mako,fuzzel}/wallust-colors.*` — `wallust run` writes these
-- `~/.config/fish` — not migrated yet
+- `~/.config/niri/{config.kdl,wallust-colors.sed}` — niri has no `include`
+  directive and rejects a second `layout` node, so its colours cannot live in
+  a file it reads: the whole config is rendered from `niri.nix`'s template by
+  substituting the current wallust palette into it, on every wallpaper change,
+  every dark/light switch and every rebuild. Edit the template, not this file.
+- `~/.config/fish/fish_variables` — fish's universal variable store
+- `~/.config/{QtProject.conf,pavucontrol.ini}` — window and dialog state
+- `~/.config/termusic/*.toml`, `~/.config/nekoray/` — rewritten on exit
+- `~/.config/Thunar/{accels.scm,uca.xml}`, `~/.config/xfce4/helpers.rc` —
+  written by Thunar's and exo's own preference dialogs
 
 ## Adding a machine
 

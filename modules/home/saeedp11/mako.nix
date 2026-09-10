@@ -1,8 +1,8 @@
 # mako's visual configuration.
 #
 # The file only, not the service: mako is launched by niri's
-# spawn-at-startup (see ~/.config/niri/config.kdl in the dotconfig repo),
-# and enabling Home Manager's `services.mako` would add a second, competing
+# spawn-at-startup (see ./niri.nix), and enabling Home Manager's
+# `services.mako` would add a second, competing
 # systemd user unit. The daemon binary and the sound-on-notify watcher come
 # from modules/nixos/desktop/notifications.nix.
 #

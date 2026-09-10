@@ -1,0 +1,11 @@
+[general]
+import = ["~/.config/alacritty/colors.toml"]
+
+[window]
+decorations = "None"
+padding = { x = 16, y = 16 }
+
+[[keyboard.bindings]]
+key = "Return"
+mods = "Shift"
+chars = "\u001B\r"

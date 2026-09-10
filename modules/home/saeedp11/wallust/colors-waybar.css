@@ -1,0 +1,28 @@
+ @define-color foreground {{foreground}};
+ @define-color background {{background}};
+ @define-color background-alt rgba({{background | rgb}},0.85);
+ @define-color cursor {{cursor}};
+ 
+ @define-color cpuText {{color0}};
+ @define-color cpuBg rgba({{color0 | rgb}}, 0.2);
+ @define-color memText {{color1}};
+ @define-color memBg rgba({{color1 | rgb}}, 0.2);
+ @define-color diskText {{color2}};
+ @define-color diskBg rgba({{color2 | rgb}}, 0.2);
+ @define-color clockText {{color3}};
+ @define-color clockBg rgba({{color3 | rgb}}, 0.2);
+ @define-color trayText {{color4}};
+ @define-color trayBg rgba({{color4 | rgb}}, 0.2);
+ @define-color audioText {{color5}};
+ @define-color audioBg rgba({{color5 | rgb}}, 0.2);
+ @define-color networkText {{color6}};
+ @define-color networkBg rgba({{color6 | rgb}}, 0.2);
+ @define-color bluetoothText {{color7}};
+ @define-color bluetoothBg rgba({{color7 | rgb}}, 0.2); 
+ @define-color batteryText {{color8}}; 
+ @define-color batteryBg rgba({{color8 | rgb}}, 0.2); 
+ @define-color powerText {{color9}}; 
+ @define-color powerBg rgba({{color9 | rgb}}, 0.2); 
+
+ @define-color themeText {{color10}};
+ @define-color themeBg rgba({{color10 | rgb}}, 0.2);

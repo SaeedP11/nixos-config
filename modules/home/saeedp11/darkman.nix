@@ -5,8 +5,7 @@
 # also supplies the PATH these hooks inherit (bash, glib for gsettings, niri,
 # wallust, procps). This module only places files.
 #
-# These eight files were previously tracked nowhere at all -- not in this
-# repo and not in the dotconfig repo -- which is what
+# These eight files were previously tracked nowhere at all, which is what
 # modules/nixos/desktop/theme.nix meant by "those live outside of Nix and
 # need to be placed by hand". 20-reload-bar.sh and 25-thunar.sh are
 # byte-identical between the two modes, so both directories point at one

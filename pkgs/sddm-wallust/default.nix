@@ -113,11 +113,11 @@ let
     HoverVirtualKeyboardButtonTextColor="{{color4}}"
   '';
 
-  # A config directory of our own rather than the user's ~/.config/wallust.
-  # That file is tracked in the dotconfig repo and drives the live session, so
-  # adding a [templates] entry to it would mean this repo editing a file it
-  # does not own -- and it would tie the greeter to whatever palette the
-  # session happens to be using.
+  # A config directory of our own rather than the user's ~/.config/wallust
+  # (modules/home/saeedp11/wallust.nix). That one drives the live session, so
+  # adding a [templates] entry to it would tie the greeter to whatever palette
+  # the session happens to be using, and would make every wallpaper change in
+  # the session rewrite the greeter's colours too.
   configDir = runCommand "sddm-wallust-config" { } ''
     mkdir -p $out/templates
     cp ${template} $out/templates/sddm-colors.conf

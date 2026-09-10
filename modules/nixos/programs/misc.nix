@@ -19,9 +19,9 @@
   # Start nekoray with the graphical session, the same way darkman and
   # notify-sound are started (../desktop/{theme,notifications}.nix). The other
   # session-scoped GUIs -- mako, waybar, nm-applet -- are niri
-  # spawn-at-startup lines instead, but niri's config.kdl lives in the
-  # dotconfig repo and is not Nix-managed, so a unit here is the only place
-  # this autostart can live in this repository.
+  # spawn-at-startup lines instead (../../home/saeedp11/niri.nix); a unit is
+  # used here so nekoray is restarted on failure rather than left dead, which
+  # matters more for the thing carrying the network than for a bar.
   #
   # /run/wrappers is on the PATH because nekoray resolves its core with
   # QStandardPaths::findExecutable("nekobox_core") (nixpkgs'

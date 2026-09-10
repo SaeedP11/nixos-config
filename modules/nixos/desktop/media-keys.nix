@@ -1,10 +1,9 @@
 # Laptop function ("Fn") / hardware key support: the SwayOSD daemon that
 # every one of those key bindings goes through.
 #
-# The bindings themselves live in ~/.config/niri/config.kdl, which is tracked
-# in the separate dotconfig repo rather than by Home Manager here — see
-# ../../home/saeedp11/default.nix for why that split exists. swayidle is
-# spawned from the same file (see ./idle.nix).
+# The bindings themselves live in niri's config, which Home Manager owns:
+# ../../home/saeedp11/niri.nix. swayidle is spawned from the same file (see
+# ./idle.nix).
 #
 # Why the binds call one tool instead of wpctl/brightnessctl plus a
 # separate OSD call: swayosd-client performs the change *and* draws the

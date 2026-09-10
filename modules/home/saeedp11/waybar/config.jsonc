@@ -1,0 +1,227 @@
+{
+  "layer": "top",
+  "position": "top",
+  "height": 32,
+  "spacing": 6,
+  "margin-top": 8,
+  "margin-bottom": 0,
+  "margin-left": 10,
+  "margin-right": 10,
+  "modules-left": [
+    "group/launcher",
+    "niri/workspaces",
+    "niri/window",
+    "group/system"
+  ],
+  "modules-center": [
+    "group/datetime"
+  ],
+  "modules-right": [
+    "group/quick",
+    "group/status",
+    "custom/power"
+  ],
+  "group/launcher": {
+    "orientation": "horizontal",
+    "modules": [
+      "custom/launcher",
+      "custom/file-explorer"
+    ]
+  },
+  "group/system": {
+    "orientation": "horizontal",
+    "modules": [
+      "cpu",
+      "memory",
+      "disk"
+    ]
+  },
+  "group/datetime": {
+    "orientation": "horizontal",
+    "modules": [
+      "custom/date",
+      "custom/time"
+    ]
+  },
+  "group/quick": {
+    "orientation": "horizontal",
+    "modules": [
+      "custom/theme",
+      "idle_inhibitor",
+      "tray"
+    ]
+  },
+  "group/status": {
+    "orientation": "horizontal",
+    "modules": [
+      "pulseaudio",
+      "network",
+      "bluetooth",
+      "battery"
+    ]
+  },
+  "custom/launcher": {
+    "format": "<span size='large'>󱓞</span>",
+    "tooltip": false,
+    "on-click": "fuzzel",
+    "on-click-right": "niri msg action toggle-overview"
+  },
+  "custom/file-explorer": {
+    "format": "<span size='large'>󰉋</span>",
+    "tooltip": false,
+    "on-click": "nautilus"
+  },
+  // Named workspaces keep their category glyph in every state; niri's
+  // dynamic unnamed ones get a dot. Deliberately no "empty" icon: that
+  // state icon overrides the name match, so an empty "dev" would lose its
+  // glyph exactly when the icon is the only hint of what belongs there.
+  // Emptiness is shown by opacity in style.css instead.
+  "niri/workspaces": {
+    "format": "<span size='large'>{icon}</span>",
+    "format-icons": {
+      "browser": "󰖟",
+      "messenger": "󰭹",
+      "dev": "󰅩",
+      "default": "󰝥"
+    },
+    "all-outputs": false
+  },
+  // separate-outputs matches niri/workspaces' all-outputs:false -- each
+  // bar reports its own monitor rather than both showing the globally
+  // focused window.
+  //
+  // The rewrite rules strip the app-name suffix every one of these
+  // programs appends: the workspace glyph to the left already says which
+  // app this is, so the suffix only eats width. Rules are whole-string
+  // matches, hence the leading (.*) capture. Firefox is listed twice
+  // because it switched from a hyphen to an em dash.
+  "niri/window": {
+    "format": "{title}",
+    "separate-outputs": true,
+    // Explicit only to silence a waybar warning: the module logs
+    // "'swap-icon-label' must be a bool" on every reload when the key is absent.
+    "swap-icon-label": false,
+    "max-length": 45,
+    "tooltip-format": "{title}",
+    "rewrite": {
+      "(.*) — Mozilla Firefox": "$1",
+      "(.*) - Mozilla Firefox": "$1",
+      "(.*) - Visual Studio Code": "$1",
+      "(.*) - Insomnia": "$1",
+      "\\[Admin\\].*Nekoray.*": "Nekoray"
+    }
+  },
+  "cpu": {
+    "interval": 5,
+    "format": "<span size='large'>󰍛</span>   {usage:02}%",
+    "on-click": "gnome-system-monitor",
+    "on-click-right": "$TERM -e btm"
+  },
+  "memory": {
+    "format": "<span size='large'>󰘚</span>   {percentage:02}%",
+    "on-click": "gnome-system-monitor",
+    "on-click-right": "$TERM -e btm",
+    "interval": 5
+  },
+  "disk": {
+    "format": "<span size='large'>󰋊</span>   {used} / {total}",
+    "path": "/",
+    "on-click": "baobab",
+    "interval": 30
+  },
+  "custom/date": {
+    "exec": "date '+%Y %b %d %a'",
+    "format": "<span size='medium'>󰭧</span>   {}",
+    "tooltip": false,
+    "on-click": "gnome-calendar",
+    "interval": 60
+  },
+  "custom/time": {
+    "exec": "date '+%H:%M'",
+    "format": "<span size='medium'>󰅐</span>   {}",
+    "tooltip": false,
+    "on-click": "gnome-clocks",
+    "interval": 1
+  },
+  "tray": {
+    "icon-size": 18,
+    "spacing": 10
+  },
+  "pulseaudio": {
+    "format": "<span size='large'>{icon}</span>   {volume}%",
+    "format-muted": "󰝟",
+    "format-icons": {
+      "default": [
+        "󰕿",
+        "󰖀",
+        "󰕾"
+      ]
+    },
+    "scroll-step": 5,
+    "on-click": "pavucontrol"
+  },
+  "network": {
+    "format-wifi": "<span size='large'>󰖩</span>   {signalStrength}%",
+    "format-ethernet": "<span size='large'>󰈀</span>",
+    "format-disconnected": "<span size='large'>󰖪</span>",
+    "tooltip-format": "{essid} ({signalStrength}%)",
+    "on-click": "nm-connection-editor"
+  },
+  "bluetooth": {
+    "format": "<span size='large'>󰂯</span>",
+    "format-disabled": "<span size='large'>󰂯</span>",
+    "format-connected": "<span size='large'>󰂱</span>",
+    "on-click": "",
+    "on-click-right": "blueman-manager"
+  },
+  "battery": {
+    "states": {
+      "warning": 30,
+      "critical": 15
+    },
+    "format": "<span size='large'>{icon}</span>   {capacity}%",
+    "format-charging": "<span size='large'>󰂄</span>   {capacity}%",
+    "format-icons": [
+      "󰁺",
+      "󰁻",
+      "󰁼",
+      "󰁽",
+      "󰁾",
+      "󰁿",
+      "󰂀",
+      "󰂁",
+      "󰂂",
+      "󰁹"
+    ]
+  },
+  // Filled cup while inhibiting, outline while idle is allowed to run --
+  // same filled-vs-outline on/off language the workspace dots use, so the
+  // silhouette stays put and only the fill changes.
+  //
+  // This genuinely suppresses the swayidle timers spawned from
+  // niri/config.kdl: niri advertises both zwp_idle_inhibit_manager_v1
+  // (which waybar takes an inhibitor on) and ext_idle_notifier_v1 (which
+  // swayidle listens to), and honours the former when deciding whether to
+  // fire the latter.
+  "idle_inhibitor": {
+    "format": "<span size='large'>{icon}</span>",
+    "format-icons": {
+      "activated": "󰅶",
+      "deactivated": "󰛊"
+    },
+    "tooltip-format-activated": "Idle inhibited — screen stays on",
+    "tooltip-format-deactivated": "Idle active — click to keep the screen on"
+  },
+  "custom/power": {
+    "format": "<span size='large'>⏻</span>",
+    "tooltip": false,
+    "on-click": "wlogout"
+  },
+  "custom/theme": {
+    "exec": "~/.config/waybar/scripts/theme-status.sh",
+    "return-type": "json",
+    "interval": 15,
+    "on-click": "darkman toggle",
+    "tooltip": true
+  }
+}
