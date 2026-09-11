@@ -8,6 +8,26 @@
   networking.networkmanager.enable = true;
   networking.wireless.enable = false;
 
+  # Load the firewall as one nftables ruleset instead of driving iptables a
+  # rule at a time.
+  #
+  # The generated firewall-start script was 213 lines and 21 `ip46tables`
+  # calls -- so roughly 42 processes, each taking the xtables lock and
+  # re-reading the whole table -- and `systemd-analyze blame` put
+  # firewall.service at 1.500s on an idle boot. nftables hands the kernel the
+  # complete ruleset in a single atomic transaction.
+  #
+  # firewall.service is ordered after systemd-modules-load.service and both
+  # are wanted by sysinit.target, so this time was squarely on the critical
+  # path, and it was also competing for this machine's two cores with
+  # systemd-tmpfiles-setup.service, which ran concurrently and took 1.449s.
+  #
+  # The cost of the switch is that `networking.firewall.extraCommands` and
+  # `networking.nat.extraCommands` stop being accepted -- both modules assert
+  # on them. ../services/vpn-share.nix is the only user of either and states
+  # its rules natively now.
+  networking.nftables.enable = true;
+
   # Configure network proxy if necessary
   # networking.proxy.default = "http://localhost:2080/";
   # networking.proxy.noProxy = "127.0.0.1,localhost,internal.domain";
