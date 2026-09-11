@@ -87,8 +87,20 @@ in
     # source network produces the same MASQUERADE and FORWARD accept without
     # touching the mark.
     internalIPs = [ network ];
+  };
 
-    extraCommands = ''
+  # The two rules that used to be `networking.nat.extraCommands`, which the
+  # nftables nat module asserts against. Their own table rather than additions
+  # to nixos-nat, since ../core/networking.nix owns that one through
+  # `networking.nat` and nothing here should have to reach into it; nftables
+  # runs every base chain registered on a hook, so a separate table composes
+  # with the firewall's chains instead of replacing them.
+  #
+  # There is no teardown counterpart to the old `extraStopCommands`:
+  # nftables.service deletes the tables it created, and this is one of them.
+  networking.nftables.tables.vpn-share = {
+    family = "ip";
+    content = ''
       # Send forwarded LAN traffic to sing-box's routing table. Packets
       # addressed to this host -- the DHCP handshake and the DNS queries
       # dnsmasq answers itself -- are left alone, since marking those would
@@ -100,29 +112,62 @@ in
       # This chain is kept as the fallback for a nekoray profile with
       # auto_redirect off, where that chain is not installed at all and
       # nothing else would mark the packets.
-      iptables -w -t mangle -N vpn-share-mark 2>/dev/null || iptables -w -t mangle -F vpn-share-mark
-      iptables -w -t mangle -A vpn-share-mark -m addrtype --dst-type LOCAL -j RETURN
-      iptables -w -t mangle -A vpn-share-mark -j MARK --set-mark ${fwmark}
-      iptables -w -t mangle -C PREROUTING -i ${lan} -j vpn-share-mark 2>/dev/null \
-        || iptables -w -t mangle -A PREROUTING -i ${lan} -j vpn-share-mark
+      #
+      # `fib daddr type local` is nftables' spelling of iptables'
+      # `-m addrtype --dst-type LOCAL`. Named as the iptables chain was, and
+      # not `mark`, which nftables keeps as a keyword and will not parse as a
+      # chain name.
+      #
+      # ## Why the priority is mangle + 20 and not mangle
+      #
+      # It has to stay after the firewall's reverse path filter, which the
+      # nftables firewall puts at `mangle + 10`. That chain's test is
+      #
+      #     fib saddr . mark . iif oif exists accept
+      #
+      # so it resolves the packet's source address in whichever table the
+      # packet's *mark* selects. Marked 0x2023 first, a client's packet would
+      # be looked up in table 2022, which holds only the tunnel's default
+      # route and no connected route back to this LAN; the reverse path would
+      # not match the interface the packet arrived on and it would be dropped
+      # -- every packet from the console and the TV.
+      #
+      # This is the ordering iptables had, by a different mechanism. There
+      # rpfilter was a chain jumped to from the *same* mangle PREROUTING
+      # chain, appended by firewall.service before nat.service appended this
+      # one, so it also ran first and saw the mark still at 0, resolving the
+      # source against the main table where this LAN is connected. With
+      # nftables the two are separate base chains and hook priority is what
+      # orders them.
+      #
+      # mangle + 20 is -130, still comfortably ahead of dstnat's -100 and of
+      # the routing decision that follows the whole prerouting hook.
+      chain vpn-share-mark {
+        type filter hook prerouting priority mangle + 20; policy accept;
+
+        iifname != "${lan}" return
+        fib daddr type local return
+        meta mark set ${fwmark}
+      }
 
       # Kill switch, and the reason this is not merely belt and braces: when
       # nekoray is not running, sing-box's ip rule is gone, so a marked
       # packet finds no table 2022, falls through to the main table and would
-      # leave over the wifi with this machine's real address. The FORWARD
-      # policy is ACCEPT unless docker happens to be running, so nothing else
-      # stops it. Inserted at the head of nixos-filter-forward, ahead of the
-      # accepts nat-iptables appends; return traffic is addressed *to* the
-      # network rather than from it and so is not matched.
-      iptables -w -t filter -I nixos-filter-forward 1 -s ${network} ! -o ${tun} -j DROP
-    '';
+      # leave over the wifi with this machine's real address. The forward
+      # hook has no default-drop chain -- `networking.firewall.filterForward`
+      # is off, because turning it on would put a policy-drop chain on the
+      # same hook as the rules docker installs for its bridge networks --
+      # so nothing else stops it.
+      #
+      # The policy is accept and the single rule matches only this LAN's
+      # source network, which keeps the chain inert for everything else on
+      # the hook. Return traffic is addressed *to* the network rather than
+      # from it and so is not matched.
+      chain vpn-share-killswitch {
+        type filter hook forward priority filter; policy accept;
 
-    # nat-iptables flushes and deletes nixos-filter-forward itself, so only
-    # the mangle chain needs taking back down here.
-    extraStopCommands = ''
-      iptables -w -t mangle -D PREROUTING -i ${lan} -j vpn-share-mark 2>/dev/null || true
-      iptables -w -t mangle -F vpn-share-mark 2>/dev/null || true
-      iptables -w -t mangle -X vpn-share-mark 2>/dev/null || true
+        ip saddr ${network} oifname != "${tun}" drop
+      }
     '';
   };
 
@@ -187,11 +232,13 @@ in
   # of exactly the packets some NAT rule has already redirected and of
   # nothing a client sends to this host on its own account.
   #
-  # Appended rather than inserted: the firewall's own script runs
-  # extraCommands after its port rules and before the closing jump to
-  # nixos-fw-log-refuse, so -A lands this ahead of the catch-all.
-  networking.firewall.extraCommands = ''
-    iptables -w -A nixos-fw -i ${lan} -m conntrack --ctstate DNAT -j nixos-fw-accept
+  # `extraInputRules` rather than the `extraCommands` this used to be, which
+  # the nftables firewall asserts against. It is appended to the input-allow
+  # chain, which the input chain's conntrack vmap jumps to for `new` and
+  # `untracked` packets -- the redirected SYN is `new` -- while the rest of
+  # the connection is accepted by that vmap's `established` arm.
+  networking.firewall.extraInputRules = ''
+    iifname "${lan}" ct status dnat accept comment "sing-box auto-redirect listener"
   '';
 
   # Left as a marker for the AP variant: running a hotspot off wlp3s0 is not
