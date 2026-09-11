@@ -22,6 +22,57 @@
 @define-color themeAccent     mix(@themeText, @foreground, 0.45);
 @define-color powerAccent     mix(@powerText, @foreground, 0.45);
 
+/* ---- Motion ------------------------------------------------------ */
+/* One motion system for the whole bar. A status bar is read at a glance
+   and out of the corner of the eye, so mismatched timings register as
+   jitter rather than as polish; everything below uses one of three
+   durations and one of two curves, and nothing uses anything else.
+
+     110ms  cubic-bezier(0.4, 0, 1, 1)   press. Accelerating, so the
+                                         surface is already moving when
+                                         the click lands. Only ever the
+                                         *entry* into :active -- release
+                                         falls back to the 200ms rule,
+                                         which is the shape of a real
+                                         button: instant down, soft up.
+     200ms  cubic-bezier(0.2, 0, 0, 1)   module-sized feedback and state:
+                                         hover, focus, mute, warning, a
+                                         device connecting.
+     320ms  cubic-bezier(0.2, 0, 0, 1)   group-sized change: the pills
+                                         themselves, and the window title
+                                         collapsing. Larger surfaces
+                                         travel further, so they are
+                                         given longer to arrive.
+
+   The 0.2/0/0/1 curve is decelerating: motion starts at full speed and
+   settles, which is what makes a hover feel answered rather than played
+   back.
+
+   GTK3 animates color, background, border, box-shadow, padding,
+   min-width/min-height and opacity, but it has no transforms. So "lift"
+   here is a shadow that grows, "press" is a shadow turned inset, and
+   "grow" is padding -- never a scale, because there is none to be had.
+
+   Two rules of restraint, both about a bar that sits on screen all day
+   on a dual-core laptop:
+
+   - Nothing changes *size* on hover except a workspace taking focus. A
+     width change ripples through every module beside it, and a bar that
+     shrugs whenever the pointer crosses it is worse than a still one.
+     Hover is carried by background, shadow and color, which cost the
+     widget's own area and nothing else.
+   - Nothing animates forever except the states whose entire job is to
+     be noticed -- an urgent workspace, a critical battery, a tray icon
+     asking for attention. Each animates opacity only, the cheapest
+     thing to repaint. A charging battery deliberately does not breathe:
+     it would repaint the bar for hours to report something the icon
+     already says.
+
+   A side effect worth having: because color is transitioned rather than
+   swapped, the whole palette cross-fades when darkman toggles or wallust
+   rewrites wallust-colors.css on a wallpaper change, instead of the bar
+   snapping to the new theme. */
+
 * {
   font-family: "Ubuntu", "Font Awesome 6 Free";
   font-size: 14px;
@@ -47,7 +98,12 @@ tooltip {
    instead of each module carrying its own colored block — the
    per-module wallust accent colors now live on the icon/text and on
    hover, so the bar reads as one cohesive shape instead of a row of
-   mismatched tiles. */
+   mismatched tiles.
+
+   These are the largest surfaces on the bar, so they take the 320ms
+   group duration. They have no hover of their own -- the modules inside
+   them do -- so what this transition is for is the palette cross-fade
+   on a theme switch, and #window's collapse further down. */
 
 #launcher,
 #workspaces,
@@ -60,6 +116,9 @@ tooltip {
   border: 1.5px solid alpha(@foreground, 0.16);
   border-radius: 16px;
   box-shadow: 0 4px 14px alpha(black, 0.35);
+  transition: background 320ms cubic-bezier(0.2, 0, 0, 1),
+              border-color 320ms cubic-bezier(0.2, 0, 0, 1),
+              box-shadow 320ms cubic-bezier(0.2, 0, 0, 1);
 }
 
 /* ---- Workspaces ---------------------------------------------------- */
@@ -83,7 +142,19 @@ tooltip {
 
 /* GTK's stock button styling has to be reset explicitly: GTK3 CSS has no
    `all: unset`, and without this each workspace draws the theme's own
-   background, border and min-width inside the pill. */
+   background, border and min-width inside the pill.
+
+   These are also the only real GtkButtons on the bar -- every other
+   module is a GtkEventBox, which GTK3 gives a hover state but never an
+   active one -- so this is the one place a press can actually be drawn,
+   and the one place worth drawing it, since switching workspace is the
+   interaction the bar is used for most.
+
+   The transition is declared once, on the resting state, and left alone
+   by every state rule below, so entering and leaving focus, hover and
+   emptiness all take the same 200ms in both directions. Padding is in
+   the list because focus stretches the pill. The press rule is the sole
+   exception, and it overrides the timing rather than the properties. */
 #workspaces button {
   min-width: 0;
   padding: 1px 8px;
@@ -93,7 +164,10 @@ tooltip {
   box-shadow: none;
   background: transparent;
   color: alpha(@foreground, 0.65);
-  transition: background 200ms ease-in-out, color 200ms ease-in-out;
+  transition: background 200ms cubic-bezier(0.2, 0, 0, 1),
+              color 200ms cubic-bezier(0.2, 0, 0, 1),
+              padding 200ms cubic-bezier(0.2, 0, 0, 1),
+              box-shadow 200ms cubic-bezier(0.2, 0, 0, 1);
 }
 
 #workspaces button.empty {
@@ -103,6 +177,7 @@ tooltip {
 #workspaces button:hover {
   background: alpha(@foreground, 0.08);
   color: @foreground;
+  box-shadow: inset 0 0 0 1px alpha(@foreground, 0.12);
 }
 
 /* Visible on its output, but not the focused one -- only meaningful on
@@ -112,39 +187,89 @@ tooltip {
   color: @foreground;
 }
 
+/* Focus both inverts and widens. The extra 4px either side is the one
+   deliberate layout change on the bar: it makes the focused workspace
+   arrive rather than merely light up, and because the pill sizes to its
+   contents, the group breathes with it. It is a state change, not
+   pointer feedback, so it happens once per switch -- not every time the
+   pointer crosses the bar. */
 #workspaces button.focused {
   background: @foreground;
   color: @background;
+  padding: 1px 12px;
+  box-shadow: 0 0 12px alpha(@foreground, 0.35);
+}
+
+/* Press: the only use of the fast accelerating curve, and only on the
+   way in. Releasing inherits the 200ms rule above, so the button drops
+   instantly under the click and eases back up after it. */
+#workspaces button:active {
+  background: alpha(@foreground, 0.30);
+  box-shadow: inset 0 2px 6px alpha(black, 0.35);
+  transition: background 110ms cubic-bezier(0.4, 0, 1, 1),
+              box-shadow 110ms cubic-bezier(0.4, 0, 1, 1);
+}
+
+/* Already inverted, so it presses by dipping off full @foreground
+   instead of toward it. */
+#workspaces button.focused:active {
+  background: alpha(@foreground, 0.82);
 }
 
 #workspaces button.urgent {
   background: #ff657a;
   color: @background;
-  animation: pulse 1.5s infinite;
+  animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
 
 /* ---- Focused window title ------------------------------------------ */
 /* Slightly dimmed against the module accents: the title is context for
    what the rest of the bar reports, not a reading of its own, and it is
-   the one element whose width changes on every focus switch. */
+   the one element whose width changes on every focus switch.
+
+   Pointedly no hover state: the title carries no on-click, and lighting
+   up under the pointer would promise an interaction that is not there.
+   Its transition instead belongs entirely to the collapse below, which
+   is why opacity, padding and color are added to the three properties
+   the group rule already animates. */
 
 #window {
   padding: 4px 14px;
   color: alpha(@foreground, 0.8);
   font-weight: 400;
+  transition: background 320ms cubic-bezier(0.2, 0, 0, 1),
+              border-color 320ms cubic-bezier(0.2, 0, 0, 1),
+              box-shadow 320ms cubic-bezier(0.2, 0, 0, 1),
+              padding 320ms cubic-bezier(0.2, 0, 0, 1),
+              opacity 320ms cubic-bezier(0.2, 0, 0, 1),
+              color 320ms cubic-bezier(0.2, 0, 0, 1);
 }
 
 /* waybar puts .empty on the whole bar when the workspace holds no
    windows. Without this the pill would still draw, leaving an empty
-   capsule floating between the workspaces and the system group. */
+   capsule floating between the workspaces and the system group.
+
+   Fading opacity as well as the chrome is what keeps the last title
+   from blinking out: the pill deflates -- padding to nothing, shadow
+   and border away, text to transparent -- as the workspace empties, and
+   inflates again when the next window opens. Both directions read off
+   the transition above, so closing and opening are mirror images. */
 window#waybar.empty #window {
   background: transparent;
   border-color: transparent;
   box-shadow: none;
   padding: 0;
+  opacity: 0;
 }
 /* ---- Individual modules inside a group --------------------------- */
+/* Every module animates the same three things: the hover plate, the
+   inset hairline that comes with it, and its own color -- the last so
+   that a mute, a disconnect, a battery crossing into warning and a
+   whole-palette theme switch all arrive as a fade rather than a jump.
+
+   No padding in the list: these sit shoulder to shoulder inside a pill,
+   and growing one on hover would shove its neighbours sideways. */
 
 #custom-launcher,
 #custom-file-explorer,
@@ -162,7 +287,9 @@ window#waybar.empty #window {
 #battery {
   padding: 4px 12px;
   border-radius: 16px;
-  transition: background 200ms ease-in-out, color 200ms ease-in-out;
+  transition: background 200ms cubic-bezier(0.2, 0, 0, 1),
+              color 200ms cubic-bezier(0.2, 0, 0, 1),
+              box-shadow 200ms cubic-bezier(0.2, 0, 0, 1);
 }
 
 #custom-launcher:hover,
@@ -180,6 +307,7 @@ window#waybar.empty #window {
 #bluetooth:hover,
 #battery:hover {
   background: alpha(@foreground, 0.08);
+  box-shadow: inset 0 0 0 1px alpha(@foreground, 0.10);
 }
 
 /* ---- Accent colors (icon/text only, from wallust) ---------------- */
@@ -205,6 +333,42 @@ window#waybar.empty #window {
 #battery   { color: @batteryAccent; }
 #custom-theme { color: @themeAccent; }
 
+/* The two launchers are the only modules that open something rather
+   than report something, so their hover goes a step past the neutral
+   plate the readouts get -- same motion, more of it. */
+#custom-launcher:hover,
+#custom-file-explorer:hover {
+  background: alpha(@foreground, 0.14);
+  box-shadow: inset 0 0 0 1px alpha(@foreground, 0.18);
+}
+
+/* ---- Tray ---------------------------------------------------------- */
+/* Tray items are separate widgets inside #tray, so the module-wide
+   hover above lights the whole group while these light the one icon
+   under the pointer. needs-attention is an application asking to be
+   looked at, and is the last of the three things on this bar allowed to
+   animate indefinitely. */
+
+#tray > * {
+  border-radius: 10px;
+  transition: background 200ms cubic-bezier(0.2, 0, 0, 1),
+              opacity 200ms cubic-bezier(0.2, 0, 0, 1),
+              box-shadow 200ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+#tray > *:hover {
+  background: alpha(@foreground, 0.14);
+  box-shadow: inset 0 0 0 1px alpha(@foreground, 0.12);
+}
+
+#tray > .passive {
+  opacity: 0.55;
+}
+
+#tray > .needs-attention {
+  animation: pulse 1.2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
 
 /* ---- Idle inhibitor ------------------------------------------------ */
 /* Off is the normal state, so it stays quiet at the same weight as the
@@ -212,21 +376,37 @@ window#waybar.empty #window {
    silently disables the screen-off and suspend timers, and the only
    thing standing between that and a laptop cooking in a bag is
    noticing it here. The inversion is the same "this one is active"
-   language as the focused workspace and the power button's hover. */
+   language as the focused workspace and the power button's hover.
+
+   Both halves of that inversion ride the same 200ms color/background
+   pair from the module rule, which matters more here than anywhere
+   else: if the plate filled faster than the glyph flipped, the icon
+   would spend the middle of every toggle dark on dark. */
 
 #idle_inhibitor {
   color: alpha(@foreground, 0.55);
 }
 
+#idle_inhibitor:hover {
+  color: @foreground;
+}
+
 #idle_inhibitor.activated {
   color: @background;
   background: @foreground;
+  box-shadow: 0 0 12px alpha(@foreground, 0.30);
 }
 
 #idle_inhibitor.activated:hover {
   background: alpha(@foreground, 0.85);
+  box-shadow: 0 0 14px alpha(@foreground, 0.40);
 }
 /* ---- Power button: standalone accent circle, not part of a group - */
+/* The one destructive control on the bar, so its hover is the loudest
+   on it: the tint fills to solid accent, the glyph inverts, and the
+   resting drop shadow is traded for a glow in the accent's own color.
+   Size stays fixed -- it sits at the end of the row, and growing it
+   would drag the whole right-hand side along with it. */
 
 #custom-power {
   color: @powerAccent;
@@ -238,15 +418,25 @@ window#waybar.empty #window {
   padding: 0;
   margin-left: 8px;
   box-shadow: 0 4px 14px alpha(black, 0.35);
-  transition: background 200ms ease-in-out;
+  transition: background 200ms cubic-bezier(0.2, 0, 0, 1),
+              color 200ms cubic-bezier(0.2, 0, 0, 1),
+              border-color 200ms cubic-bezier(0.2, 0, 0, 1),
+              box-shadow 200ms cubic-bezier(0.2, 0, 0, 1);
 }
 
 #custom-power:hover {
   background: @powerAccent;
   color: @background;
+  border-color: @powerAccent;
+  box-shadow: 0 4px 18px alpha(@powerAccent, 0.55);
 }
 
 /* ---- Battery states ------------------------------------------------ */
+/* These colors fade in over the module's 200ms, so a battery sliding
+   past 30% warms rather than flicks. Critical then takes over with the
+   same pulse the urgent workspace uses -- one vocabulary for "look at
+   this" -- and animates opacity only, which is the cheapest repaint
+   there is, on a battery that is by definition nearly flat. */
 
 #battery.warning {
   color: #ffb86c;
@@ -254,7 +444,7 @@ window#waybar.empty #window {
 
 #battery.critical {
   color: #ff657a;
-  animation: pulse 1.5s infinite;
+  animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
 @keyframes pulse {
