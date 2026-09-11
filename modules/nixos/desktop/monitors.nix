@@ -7,8 +7,11 @@
 # its name says: it picks the output focused when niri starts, and has no
 # say over a monitor plugged in twenty minutes later. Since "primary" here
 # means "the one new windows and new workspaces land on", and in niri that
-# is simply the focused output, the whole job is to move focus to the
-# external monitor at the moment it appears.
+# is simply the focused output, the first half of the job is to move focus
+# to the external monitor at the moment it appears; the second is to take
+# the workspaces the config declares by name with it, because those are
+# placed once at startup and would otherwise keep the apps pinned to them
+# on the internal panel. See promote() below.
 #
 # HOW THE MOMENT IS DETECTED. niri's event stream has no output-hotplug
 # event (the events it emits are WorkspacesChanged, WindowsChanged,
@@ -52,10 +55,31 @@ let
 
     externals() { grep -Ev "$INTERNAL" | grep -v '^$' || true; }
 
-    focus() {
+    # Making an output primary is two things. Focusing it is what decides
+    # where new windows and new workspaces land. Moving the workspaces the
+    # niri config declares by name is the other half: those are created
+    # once, at niri startup, on whichever output was there first -- outputs
+    # are sorted by connector name, so on this laptop eDP-1 wins every time
+    # -- and nothing moves them afterwards, so every app the
+    # open-on-workspace window rules place would spend the session on the
+    # internal panel no matter which output is focused. Named workspaces are
+    # exactly the declared ones, since niri leaves the ones it creates on
+    # demand unnamed, so the list does not have to be repeated from
+    # ../../home/saeedp11/niri/config.kdl here. They are walked backwards
+    # because each one lands immediately after the target's active
+    # workspace, so moving them in declaration order would arrive reversed.
+    promote() {
         [ -n "''${1:-}" ] || return 0
         echo "niri-external-primary: making $1 primary" >&2
         niri msg action focus-monitor "$1"
+
+        niri msg -j workspaces |
+            jq -r --arg out "$1" '[.[] | select(.name != null and .output != $out)] |
+                                  sort_by(.idx) | reverse | .[].name' |
+            while IFS= read -r ws; do
+                echo "niri-external-primary: moving workspace $ws to $1" >&2
+                niri msg action move-workspace-to-monitor --reference "$ws" "$1"
+            done
     }
 
     # niri exports NIRI_SOCKET into the systemd user environment from a
@@ -73,7 +97,7 @@ let
     # an internal panel: where every output is external there is nothing to
     # promote over, and niri's own startup focus is the better answer.
     if printf '%s\n' "$prev" | grep -Eq "$INTERNAL"; then
-        focus "$(printf '%s\n' "$prev" | externals | head -n1)"
+        promote "$(printf '%s\n' "$prev" | externals | head -n1)"
     fi
 
     niri msg -j event-stream | while IFS= read -r event; do
@@ -91,7 +115,7 @@ let
         # at once, which is as good an answer as any for a docking station.
         new=$(comm -13 <(printf '%s\n' "$prev") <(printf '%s\n' "$cur") | externals | head -n1)
         prev=$cur
-        focus "$new"
+        promote "$new"
     done
   '';
 in
