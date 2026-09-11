@@ -22,6 +22,15 @@
     slurp
     wl-clipboard
     xdg-utils
+
+    # niri carries no X server of its own and spawns this on demand when an
+    # X11 client first connects to the socket it opened at startup, handing it
+    # the listening fd and exporting the DISPLAY it lands on. The integration
+    # is on by default and resolves the bare name "xwayland-satellite" from
+    # PATH, so installing it here is the whole of the switch: without it niri
+    # logs `error spawning xwayland-satellite ... disabling integration` once
+    # at startup and every X11 client dies on XOpenDisplay.
+    xwayland-satellite
   ];
 
   hardware.graphics = {

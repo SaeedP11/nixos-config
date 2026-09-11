@@ -10,6 +10,8 @@
 { pkgs }:
 
 rec {
+  openwhip = pkgs.callPackage ./openwhip.nix { };
+
   # Takes sddm-wallust to read the path of the runtime theme layer it hands
   # over, so the mutable theme directory is spelled out in exactly one place.
   sddm-astronaut-themed = pkgs.callPackage ./sddm-astronaut-themed.nix {
@@ -17,4 +19,5 @@ rec {
   };
   sddm-wallust = pkgs.callPackage ./sddm-wallust { };
   wallpaper-tools = pkgs.callPackage ./wallpaper-tools { };
+  xboxdownload = pkgs.callPackage ./xboxdownload.nix { };
 }

@@ -509,6 +509,22 @@ window-rule {
     default-column-width {}
 }
 
+// OpenWhip's whip animation draws on a borderless, transparent, full-screen
+// Electron window, and without this rule it runs over a flat rectangle in the
+// focus ring's colour instead of over the desktop. niri draws the ring and the
+// border *around* a window only when that window agrees to omit its
+// client-side decorations, and as a *background* filling the whole surface
+// otherwise -- the sensible default, since a server-side-decorated window
+// expects the compositor to paint something behind it. Electron's
+// `frame: false` window never negotiates xdg-decoration either way, so it
+// lands in the second case, and an overlay that is transparent by design has
+// nothing of its own to hide the fill behind.
+window-rule {
+    match app-id=r#"^openwhip$"#
+
+    draw-border-with-background false
+}
+
 binds {
     // Keys consist of modifiers separated by + signs, followed by an XKB key name
     // in the end. To find an XKB name for a particular key, you may use a program

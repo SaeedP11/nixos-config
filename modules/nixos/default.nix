@@ -26,6 +26,7 @@
     ./desktop/idle.nix
     ./desktop/notifications.nix
     ./desktop/media-keys.nix
+    ./desktop/monitors.nix
     ./desktop/fonts.nix
 
     ./programs/shell.nix

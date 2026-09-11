@@ -14,6 +14,16 @@
     aria2
     loupe
 
+    # Tray whip for Claude Code; defined in ../../../pkgs/openwhip.nix and
+    # reachable as a plain pkgs attribute through ../../../overlays.
+    openwhip
+
+    # CDN redirector for console and game-store downloads; defined in
+    # ../../../pkgs/xboxdownload.nix. An Avalonia app with no Wayland backend,
+    # so it needs the xwayland-satellite that ../../nixos/desktop/niri.nix
+    # installs, and sudo for the parts that bind :53/:80/:443.
+    xboxdownload
+
     # Required by wallpaper-picker's terminal path (fzf list + chafa preview).
     fzf
     chafa
