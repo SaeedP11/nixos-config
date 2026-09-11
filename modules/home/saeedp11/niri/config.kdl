@@ -332,6 +332,11 @@ spawn-at-startup "waybar"
 spawn-at-startup "swww-daemon"
 spawn-at-startup "nm-applet"
 spawn-at-startup "blueman-applet"
+
+// OpenWhip, the Claude Code whip; ../../../../pkgs/openwhip.nix. Like the two
+// applets above it is a tray icon and nothing else, so it belongs with them,
+// and after waybar, which is the StatusNotifierWatcher this session has.
+spawn-at-startup "openwhip"
 // To run a shell command (with variables, pipes, etc.), use spawn-sh-at-startup:
 // spawn-sh-at-startup "qs -c ~/source/qs/MyAwesomeShell"
 
