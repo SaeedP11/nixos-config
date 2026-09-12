@@ -20,6 +20,14 @@
     wdisplays
     grim
     slurp
+    # Annotation GUI for the Shift+Print bind in the niri config: grim pipes a
+    # slurp-selected region into it on stdin and it opens a GTK4/libadwaita
+    # editor to crop, draw and annotate before saving or copying. niri's own
+    # `screenshot` action covers plain capture; this is the edit-first path,
+    # and it stands in for gnome-screenshot, whose only two backends are GNOME
+    # Shell's D-Bus interface and an X11 fallback that under niri would see
+    # nothing but XWayland clients.
+    satty
     wl-clipboard
     xdg-utils
 

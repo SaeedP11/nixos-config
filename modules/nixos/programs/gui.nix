@@ -16,6 +16,11 @@
     # Media
     vlc
     mpv
+    # Screen recorder. Captures through the xdg-desktop-portal ScreenCast
+    # interface (../desktop/portals.nix routes it to wlr) and PipeWire, so it
+    # works under niri; GNOME's own recorder is a gnome-shell built-in and
+    # ships no standalone package.
+    kooha
 
     # Settings / system UI
     pavucontrol

@@ -553,6 +553,12 @@ binds {
     Mod+B hotkey-overlay-title="Open Firefox: Web browser" { spawn "firefox"; }
     Mod+F1 hotkey-overlay-title="Open Nekoray: V2ray graphical client" { spawn "nekoray"; }
     Mod+F2 hotkey-overlay-title="Open Telegram Desktop" { spawn "telegram-desktop"; }
+    // Kooha is a single-instance GApplication, so pressing this again while it
+    // is running raises the existing window rather than starting a second
+    // recorder. Recording itself starts from the window's button: the app has
+    // no CLI beyond --help, and its toggle-record lives on the window's
+    // org.gtk.Actions interface, not on an app action a bind could activate.
+    Mod+F3 hotkey-overlay-title="Open Kooha: Screen recorder" { spawn "kooha"; }
     Mod+E hotkey-overlay-title="Open Thunar: File explorer" { spawn "thunar"; }
     Mod+Shift+W hotkey-overlay-title="Spawn Random Walpaper" { spawn "randomWallpaper"; }
     Mod+Shift+B hotkey-overlay-title="Pick Wallpaper" { spawn "wallpaper-picker"; }
@@ -813,6 +819,14 @@ binds {
     Print { screenshot; }
     Ctrl+Print { screenshot-screen; }
     Alt+Print { screenshot-window; }
+    // Select a region and open it in satty (installed by
+    // ../../nixos/desktop/niri.nix) to crop, draw and annotate before saving,
+    // rather than writing straight to screenshot-path the way the three binds
+    // above do. satty expands the same strftime pattern itself, so the file
+    // lands beside niri's own screenshots under the same name; it creates no
+    // directories, hence the mkdir. A cancelled slurp exits before grim runs,
+    // so no empty capture reaches the editor.
+    Shift+Print hotkey-overlay-title="Screenshot a Region and Annotate: satty" { spawn-sh r#"region=$(slurp) || exit 0; mkdir -p "$HOME/Pictures/Screenshots"; grim -g "$region" - | satty --filename - --output-filename "$HOME/Pictures/Screenshots/Screenshot from %Y-%m-%d %H-%M-%S.png" --copy-command wl-copy --early-exit"#; }
 
     // Applications such as remote-desktop clients and software KVM switches may
     // request that niri stops processing the keyboard shortcuts defined here
