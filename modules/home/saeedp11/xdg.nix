@@ -29,7 +29,15 @@
       "x-scheme-handler/tg" = "org.telegram.desktop.desktop";
       "x-scheme-handler/tonsite" = "org.telegram.desktop.desktop";
       "application/json" = "vim.desktop";
-      "image/png" = "org.gnome.Loupe.desktop";
+      # Loupe is the default above; satty is here so it shows up in a PNG's
+      # Open With list, which is where the annotation editor is wanted -- the
+      # live file had grown this entry by hand after ../../nixos/desktop/niri.nix
+      # installed satty, and it is written down here so the next rebuild stops
+      # clobbering it.
+      "image/png" = [
+        "org.gnome.Loupe.desktop"
+        "satty.desktop"
+      ];
     };
   };
 }
