@@ -47,6 +47,9 @@
 #     installs.
 #   * ../../nixos/desktop/lockscreen.nix -- Super+Alt+L and swayidle's
 #     before-sleep both call qylock-lock.
+#   * ../../nixos/desktop/niri.nix -- the Mod+B, Mod+E, Mod+Return and Mod+F4
+#     app binds go through raise-or-run, which that module installs; it is
+#     also where alacritty itself comes from.
 #
 # The dbus-update-activation-environment line has to stay first: darkman and
 # the other independently-started user services only see WAYLAND_DISPLAY and

@@ -39,6 +39,11 @@
     # logs `error spawning xwayland-satellite ... disabling integration` once
     # at startup and every X11 client dies on XOpenDisplay.
     xwayland-satellite
+
+    # Focus-instead-of-spawn helper behind the Mod+B, Mod+E, Mod+Return and
+    # Mod+F4 binds in the niri config; defined in ../../../pkgs/raise-or-run.nix
+    # and reachable as a plain pkgs attribute through ../../../overlays.
+    raise-or-run
   ];
 
   hardware.graphics = {
