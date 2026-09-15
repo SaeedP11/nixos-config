@@ -29,7 +29,14 @@
   # regenerable `nixos-generate-config` scan and nothing else.
   boot.kernelPackages = pkgs.linuxPackages_latest;
 
-  boot.supportedFilesystems = [ "exfat" ];
+  # Also what puts the userspace tools on PATH: each entry here pulls its
+  # driver package in through system.fsPackages, which NixOS appends to
+  # environment.systemPackages -- "ntfs" is where mkfs.ntfs, ntfsfix and
+  # ntfsresize come from, not a separate ntfs3g in ../programs/cli.nix.
+  boot.supportedFilesystems = [
+    "exfat"
+    "ntfs"
+  ];
 
   # Do not gate logins on the network coming up.
   #

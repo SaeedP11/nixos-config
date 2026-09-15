@@ -29,8 +29,11 @@
 #   ~/.config/termusic/*.toml  -- rewritten on exit.
 #   ~/.config/nekoray/  -- rewritten on exit, and holds a subscription URL
 #     and password (see ../../nixos/programs/misc.nix).
-#   ~/.config/{Thunar/{accels.scm,uca.xml},xfce4/helpers.rc}  -- Thunar and
-#     exo write these from their own preference dialogs.
+#   ~/.config/Thunar/accels.scm  -- rewritten by Thunar whenever a menu
+#     item's keyboard shortcut is changed in place. Its neighbour uca.xml is
+#     owned here, by ./thunar.nix, which explains why.
+#   ~/.config/xfce4/xfconf/  -- xfconfd's own store, written continuously
+#     while Thunar runs.
 { vars, ... }:
 
 {
@@ -38,6 +41,7 @@
     ./git.nix
     ./shell.nix
     ./xdg.nix
+    ./thunar.nix
     ./niri.nix
     ./waybar.nix
     ./mako.nix

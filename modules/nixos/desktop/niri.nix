@@ -31,6 +31,16 @@
     wl-clipboard
     xdg-utils
 
+    # What launches a `Terminal=true` desktop entry. GLib looks for this
+    # command by name before falling back to a list of terminals compiled into
+    # libgio -- gnome-terminal, konsole, rxvt, xterm and friends, none of which
+    # is alacritty -- so without it every console application's .desktop file
+    # was unlaunchable from Thunar or from xdg-open, silently: vim.desktop and
+    # nvim.desktop simply did nothing when double-clicked. It reads the
+    # preference order from ~/.config/xdg-terminals.list, which
+    # ../home/saeedp11/xdg.nix writes.
+    xdg-terminal-exec
+
     # niri carries no X server of its own and spawns this on demand when an
     # X11 client first connects to the socket it opened at startup, handing it
     # the listening fd and exporting the DISPLAY it lands on. The integration
