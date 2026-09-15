@@ -17,6 +17,16 @@
 
   nixpkgs.config.allowUnfree = true;
 
+  # ventoy (../programs/gui.nix) ships prebuilt blobs -- its own bootloader
+  # images and a vendored EFI chain -- that nobody has audited, so nixpkgs
+  # marks it insecure rather than broken: it works, it just cannot be
+  # reproduced from source. Nothing else in this configuration is permitted
+  # here, and the version is pinned so a bump has to be acknowledged instead
+  # of silently inheriting the exemption. The name carries the GUI variant --
+  # the gtk3 override renames the package -- so it has to match whichever
+  # ventoy attribute ../programs/gui.nix installs.
+  nixpkgs.config.permittedInsecurePackages = [ "ventoy-gtk3-1.1.05" ];
+
   nixpkgs.overlays = [
     # Custom packages from ../../../pkgs, reachable as ordinary pkgs.* attrs.
     (import ../../../overlays)

@@ -36,6 +36,21 @@
     file-roller
     baobab
 
+    # Bootable USB media. ventoy-full-gtk, not ventoy or ventoy-full: the
+    # filesystem backends (cryptsetup, xfs, ext4, ntfs) are what -full adds,
+    # while the GUI is a separate override -- without a defaultGuiType the
+    # package installs no `ventoy-gui` and no desktop entry at all, only the
+    # Ventoy2Disk shell wrappers. gtk3 over qt5 because the rest of this
+    # desktop is GTK. Writing a stick needs root either way, so the launcher
+    # entry only works from a root session; `sudo ventoy` is the shell path.
+    #
+    # Ventoy prepares the stick once and then boots any ISO copied onto its
+    # exFAT partition, which is the everyday case; impression is for the times
+    # an image has to be written raw over the whole device, the job
+    # balenaEtcher did before it was dropped from nixpkgs.
+    ventoy-full-gtk
+    impression
+
     # Media
     vlc
     mpv
