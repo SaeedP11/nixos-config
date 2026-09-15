@@ -66,6 +66,15 @@
     # rest of the GNOME accessories below.
     papers
 
+    # Office suite. onlyoffice-desktopeditors is the only attribute nixpkgs
+    # has for it -- an unfree, prebuilt Electron bundle, which is what
+    # ../core/nix.nix's allowUnfree already covers. Chosen over libreoffice
+    # for the OOXML files that actually arrive by mail: it lays .docx/.xlsx/
+    # .pptx out with the same engine that writes them back rather than
+    # round-tripping through ODF, so an opened and saved document comes back
+    # unshifted.
+    onlyoffice-desktopeditors
+
     # Settings / system UI
     pavucontrol
     networkmanagerapplet

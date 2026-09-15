@@ -50,6 +50,7 @@
     ./darkman.nix
     ./wallust.nix
     ./gtk.nix
+    ./fonts.nix
     ./packages.nix
   ];
 
