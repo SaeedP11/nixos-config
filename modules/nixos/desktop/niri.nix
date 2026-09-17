@@ -4,7 +4,7 @@
 # Portals live in ./portals.nix, audio in ./audio.nix, and the supporting
 # desktop daemons (mounting, printing, bluetooth agent, polkit) in
 # ./services.nix.
-{ pkgs, ... }:
+{ pkgs, vars, ... }:
 
 {
   # Components of the niri session itself. Configuration for these lives in
@@ -153,6 +153,31 @@
     wantedBy = [ "graphical-session.target" ];
     partOf = [ "graphical-session.target" ];
     after = [ "graphical-session.target" ];
+
+    # A launcher exists to start other programs, and it starts them the way
+    # their desktop entry says to: Qt execs the first word of Exec= directly,
+    # so a relative one is resolved against this service's own PATH. Almost
+    # every entry on this system has one -- `Exec=libreoffice %U`,
+    # `Exec=firefox %U` -- because that is what upstream .desktop files ship
+    # and nixpkgs rewrites only a few of them.
+    #
+    # The PATH a NixOS service gets is deliberately minimal: coreutils,
+    # findutils, grep, sed and systemd, with no profile of any kind in it
+    # (nixos/lib/systemd-lib.nix, stage2ServiceConfig). Nothing installed by
+    # this repo is reachable through it, so every such entry died on
+    # "execve: No such file or directory" with nothing but a warning in the
+    # journal.
+    #
+    # The profiles are named here rather than left to the manager's own
+    # environment, which does have them: that environment is only populated
+    # once something in the session imports it, and a unit that sets no PATH
+    # at all would then depend on having started after that.
+    path = [
+      "/run/wrappers"
+      "/etc/profiles/per-user/${vars.username}"
+      "/run/current-system/sw"
+    ];
+
     serviceConfig = {
       # The leading "" clears any ExecStart= from a unit vicinae installs
       # itself: NixOS merges this as a drop-in when the package ships one,
