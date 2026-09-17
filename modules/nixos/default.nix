@@ -21,6 +21,7 @@
     ./desktop/audio.nix
     ./desktop/services.nix
     ./desktop/sddm.nix
+    ./desktop/plymouth.nix
     ./desktop/lockscreen.nix
     ./desktop/theme.nix
     ./desktop/idle.nix

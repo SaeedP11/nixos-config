@@ -39,6 +39,13 @@
 
   networking.hostName = hostName;
 
+  # Load the display driver in the initrd rather than leaving it to stage 2,
+  # so ../../modules/nixos/desktop/plymouth.nix draws its splash at the panel's
+  # native resolution from the start. Without it plymouth comes up on the EFI
+  # framebuffer simpledrm hands it, and the screen blanks and changes mode
+  # again when i915 binds later -- the flicker the splash is there to remove.
+  boot.initrd.kernelModules = [ "i915" ];
+
   # CPU inference. "cuda" was only ever aspirational here: it needs the NVIDIA
   # driver that never loaded (see the note above), so ollama fell back to the
   # CPU anyway while the CUDA closure was still built and stored.
