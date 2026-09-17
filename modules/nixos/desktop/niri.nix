@@ -6,6 +6,28 @@
 # ./services.nix.
 { pkgs, vars, ... }:
 
+let
+  # vicinae's starting configuration, handled exactly as ./theme.nix handles
+  # waypaper's: a seed copied once, not a managed file. vicinae rewrites
+  # settings.json whenever anything is changed through its own GUI -- it
+  # says so in the header it writes into the file -- so a read-only store
+  # symlink would break the preferences window.
+  #
+  # The one thing in it that is not a default is the dark theme. vicinae
+  # ships its own, which is a flat grey that sits oddly next to a session
+  # whose colours all come out of the wallpaper; catppuccin-mocha is the
+  # closest of the bundled themes to what ../../home/saeedp11/wallust.nix
+  # generates for everything else. It cannot simply follow wallust the way
+  # waybar, mako and fuzzel do, because vicinae reads its theme by name from
+  # this file rather than including a generated colour file.
+  vicinaeSettingsSeed = pkgs.writeText "vicinae-settings-seed.json" (
+    builtins.toJSON {
+      "$schema" = "https://vicinae.com/schemas/config.json";
+      theme.dark.name = "catppuccin-mocha";
+    }
+  );
+in
+
 {
   # Components of the niri session itself. Configuration for these lives in
   # Home Manager (../home/), except fuzzel's layout, which ../desktop/theme.nix
@@ -187,4 +209,12 @@
       RestartSec = 2;
     };
   };
+
+  # `C` copies only when the target is missing, so this is the theme a new
+  # account starts with and never a file that comes back on the next
+  # rebuild. See the note on vicinaeSettingsSeed above.
+  systemd.user.tmpfiles.rules = [
+    "d %h/.config/vicinae 0755 - - -"
+    "C %h/.config/vicinae/settings.json 0644 - - - ${vicinaeSettingsSeed}"
+  ];
 }

@@ -41,6 +41,7 @@
     ./git.nix
     ./shell.nix
     ./xdg.nix
+    ./vscode.nix
     ./thunar.nix
     ./niri.nix
     ./waybar.nix

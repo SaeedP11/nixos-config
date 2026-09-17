@@ -7,7 +7,9 @@
 
 {
   home.packages = with pkgs; [
-    vscode
+    # vscode itself is installed by ./vscode.nix, which also owns its
+    # settings, keybindings and the extensions that exist in nixpkgs.
+
     # The docker CLI and daemon come from modules/nixos/services/docker.nix.
     docker-compose
     telegram-desktop
@@ -27,5 +29,11 @@
     # Required by wallpaper-picker's terminal path (fzf list + chafa preview).
     fzf
     chafa
+
+    # Token-filtering shell proxy for Claude Code; defined in
+    # ../../../pkgs/rtk.nix. User rather than system scope because it is
+    # driven by ~/.claude/RTK.md and the Claude Code hook that reads it,
+    # both of which belong to this account, not to the machine.
+    rtk
   ];
 }

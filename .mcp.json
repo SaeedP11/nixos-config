@@ -1,13 +1,10 @@
 {
   "mcpServers": {
     "code-review-graph": {
-      "command": "/home/saeedp11/.local/share/pipx/venvs/code-review-graph/bin/python",
+      "command": "code-review-graph",
       "args": [
-        "-m",
-        "code_review_graph",
         "serve"
       ],
-      "cwd": "/home/saeedp11/nixos-config",
       "type": "stdio"
     }
   }

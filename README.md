@@ -21,13 +21,13 @@ modules/nixos/
   desktop/             niri, portals, audio, services, sddm, lockscreen,
                        theme, idle, notifications, media-keys, fonts
   programs/            shell, cli, gui, dev, misc
-  services/            docker, ollama
-  users.nix            the account only
+  services/            docker, ollama, vpn-share, hotspot-share
+  users.nix            the account, its groups, its bootstrap password
 
 modules/home/saeedp11/ Home Manager: niri, waybar, alacritty, zellij, mako,
                        gtk, wallust, darkman + hooks, fish + starship,
                        mimeapps, git identity, user packages
-pkgs/                  sddm-astronaut-themed, wallpaper-tools
+pkgs/                  sddm-astronaut-themed, wallpaper-tools, rtk, openwhip
 overlays/              exposes pkgs/ as ordinary pkgs.* attributes
 assets/                sddm background
 ```
@@ -75,6 +75,9 @@ those files now.
 | `~/.config/fish/config.fish`, `~/.config/starship.toml` | `shell.nix` |
 | `~/.config/mimeapps.list` | `xdg.nix` |
 | `~/.config/git/config` | `git.nix` |
+| `~/.config/Code/User/{settings.json,keybindings.json}` | `vscode.nix` — and the extensions nixpkgs carries |
+| `~/.config/vicinae/settings.json` | `desktop/niri.nix` — seeded once, then vicinae's |
+| `~/.config/waypaper/config.ini`, `~/.config/fuzzel/wallust-colors.ini` | `desktop/theme.nix` — seeded once |
 
 Intentionally left unmanaged, because something rewrites them at runtime and
 a read-only store symlink would break it:
@@ -97,6 +100,52 @@ a read-only store symlink would break it:
 1. `nixos-generate-config --show-hardware-config > hosts/<name>/hardware-configuration.nix`
 2. Write `hosts/<name>/default.nix` importing the CPU/GPU modules it needs.
 3. Add `<name> = mkHost { hostName = "<name>"; };` to `flake.nix`.
+
+## Moving to a new machine
+
+`nixos-rebuild switch --flake .#<name>` reproduces everything this repository
+describes, which is the whole desktop. It does not reproduce the things below,
+because they are secrets, licences or hundreds of megabytes of images. Each
+one is a deliberate omission rather than an oversight.
+
+**Log in first.** `users.nix` creates both accounts with a bootstrap password
+of `changeme` (`initialHashedPassword`, so it applies only at account
+creation and never touches a machine that already has one). Run `passwd` at
+the first login. To bootstrap with a real secret instead, swap that option
+for `hashedPasswordFile` and place the file before the first boot.
+
+**Wallpapers.** `~/Pictures/wallpapers` is roughly a gigabyte of images and
+is not in git. The whole palette — waybar, niri, mako, fuzzel, alacritty and
+the SDDM greeter — is generated from whichever one is set, so until the
+directory is populated the session comes up on wallust's seed colours. Copy
+it across, or point `WALLPAPER_DIR` at somewhere else: every script in
+`pkgs/wallpaper-tools` honours that variable, and `desktop/theme.nix` seeds
+waypaper's own `folder` setting from the same default.
+
+**nekoray.** `~/.config/nekoray/` holds the subscription URL and the
+Shadowsocks password and is rewritten on exit, so it is neither tracked nor
+trackable. Re-enter the subscription, then turn on *Preferences → Remember
+last profile* and VPN mode; `programs/misc.nix` explains which keys that
+writes. `services/vpn-share.nix` and `services/hotspot-share.nix` are inert
+until it is running.
+
+**Wifi.** NetworkManager keeps saved connections in
+`/etc/NetworkManager/system-connections`, root-owned and containing the
+PSKs. Not tracked; reconnect by hand.
+
+**Keys.** SSH and GPG keys are yours to carry. `programs.gnupg.agent` is
+enabled with `enableSSHSupport`, so the agent is there as soon as the keys
+are.
+
+**Marketplace VS Code extensions.** `vscode.nix` declares the two thirds of
+them that exist in nixpkgs. claude-code, chatgpt, omnicopilot, wakatime,
+nuxtr and the devtools bridges are Marketplace-only and install themselves
+on first sign-in; `mutableExtensionsDir` is left true so they survive
+rebuilds.
+
+**The hotspot passphrase**, if `services/hotspot-share.nix` is imported:
+`/var/lib/hostapd/wpa-passphrase`, mode 600, written before the first boot.
+hostapd refuses to start without it, which is the point.
 
 ## Notes
 

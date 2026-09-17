@@ -241,9 +241,10 @@ in
     iifname "${lan}" ct status dnat accept comment "sing-box auto-redirect listener"
   '';
 
-  # Left as a marker for the AP variant: running a hotspot off wlp3s0 is not
-  # possible here, because that is the radio carrying the uplink the tunnel
-  # rides on and hostapd would take it away. A second wifi adapter would make
-  # services.hostapd the counterpart to this module, reusing every rule above
-  # with `lan` pointed at it.
+  # The AP variant is ./hotspot-share.nix, which is this ruleset with `lan`
+  # pointed at a radio and a hostapd block in front of it. It cannot be
+  # imported on *this* host: wlp3s0 is the radio carrying the uplink the
+  # tunnel rides on, and hostapd would take it away. Nor can the two be
+  # imported together on any host -- they claim the same subnet and the same
+  # single dnsmasq.
 }

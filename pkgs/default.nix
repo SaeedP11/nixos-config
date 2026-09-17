@@ -12,6 +12,7 @@
 rec {
   openwhip = pkgs.callPackage ./openwhip.nix { };
   raise-or-run = pkgs.callPackage ./raise-or-run.nix { };
+  rtk = pkgs.callPackage ./rtk.nix { };
 
   # Takes sddm-wallust to read the path of the runtime theme layer it hands
   # over, so the mutable theme directory is spelled out in exactly one place.

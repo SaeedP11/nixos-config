@@ -1,4 +1,12 @@
 result
-.claude
+
+# Claude Code. The project hooks in .claude/settings.json and the four
+# skills under .claude/skills/ are part of how this repository is worked on
+# and are tracked; these two are per-machine state and are not.
+#   settings.local.json  -- per-machine MCP enable/disable answers
+#   worktrees/           -- scratch checkouts
+.claude/settings.local.json
+.claude/worktrees/
+
 # Added by code-review-graph
 .code-review-graph/
