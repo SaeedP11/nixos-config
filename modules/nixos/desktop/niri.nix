@@ -12,6 +12,18 @@
   # ships in /etc/xdg so wallust can own only the colors.
   environment.systemPackages = with pkgs; [
     waybar
+    # The Mod+D launcher. Comes from ../../../overlays/vicinae.nix, since
+    # 25.05 has no vicinae attribute of its own.
+    #
+    # Unlike fuzzel it is not a popup that starts and exits per invocation:
+    # a `vicinae server` runs for the session and the keybind toggles it, so
+    # the window appears without a cold start and the clipboard history has
+    # something to record into. The user service below is what runs it.
+    vicinae
+    # Kept alongside vicinae rather than removed. It is what ./theme.nix
+    # themes from the wallust palette and what the wallpaper picker in
+    # ../../../pkgs/wallpaper-tools calls, so it is still a working part of
+    # the session even with the Mod+D bind pointed elsewhere.
     fuzzel
     alacritty
     wlogout
@@ -66,6 +78,36 @@
   programs.niri.enable = true;
   programs.dconf.enable = true;
 
+  # GSettings schemas. Without these any GTK code loaded into a process that
+  # is not itself a packaged GTK application dies on startup, because GLib
+  # treats "No GSettings schemas are installed on the system" as fatal rather
+  # than as a warning -- the process aborts with SIGTRAP.
+  #
+  # That is what Okular hit. QT_QPA_PLATFORMTHEME=gtk3 below deliberately
+  # loads the qgtk3 platform theme into every Qt application, which
+  # initialises GTK, which reads org.gnome.desktop.* out of
+  # gsettings-desktop-schemas. So the cost of bridging Qt onto the GTK theme
+  # is that Qt applications need the schemas too.
+  #
+  # Pointing pathsToLink at /share/glib-2.0/schemas does NOT work, which is
+  # worth writing down because it looks like it should: nixpkgs' glib setup
+  # hook relocates every package's schemas to
+  # share/gsettings-schemas/<name>/glib-2.0/schemas so that two packages
+  # shipping the same schema cannot collide in a profile. Linking the
+  # unprefixed path therefore collects an empty directory.
+  #
+  # So the directories are named individually instead. GLib appends
+  # /glib-2.0/schemas to each XDG_DATA_DIRS entry when it searches, which is
+  # exactly the shape the relocated path has once the <name> component is
+  # included. The GNOME applications in ../programs/gui.nix never hit this
+  # because wrapGAppsHook bakes these same directories into each one's own
+  # wrapper; what is missing is only the case of GTK being loaded into a
+  # process nobody wrapped.
+  environment.sessionVariables.XDG_DATA_DIRS = [
+    "${pkgs.gsettings-desktop-schemas}/share/gsettings-schemas/${pkgs.gsettings-desktop-schemas.name}"
+    "${pkgs.gtk3}/share/gsettings-schemas/${pkgs.gtk3.name}"
+  ];
+
   # niri reads its own keyboard layout from ~/.config/niri/config.kdl, so
   # this mainly covers SDDM's greeter and XWayland clients.
   services.xserver.xkb = {
@@ -96,5 +138,28 @@
     ELECTRON_OZONE_PLATFORM_HINT = "wayland";
     # Firefox
     MOZ_ENABLE_WAYLAND = "1";
+  };
+
+  # vicinae splits into a server and a thin client: `vicinae toggle`, which
+  # Mod+D runs, only talks to an already-running server and does nothing on
+  # its own. So the session needs one, and this is it.
+  #
+  # Written out here rather than relying on a unit the package might ship,
+  # so the ordering against graphical-session.target is explicit -- the
+  # server opens a Wayland connection at startup and exits if there is no
+  # compositor to connect to yet.
+  systemd.user.services.vicinae = {
+    description = "Vicinae launcher server";
+    wantedBy = [ "graphical-session.target" ];
+    partOf = [ "graphical-session.target" ];
+    after = [ "graphical-session.target" ];
+    serviceConfig = {
+      # The leading "" clears any ExecStart= from a unit vicinae installs
+      # itself: NixOS merges this as a drop-in when the package ships one,
+      # and systemd refuses two ExecStart lines on a non-oneshot service.
+      ExecStart = [ "" "${pkgs.vicinae}/bin/vicinae server" ];
+      Restart = "on-failure";
+      RestartSec = 2;
+    };
   };
 }

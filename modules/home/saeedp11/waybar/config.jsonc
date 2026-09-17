@@ -8,7 +8,6 @@
   "margin-left": 10,
   "margin-right": 10,
   "modules-left": [
-    "group/launcher",
     "niri/workspaces",
     "niri/window",
     "group/system"
@@ -21,13 +20,6 @@
     "group/status",
     "custom/power"
   ],
-  "group/launcher": {
-    "orientation": "horizontal",
-    "modules": [
-      "custom/launcher",
-      "custom/file-explorer"
-    ]
-  },
   "group/system": {
     "orientation": "horizontal",
     "modules": [
@@ -60,17 +52,6 @@
       "battery"
     ]
   },
-  "custom/launcher": {
-    "format": "<span size='large'>󱓞</span>",
-    "tooltip": false,
-    "on-click": "fuzzel",
-    "on-click-right": "niri msg action toggle-overview"
-  },
-  "custom/file-explorer": {
-    "format": "<span size='large'>󰉋</span>",
-    "tooltip": false,
-    "on-click": "nautilus"
-  },
   // Named workspaces keep their category glyph in every state; niri's
   // dynamic unnamed ones get a dot. Deliberately no "empty" icon: that
   // state icon overrides the name match, so an empty "dev" would lose its
@@ -82,6 +63,7 @@
       "browser": "󰖟",
       "messenger": "󰭹",
       "dev": "󰅩",
+      "office": "󰈙",
       "default": "󰝥"
     },
     "all-outputs": false

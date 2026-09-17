@@ -128,8 +128,8 @@ output "DP-4" {
 // Named workspaces, one per category of app. Declaring them here (rather
 // than letting the open-on-workspace window rules below create them on
 // demand) means they always exist, always in this order, and keep their
-// position even while empty. On a fresh niri start they take indices 1, 2
-// and 3 in this order; after a live config reload they are appended in
+// position even while empty. On a fresh niri start they take indices 1
+// through 4 in this order; after a live config reload they are appended in
 // whatever order niri creates them, which is why the binds below address
 // them by name rather than by index.
 //
@@ -138,8 +138,9 @@ output "DP-4" {
 // A workspace whose output is missing (the laptop has only eDP-1) falls
 // back to the first available one.
 workspace "browser"
-workspace "messenger"
 workspace "dev"
+workspace "office"
+workspace "messenger"
 
 // Settings that influence how windows are positioned and sized.
 // Find more information on the wiki:
@@ -434,6 +435,21 @@ window-rule {
     open-on-workspace "messenger"
 }
 
+// Documents: the office suite and the PDF reader. LibreOffice is matched on
+// the prefix because it sets a different app-id per module -- writer, calc,
+// impress, draw, math, base and the Start Center are separate strings, and a
+// document opened from Thunar goes straight to its own module rather than
+// through the Start Center. `soffice` is the same binary under the name the
+// wrapper scripts use.
+window-rule {
+    match app-id=r#"^libreoffice"#
+    match app-id=r#"^soffice"#
+    match app-id=r#"^org\.gnome\.Papers$"#
+    match app-id=r#"^org\.kde\.okular$"#
+    match app-id=r#"^okular$"#
+    open-on-workspace "office"
+}
+
 // PER-APPLICATION COLUMN WIDTHS.
 //
 // niri opens every new window at the layout's default-column-width, which
@@ -467,6 +483,11 @@ window-rule {
     match app-id=r#"firefox$"#
     match app-id=r#"(?i)^vlc$"#
     match app-id=r#"(?i)^u?mpv$"#
+    // The Mod+Return zellij window: the same terminal under its own app-id.
+    // A zellij session is tabs and panes of its own, so it is the task and
+    // nothing is meant to sit beside it -- it was half-width with the other
+    // terminals before.
+    match app-id=r#"(?i)^zellij$"#
 
     default-column-width { proportion 1.0; }
 }
@@ -484,8 +505,6 @@ window-rule {
 // manager against a terminal, a chat against a browser.
 window-rule {
     match app-id=r#"(?i)^alacritty$"#
-    // The Mod+Return zellij window: the same terminal under its own app-id.
-    match app-id=r#"(?i)^zellij$"#
     match app-id=r#"(?i)^thunar$"#
     match app-id=r#"(?i)^org\.telegram\.desktop$"#
     match app-id=r#"(?i)^nekoray$"#
@@ -562,7 +581,7 @@ binds {
     // want several of. Mod+Return is the single zellij window, and it gets
     // `--class zellij` so raise-or-run can tell it apart from those.
     Mod+Return hotkey-overlay-title="Open a Zellij session" { spawn "raise-or-run" "^zellij$" "alacritty" "--class" "zellij" "-e" "zellij"; }
-    Mod+D hotkey-overlay-title="Run an Application: fuzzel" { spawn "fuzzel"; }
+    Mod+D hotkey-overlay-title="Run an Application: vicinae" { spawn "vicinae" "toggle"; }
     Super+Alt+L hotkey-overlay-title="Lock the Screen: qylock-lock" { spawn "qylock-lock"; }
     Mod+B hotkey-overlay-title="Open Firefox: Web browser" { spawn "raise-or-run" "firefox$" "firefox"; }
     Mod+F1 hotkey-overlay-title="Open Nekoray: V2ray graphical client" { spawn "nekoray"; }
@@ -761,15 +780,17 @@ binds {
     // Alternatively, there are commands to move just a single window:
     // Mod+Ctrl+1 { move-window-to-workspace 1; }
 
-    // The same three workspaces by name rather than by index. Index binds
+    // The same named workspaces by name rather than by index. Index binds
     // are "best effort" and shift around per output; these always go to the
     // named workspace declared near the top of this file.
     Mod+Alt+B hotkey-overlay-title="Focus the browser workspace"   { focus-workspace "browser"; }
     Mod+Alt+M hotkey-overlay-title="Focus the messenger workspace" { focus-workspace "messenger"; }
     Mod+Alt+D hotkey-overlay-title="Focus the dev workspace"       { focus-workspace "dev"; }
+    Mod+Alt+O hotkey-overlay-title="Focus the office workspace"    { focus-workspace "office"; }
     Mod+Ctrl+Alt+B { move-column-to-workspace "browser"; }
     Mod+Ctrl+Alt+M { move-column-to-workspace "messenger"; }
     Mod+Ctrl+Alt+D { move-column-to-workspace "dev"; }
+    Mod+Ctrl+Alt+O { move-column-to-workspace "office"; }
 
     // Switches focus between the current and the previous workspace.
     Mod+Tab { focus-workspace-previous; }

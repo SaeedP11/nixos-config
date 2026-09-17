@@ -65,15 +65,29 @@
     # did nothing. Papers is the GNOME 48 successor to Evince and fits the
     # rest of the GNOME accessories below.
     papers
+    # Okular for the PDFs Papers only half-handles: digitally signed ones,
+    # which it verifies and can sign, and interactive forms, where its widget
+    # support is the one that holds up. Papers stays the default handler in
+    # ../../home/saeedp11/xdg.nix; this is the second entry in Open With.
+    # It is the one Qt/KDE application on an otherwise GTK desktop, so it
+    # brings a KDE Frameworks closure of its own and its dialogs will not
+    # match -- the signature and form support is what pays for that.
+    kdePackages.okular
 
-    # Office suite. onlyoffice-desktopeditors is the only attribute nixpkgs
-    # has for it -- an unfree, prebuilt Electron bundle, which is what
-    # ../core/nix.nix's allowUnfree already covers. Chosen over libreoffice
-    # for the OOXML files that actually arrive by mail: it lays .docx/.xlsx/
-    # .pptx out with the same engine that writes them back rather than
-    # round-tripping through ODF, so an opened and saved document comes back
-    # unshifted.
-    onlyoffice-desktopeditors
+    # Office suite. The plain `libreoffice` attribute is the wrapped Fresh
+    # build -- the wrapper is what puts the GTK VCL plugin and the bundled JRE
+    # on the path, so the dialogs match the rest of this desktop instead of
+    # falling back to the X11 plugin, and Base and the wizards have a Java
+    # runtime to find. It is .odt/.ods/.odp natively, reads and writes
+    # .docx/.xlsx/.pptx, and is the only thing here that opens the legacy
+    # .doc/.xls/.ppt, .rtf, .wpd and .pub or converts from a script with
+    # `soffice --headless --convert-to`.
+    #
+    # It stands alone where onlyoffice-desktopeditors used to sit beside it.
+    # ONLYOFFICE was here for closer OOXML round-tripping, which is not worth
+    # keeping a second suite installed for -- and it was the heavier of the
+    # two, a prebuilt unfree Electron bundle.
+    libreoffice
 
     # Settings / system UI
     pavucontrol
@@ -86,6 +100,15 @@
     gnome-clocks
     gnome-characters
     gnome-calculator
+    # gnome-font-viewer previews one file at a time and is what supplies the
+    # font thumbnailer; font-manager is the browser over everything installed
+    # -- specimens by family, face comparison, licence and metadata, and the
+    # enable/disable toggles. Those toggles and its install button write to
+    # ~/.local/share/fonts, which is a real directory again now that the
+    # ONLYOFFICE workaround that owned it is gone. Anything wanted on this
+    # machine for good still belongs in ../desktop/fonts.nix; what is added
+    # through the GUI is user-local and will not survive a migration.
+    font-manager
     gnome-font-viewer
     snapshot
   ];

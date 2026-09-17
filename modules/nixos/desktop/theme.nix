@@ -18,7 +18,7 @@
 # dark-mode.d/light-mode.d hook scripts — are managed by Home Manager in
 # ../../home/saeedp11/darkman.nix. They used to have to be placed by hand.
 
-{ config, lib, pkgs, ... }:
+{ config, lib, pkgs, vars, ... }:
 
 let
   # Colors fuzzel falls back to before wallust has ever run (see the
@@ -39,6 +39,40 @@ let
     counter=e6e6e680
     border=8899ffff
   '';
+
+  # waypaper's starting configuration. It is a *seed*, not a managed file:
+  # waypaper rewrites config.ini on every change (the selected wallpaper,
+  # the folder, the column count all persist there), so it cannot be a
+  # read-only store symlink the way a Home Manager xdg.configFile would
+  # make it. The tmpfiles rule below therefore copies it once and never
+  # again, exactly as the fuzzel seed above is handled.
+  #
+  # backend=swww matches the daemon ../desktop/niri.nix starts at session
+  # start, and the transition settings are the same wipe over two seconds
+  # that set-wallpaper passes to `swww img`, so a wallpaper set from the
+  # grid and one set from the shell look identical.
+  #
+  # post_command is the whole point of the integration. waypaper sets the
+  # image itself, so set-wallpaper is invoked with --no-swww and does only
+  # the rest: regenerate the wallust palette for the current darkman mode,
+  # repaint the SDDM greeter, reload waybar. $wallpaper is waypaper's own
+  # placeholder and is left unquoted deliberately -- waypaper backslash-
+  # escapes spaces in the path before substituting it, and quoting would
+  # turn those escapes into literal backslashes.
+  waypaperConfigSeed = pkgs.writeText "waypaper-config-seed.ini" ''
+    [Settings]
+    language = en
+    folder = ${config.users.users.${vars.username}.home}/Pictures/wallpapers
+    backend = swww
+    fill = fill
+    sort = name
+    number_of_columns = 4
+    subfolders = False
+    show_hidden = False
+    swww_transition_type = wipe
+    swww_transition_duration = 2
+    post_command = set-wallpaper --no-swww $wallpaper
+  '';
 in
 {
   environment.systemPackages = with pkgs; [
@@ -49,6 +83,13 @@ in
     swww
     wallust
     wallpaper-tools
+    # GUI picker over the same swww/wallust pipeline: a thumbnail grid
+    # rather than wallpaper-picker's fuzzel list, which is the keyboard
+    # path and stays. waypaper drives swww itself and then runs
+    # post_command, which is why the seeded config below calls
+    # `set-wallpaper --no-swww` -- the palette, greeter and bar still have
+    # to be updated, and only that half is waypaper's to trigger.
+    waypaper
 
     # GTK/Qt theme, icon and cursor assets the live switch selects between.
     gnome-themes-extra
@@ -89,6 +130,14 @@ in
   systemd.user.tmpfiles.rules = [
     "d %h/.config/fuzzel 0755 - - -"
     "C %h/.config/fuzzel/wallust-colors.ini 0644 - - - ${fuzzelColorSeed}"
+
+    # Same `C` copy-once treatment for waypaper, for the opposite reason:
+    # fuzzel's file must exist before wallust first runs, while waypaper's
+    # must stay writable because waypaper itself owns it after the first
+    # launch. Either way the store version is a starting point, never a
+    # file that gets restored on the next rebuild.
+    "d %h/.config/waypaper 0755 - - -"
+    "C %h/.config/waypaper/config.ini 0644 - - - ${waypaperConfigSeed}"
   ];
 
   # Register darkman as the backend for the portal's Settings interface

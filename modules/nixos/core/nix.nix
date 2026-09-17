@@ -33,5 +33,8 @@
 
     # waybar from nixos-unstable; that file explains why.
     (import ../../../overlays/waybar.nix { inherit inputs; })
+
+    # vicinae from nixos-unstable, which is the only place it exists.
+    (import ../../../overlays/vicinae.nix { inherit inputs; })
   ];
 }

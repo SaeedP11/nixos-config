@@ -118,6 +118,14 @@
         "org.gnome.Loupe.desktop"
         "satty.desktop"
       ];
+      # Papers is the default above and stays the one a double-click opens.
+      # Okular is here for the PDFs Papers can read but not complete: it is
+      # what verifies and applies digital signatures, and its form and
+      # annotation tools are the ones that hold up on an official form.
+      "application/pdf" = [
+        "org.gnome.Papers.desktop"
+        "org.kde.okular.desktop"
+      ];
     };
   };
 }

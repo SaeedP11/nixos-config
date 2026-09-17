@@ -105,7 +105,6 @@ tooltip {
    them do -- so what this transition is for is the palette cross-fade
    on a theme switch, and #window's collapse further down. */
 
-#launcher,
 #workspaces,
 #window,
 #system,
@@ -128,7 +127,7 @@ tooltip {
    which workspace you are on. Emphasis is therefore carried by opacity
    steps off @foreground, which is contrast-checked by wallust itself.
 
-   The three named workspaces (browser/messenger/dev, declared in
+   The four named workspaces (browser/dev/office/messenger, declared in
    niri/config.kdl) keep their category glyph in every state, so identity
    stays put and only the styling moves; niri's dynamic unnamed
    workspaces show a filled dot, or a ring while empty. */
@@ -271,8 +270,6 @@ window#waybar.empty #window {
    No padding in the list: these sit shoulder to shoulder inside a pill,
    and growing one on hover would shove its neighbours sideways. */
 
-#custom-launcher,
-#custom-file-explorer,
 #cpu,
 #memory,
 #disk,
@@ -292,8 +289,6 @@ window#waybar.empty #window {
               box-shadow 200ms cubic-bezier(0.2, 0, 0, 1);
 }
 
-#custom-launcher:hover,
-#custom-file-explorer:hover,
 #cpu:hover,
 #memory:hover,
 #disk:hover,
@@ -312,12 +307,6 @@ window#waybar.empty #window {
 
 /* ---- Accent colors (icon/text only, from wallust) ---------------- */
 
-#custom-launcher,
-#custom-file-explorer {
-  color: @foreground;
-  font-weight: 600;
-}
-
 #cpu       { color: @cpuAccent; }
 #memory    { color: @memAccent; }
 #disk      { color: @diskAccent; }
@@ -332,15 +321,6 @@ window#waybar.empty #window {
 #bluetooth { color: @bluetoothAccent; }
 #battery   { color: @batteryAccent; }
 #custom-theme { color: @themeAccent; }
-
-/* The two launchers are the only modules that open something rather
-   than report something, so their hover goes a step past the neutral
-   plate the readouts get -- same motion, more of it. */
-#custom-launcher:hover,
-#custom-file-explorer:hover {
-  background: alpha(@foreground, 0.14);
-  box-shadow: inset 0 0 0 1px alpha(@foreground, 0.18);
-}
 
 /* ---- Tray ---------------------------------------------------------- */
 /* Tray items are separate widgets inside #tray, so the module-wide

@@ -27,18 +27,33 @@ let
   # mode), repaints the SDDM greeter from the same image, and refreshes
   # waybar in place. Both randomWallpaper and wallpaper-picker call this, so
   # the reload-safety fixes only need to live in one place.
+  #
+  # --no-swww runs everything except the swww call. That is for waypaper,
+  # which is a wallpaper setter in its own right: it drives swww itself and
+  # then runs a post-command, so without this the image would be set twice
+  # and the two-second wipe would play through a second time. Everything
+  # after the swww call is what waypaper has no idea about and is the whole
+  # reason it calls back in here.
   setWallpaperScript = writeShellScriptBin "set-wallpaper" ''
     #!/usr/bin/env bash
     set -uo pipefail
 
+    SET_VIA_SWWW=1
+    if [ "''${1-}" = "--no-swww" ]; then
+        SET_VIA_SWWW=0
+        shift
+    fi
+
     if [ $# -lt 1 ] || [ ! -f "$1" ]; then
-        echo "Usage: set-wallpaper <path-to-image>" >&2
+        echo "Usage: set-wallpaper [--no-swww] <path-to-image>" >&2
         exit 1
     fi
     WALLPAPER="$1"
 
-    if ! swww img "$WALLPAPER" --transition-type wipe --transition-duration 2; then
-        echo "swww failed to set: $WALLPAPER" >&2
+    if [ "$SET_VIA_SWWW" = 1 ]; then
+        if ! swww img "$WALLPAPER" --transition-type wipe --transition-duration 2; then
+            echo "swww failed to set: $WALLPAPER" >&2
+        fi
     fi
     echo "Wallpaper changed to: $WALLPAPER"
 
