@@ -4,8 +4,9 @@
 # ./niri/config.kdl is a TEMPLATE, not the file niri reads. It carries two
 # placeholder tokens, @wallust-accent@ and @wallust-inactive@, in its
 # `layout` block, and ~/.config/niri/config.kdl is rendered from it by
-# substituting the current wallust palette into those tokens. Everything
-# else in it is copied through byte for byte.
+# substituting the current wallust palette into those tokens and appending
+# whatever output layout was last saved from the running session (see below).
+# Everything else in it is copied through byte for byte.
 #
 # WHY IT WORKS THAT WAY, given every other wallust consumer in this
 # repository just imports a colours file: niri cannot. It has no `include`
@@ -30,9 +31,44 @@
 #   * the activation script below, so an edit to the template in this
 #     repository reaches the live config at rebuild rather than waiting for
 #     the next wallpaper change;
-#   * nothing else. It is deliberately not wired into set-wallpaper or the
-#     darkman hooks: watching the file catches those, and a manual
-#     `wallust run`, without either of them having to know niri exists.
+#   * niri-save-outputs below, when the monitor layout has changed.
+#
+# WHY OUTPUTS ARE SAVED BACK, which is the one place the generated file is
+# not purely a function of this repository: wdisplays, wlr-randr and
+# `niri msg output` all go through wlr-output-management, which niri applies
+# and explicitly does not write down -- `niri msg output --help` says so in
+# as many words. The config file is niri's only durable source of output
+# state, so a monitor rotated in wdisplays snaps back at the next
+# `load-config-file` (i.e. the next wallpaper change, via the path unit
+# above) and again at the next login. niri-save-outputs closes that loop:
+# a timer polls `niri msg --json outputs` while the session is up and, when
+# the layout differs from what it saw last, writes one KDL block per output
+# to ~/.local/state/niri/outputs/ and re-renders. Polling rather than
+# watching because niri 25.08's event stream carries workspace, window and
+# keyboard-layout events only -- there is no output event to subscribe to.
+#
+# The saved blocks OVERRIDE the template's, by name: the renderer drops an
+# `output "NAME"` block from the template when a saved block for NAME exists,
+# rather than appending a second one, because two blocks for one output would
+# leave which of them wins up to niri's internal lookup order. So the
+# template still holds each machine's starting layout and is what a fresh
+# home directory gets; the saved state is the drift on top of it, and
+# deleting ~/.local/state/niri/outputs/ returns the machine to the template.
+#
+# A DISABLED OUTPUT IS DELIBERATELY NOT SAVED. The snapshot skips any output
+# niri reports with a null `logical`, which is what an output that is off
+# looks like over IPC -- and the config kdl carries `spawn-at-startup
+# "swayidle" ... "niri msg action power-off-monitors"`, so "every monitor is
+# off" is a state this machine enters by itself after five minutes idle.
+# Writing that one down would produce a config that boots to a black screen
+# with no way back except a TTY. Turning an output off permanently is
+# therefore a template edit, not something wdisplays can persist.
+#
+# The dbus-update-activation-environment line has to stay first: darkman and
+# the other independently-started user services only see WAYLAND_DISPLAY and
+# NIRI_SOCKET because of it, and `niri msg` inside a darkman hook fails
+# without it. The renderer's own `niri msg action load-config-file` below
+# and niri-save-outputs' own `niri msg` both rely on the same line.
 #
 # WHAT DEPENDS ON THE TEMPLATE FROM THE NIXOS SIDE, i.e. what a change there
 # can break:
@@ -51,16 +87,13 @@
 #     app binds go through raise-or-run, which that module installs; it is
 #     also where alacritty itself comes from.
 #
-# The dbus-update-activation-environment line has to stay first: darkman and
-# the other independently-started user services only see WAYLAND_DISPLAY and
-# NIRI_SOCKET because of it, and `niri msg` inside a darkman hook fails
-# without it. The renderer's own `niri msg action load-config-file` below
-# relies on the same line for NIRI_SOCKET.
-#
 # ONE FILE FOR BOTH MACHINES. The `output "DP-2"`/`output "DP-4"` blocks are
 # the desktop's monitors; niri ignores an output block naming a connector
-# that is not present, so the laptop (eDP-1 only) reads the same file
-# harmlessly. Split this per host only if the two ever need different binds.
+# that is not present, so the laptop (eDP-1 only, plus whatever is plugged
+# into HDMI) reads the same file harmlessly, and the saved state that grows
+# beside it is per-machine by construction, living in the home directory
+# rather than here. Split this per host only if the two ever need different
+# binds.
 #
 # ~/.config/niri/scripts/ is NOT managed here. Those forty-odd scripts came
 # with the KooL dots this config started from and nothing in the template
@@ -76,6 +109,14 @@
 let
   template = ./niri/config.kdl;
 
+  # Where the snapshot of the live output layout lives: one file per output,
+  # named after it, each holding exactly one `output "NAME" { ... }` block.
+  # One file per output rather than one file for all of them so that an
+  # output which is currently unplugged keeps its block: `niri msg outputs`
+  # lists only what is connected, so a single regenerated file would forget
+  # the rotation of a monitor the moment it was unplugged.
+  savedOutputs = "$HOME/.local/state/niri/outputs";
+
   # What the tokens resolve to before wallust has ever written its sed
   # script -- a first boot, or a fresh home directory. Without this the
   # renderer would emit a config still carrying @wallust-accent@, which niri
@@ -87,7 +128,8 @@ let
     s|@wallust-inactive@|#505050|g
   '';
 
-  # Render ~/.config/niri/config.kdl = template + current palette.
+  # Render ~/.config/niri/config.kdl = template + current palette + saved
+  # output layout.
   #
   # Refuses to install a result that still contains a token: a truncated or
   # half-written sed script would otherwise produce a config niri cannot
@@ -105,6 +147,7 @@ let
         pkgs.coreutils
         pkgs.gnused
         pkgs.gnugrep
+        pkgs.gawk
         pkgs.diffutils
       ]
     }:$PATH
@@ -128,6 +171,38 @@ let
       exit 1
     fi
 
+    # Saved output blocks replace the template's blocks of the same name.
+    # The names are read back out of the saved blocks themselves rather than
+    # from their file names, so a sanitised file name cannot desynchronise
+    # from the output it stands for. The awk drops a template block from its
+    # `output "NAME" {` line to the next `}` in column one, which is the
+    # shape every block in the template has and the only shape this script
+    # writes; it counts no braces, so a brace inside a comment is harmless.
+    saved="$(cat ${savedOutputs}/*.kdl 2>/dev/null)"
+    if [ -n "$saved" ]; then
+      names="$(printf '%s\n' "$saved" | sed -n 's/^output "\(.*\)" {$/\1/p')"
+      if ! awk -v names="$names" '
+        BEGIN {
+          n = split(names, a, "\n")
+          for (i = 1; i <= n; i++) if (a[i] != "") drop[a[i]] = 1
+        }
+        /^output "/ {
+          name = $0
+          sub(/^output "/, "", name)
+          sub(/".*/, "", name)
+          if (name in drop) { skip = 1; next }
+        }
+        skip { if ($0 ~ /^}/) skip = 0; next }
+        { print }
+      ' "$tmp" > "$tmp.merged"; then
+        rm -f "$tmp" "$tmp.merged"
+        echo "niri-render-config: merging saved outputs failed, leaving $out alone" >&2
+        exit 1
+      fi
+      printf '\n%s\n' "$saved" >> "$tmp.merged"
+      mv -f "$tmp.merged" "$tmp"
+    fi
+
     if cmp -s "$tmp" "$out"; then
       rm -f "$tmp"
       exit 0
@@ -140,6 +215,89 @@ let
     # symlink that could never change. Asking explicitly is deterministic and
     # costs nothing when niri is not running.
     ${pkgs.niri}/bin/niri msg action load-config-file >/dev/null 2>&1 || true
+  '';
+
+  # Snapshot the live output layout into ${savedOutputs}, then re-render if
+  # anything moved. Every step is a no-op when niri is not running, when the
+  # IPC call fails, or when nothing changed since the last run, because this
+  # runs on a timer for the whole session.
+  #
+  # The jq program turns each output into the KDL block that reproduces it
+  # and hands it back base64-encoded, so that a multi-line block survives
+  # being read line by line. Field by field:
+  #   * mode comes from `modes[current_mode]`, whose refresh rate is in
+  #     millihertz, hence the /1000 -- niri writes "1920x1080@60.008" and
+  #     matches it back to the same mode.
+  #   * scale is forced to carry a decimal point, because niri's own
+  #     documentation writes fractional scales and an integer 1 is a
+  #     different KDL type from 1.0.
+  #   * transform arrives as niri-ipc spells it ("Normal", "90", "Flipped90")
+  #     and the config wants it lower-case and hyphenated ("flipped-90").
+  #   * position uses the logical coordinates, which are already in scaled
+  #     pixels and so are exactly what the config's position node takes.
+  #   * a null `logical` means the output is off; `select` drops it. See the
+  #     comment at the top of this file for why that one is not saved.
+  saveOutputs = pkgs.writeShellScript "niri-save-outputs" ''
+    set -uo pipefail
+    export PATH=${
+      lib.makeBinPath [
+        pkgs.coreutils
+        pkgs.gnused
+        pkgs.jq
+        pkgs.niri
+      ]
+    }:$PATH
+
+    outputs="$(niri msg --json outputs 2>/dev/null)" || exit 0
+    [ -n "$outputs" ] || exit 0
+
+    blocks="$(printf '%s' "$outputs" | jq -r '
+      to_entries[]
+      | .key as $name
+      | .value as $o
+      | $o.logical
+      | select(. != null)
+      | . as $l
+      | (if $o.current_mode != null and $o.modes[$o.current_mode] != null
+         then $o.modes[$o.current_mode] as $m
+              | "    mode \"\($m.width)x\($m.height)@\($m.refresh_rate / 1000)\"\n"
+         else "" end) as $mode
+      | ($l.scale | tostring | if test("\\.") then . else . + ".0" end) as $scale
+      | ($l.transform
+         | ascii_downcase
+         | ltrimstr("_")
+         | sub("^flipped_?(?<n>[0-9]+)$"; "flipped-\(.n)")) as $transform
+      | (if $o.vrr_enabled then "    variable-refresh-rate\n" else "" end) as $vrr
+      | ("output \"\($name)\" {\n"
+         + $mode
+         + "    scale \($scale)\n"
+         + "    transform \"\($transform)\"\n"
+         + "    position x=\($l.x) y=\($l.y)\n"
+         + $vrr
+         + "}\n") as $block
+      | "\($name)\t\($block | @base64)"
+    ')" || exit 0
+    [ -n "$blocks" ] || exit 0
+
+    mkdir -p ${savedOutputs}
+    changed=0
+    while IFS=$'\t' read -r name encoded; do
+      [ -n "$name" ] && [ -n "$encoded" ] || continue
+      file="${savedOutputs}/$(printf '%s' "$name" | tr -c 'A-Za-z0-9._-' '_').kdl"
+      if ! printf '%s' "$encoded" | base64 -d > "$file.tmp.$$"; then
+        rm -f "$file.tmp.$$"
+        continue
+      fi
+      if cmp -s "$file.tmp.$$" "$file"; then
+        rm -f "$file.tmp.$$"
+      else
+        mv -f "$file.tmp.$$" "$file"
+        changed=1
+      fi
+    done <<< "$blocks"
+
+    [ "$changed" = 1 ] || exit 0
+    exec ${renderConfig}
   '';
 in
 {
@@ -163,6 +321,33 @@ in
       Type = "oneshot";
       ExecStart = "${renderConfig}";
     };
+  };
+
+  systemd.user.services.niri-save-outputs = {
+    Unit.Description = "Save niri's current output layout into its config";
+    Service = {
+      Type = "oneshot";
+      ExecStart = "${saveOutputs}";
+    };
+  };
+
+  # Only while a session is up: outside one there is no niri to ask, and the
+  # service would spend every tick failing the IPC call. AccuracySec lets
+  # systemd coalesce these wakeups with other timers rather than waking the
+  # machine on its own for them, which on the laptop is the whole cost of
+  # polling. Run it by hand with `systemctl --user start niri-save-outputs`
+  # to save a layout the moment it is set rather than within the interval.
+  systemd.user.timers.niri-save-outputs = {
+    Unit = {
+      Description = "Poll niri's output layout for changes to save";
+      PartOf = [ "graphical-session.target" ];
+    };
+    Timer = {
+      OnActiveSec = "15s";
+      OnUnitActiveSec = "15s";
+      AccuracySec = "10s";
+    };
+    Install.WantedBy = [ "graphical-session.target" ];
   };
 
   # Runs after linkGeneration so it sees this generation's template. Without

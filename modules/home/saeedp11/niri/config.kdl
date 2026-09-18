@@ -87,6 +87,15 @@ cursor {
 // Find more information on the wiki:
 // https://yalter.github.io/niri/Configuration:-Outputs
 // Remember to uncomment the node by removing "/-"!
+//
+// These blocks are the STARTING layout only. A monitor rotated, moved,
+// rescaled or re-moded from wdisplays, wlr-randr or `niri msg output` is
+// snapshotted into ~/.local/state/niri/outputs/ by the niri-save-outputs
+// timer, and the renderer in ../niri.nix drops the block below for any
+// output that has a saved one, so the saved layout is what the session
+// comes back to. Delete that directory to fall back to what is written
+// here. Turning an output off is the one thing that is never saved --
+// see ../niri.nix for why.
 output "DP-2" {
     // Uncomment this line to disable this output.
     // off
