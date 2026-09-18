@@ -41,11 +41,29 @@
 # state, so a monitor rotated in wdisplays snaps back at the next
 # `load-config-file` (i.e. the next wallpaper change, via the path unit
 # above) and again at the next login. niri-save-outputs closes that loop:
-# a timer polls `niri msg --json outputs` while the session is up and, when
-# the layout differs from what it saw last, writes one KDL block per output
-# to ~/.local/state/niri/outputs/ and re-renders. Polling rather than
-# watching because niri 25.08's event stream carries workspace, window and
-# keyboard-layout events only -- there is no output event to subscribe to.
+# it watches `niri msg --json outputs` while the session is up and, when the
+# layout differs from what it saw last, writes one KDL block per output to
+# ~/.local/state/niri/outputs/ and re-renders.
+#
+# WHY IT IS A POLLING LOOP AND NOT A SUBSCRIPTION: niri 25.08's event stream
+# carries workspace, window, keyboard-layout and overview events only -- an
+# output change raises nothing (the same wall ../../nixos/desktop/monitors.nix
+# ran into, which is why that module diffs the output list on every
+# WorkspacesChanged instead). Rotating a monitor does not touch the workspace
+# list either, so even that proxy is no use here, and there is nothing left
+# to wait on. `niri msg --json outputs` costs ~44ms of CPU, so a five-second
+# loop averages under 1% of one core, which is the price of the layout being
+# saved a few seconds after it is set rather than a few tens of seconds.
+#
+# THE DECIDING SAVE IS THE ONE IN ExecStop, not the loop: rotating a monitor
+# and immediately rebooting is exactly how one tests whether this works, and
+# it is precisely the case a poll loses. The unit is ordered After
+# graphical-session.target, so on the way down it is stopped BEFORE that
+# target, and niri.service -- which is ordered Before it, and so stops after
+# it -- is still up to answer. What this cannot catch is niri being killed
+# outright, or quitting on its own from the Mod+Shift+E bind, since then the
+# compositor is gone before systemd stops anything; that is what the loop is
+# still there for.
 #
 # The saved blocks OVERRIDE the template's, by name: the renderer drops an
 # `output "NAME"` block from the template when a saved block for NAME exists,
@@ -299,6 +317,35 @@ let
     [ "$changed" = 1 ] || exit 0
     exec ${renderConfig}
   '';
+
+  # The loop the service runs for the length of the session. It compares the
+  # raw IPC answer with the previous one in memory and only pays for the
+  # snapshot when something actually moved, so an idle session costs one
+  # `niri msg` every five seconds and nothing else. It never exits on its
+  # own: before niri is up, and again if niri goes away, the IPC call simply
+  # fails and the next tick tries again, which is cheaper than the
+  # exit-and-be-restarted dance ../../nixos/desktop/monitors.nix needs for an
+  # event stream it has to re-open.
+  watchOutputs = pkgs.writeShellScript "niri-watch-outputs" ''
+    set -uo pipefail
+    export PATH=${
+      lib.makeBinPath [
+        pkgs.coreutils
+        pkgs.niri
+      ]
+    }:$PATH
+
+    previous=""
+    while :; do
+      if current="$(niri msg --json outputs 2>/dev/null)" && [ -n "$current" ]; then
+        if [ "$current" != "$previous" ]; then
+          previous="$current"
+          ${saveOutputs}
+        fi
+      fi
+      sleep 5
+    done
+  '';
 in
 {
   # Nothing places the template under ~/.config: the renderer reads it from
@@ -323,29 +370,22 @@ in
     };
   };
 
+  # Tied to the session at both ends. `After` is what puts the ExecStop save
+  # ahead of niri's own shutdown -- see the header -- and `PartOf` is what
+  # makes the session ending stop it at all. Restart covers the loop being
+  # killed rather than stopped; it cannot spin, because the loop does not
+  # exit when niri is missing, it waits.
   systemd.user.services.niri-save-outputs = {
-    Unit.Description = "Save niri's current output layout into its config";
-    Service = {
-      Type = "oneshot";
-      ExecStart = "${saveOutputs}";
-    };
-  };
-
-  # Only while a session is up: outside one there is no niri to ask, and the
-  # service would spend every tick failing the IPC call. AccuracySec lets
-  # systemd coalesce these wakeups with other timers rather than waking the
-  # machine on its own for them, which on the laptop is the whole cost of
-  # polling. Run it by hand with `systemctl --user start niri-save-outputs`
-  # to save a layout the moment it is set rather than within the interval.
-  systemd.user.timers.niri-save-outputs = {
     Unit = {
-      Description = "Poll niri's output layout for changes to save";
+      Description = "Save niri's output layout whenever it changes";
       PartOf = [ "graphical-session.target" ];
+      After = [ "graphical-session.target" ];
     };
-    Timer = {
-      OnActiveSec = "15s";
-      OnUnitActiveSec = "15s";
-      AccuracySec = "10s";
+    Service = {
+      ExecStart = "${watchOutputs}";
+      ExecStop = "${saveOutputs}";
+      Restart = "always";
+      RestartSec = 2;
     };
     Install.WantedBy = [ "graphical-session.target" ];
   };
@@ -360,5 +400,20 @@ in
   # stderr, and that is not a reason to fail the whole rebuild.
   home.activation.renderNiriConfig = lib.hm.dag.entryAfter [ "linkGeneration" ] ''
     run ${renderConfig} || true
+  '';
+
+  # Home Manager writes a new unit file and reloads the daemon, but it does
+  # not start units it has only just added (systemd.user.startServices is
+  # "suggest" by default, i.e. it prints a hint and nothing more), and a unit
+  # WantedBy graphical-session.target is not pulled in until that target is
+  # next started -- so without this line a rebuild in a running session
+  # leaves niri-save-outputs dead until the next login, and the first layout
+  # change after the rebuild, the one being tested, is lost. Only when a
+  # session is actually up: started from a TTY there would be no niri to talk
+  # to and nothing to stop the unit again.
+  home.activation.startNiriSaveOutputs = lib.hm.dag.entryAfter [ "reloadSystemd" ] ''
+    if ${pkgs.systemd}/bin/systemctl --user --quiet is-active graphical-session.target; then
+      run ${pkgs.systemd}/bin/systemctl --user start niri-save-outputs.service || true
+    fi
   '';
 }
