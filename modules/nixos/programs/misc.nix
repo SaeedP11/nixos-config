@@ -18,7 +18,7 @@
 
   # Start nekoray with the graphical session, the same way darkman and
   # notify-sound are started (../desktop/{theme,notifications}.nix). The other
-  # session-scoped GUIs -- mako, waybar, nm-applet -- are niri
+  # session-scoped GUIs -- nm-applet, blueman-applet, swww -- are niri
   # spawn-at-startup lines instead (../../home/saeedp11/niri.nix); a unit is
   # used here so nekoray is restarted on failure rather than left dead, which
   # matters more for the thing carrying the network than for a bar.

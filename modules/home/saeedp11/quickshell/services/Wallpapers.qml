@@ -1,8 +1,8 @@
 pragma Singleton
 
 // The wallpaper library, through the same wallpaper-thumbs cache and
-// set-wallpaper apply step the fuzzel picker uses (../../../../pkgs/
-// wallpaper-tools), so choosing here also re-runs wallust and repaints SDDM.
+// set-wallpaper apply step the terminal picker uses (../../../../../pkgs/
+// wallpaper-tools), so choosing here also re-runs wallust and repaints the login screen.
 import QtQuick
 import Quickshell
 import Quickshell.Io

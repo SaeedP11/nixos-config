@@ -6,7 +6,7 @@
 #
 # `rec` so a package here can take another one as an argument without relying
 # on the overlay having been applied: ../flake.nix builds the `packages`
-# output from plain nixpkgs, where `pkgs.sddm-wallust` does not exist.
+# output from plain nixpkgs, where `pkgs.greeter-wallust` does not exist.
 { pkgs }:
 
 rec {
@@ -14,12 +14,7 @@ rec {
   raise-or-run = pkgs.callPackage ./raise-or-run.nix { };
   rtk = pkgs.callPackage ./rtk.nix { };
 
-  # Takes sddm-wallust to read the path of the runtime theme layer it hands
-  # over, so the mutable theme directory is spelled out in exactly one place.
-  sddm-astronaut-themed = pkgs.callPackage ./sddm-astronaut-themed.nix {
-    inherit sddm-wallust;
-  };
-  sddm-wallust = pkgs.callPackage ./sddm-wallust { };
+  greeter-wallust = pkgs.callPackage ./greeter-wallust { };
   wallpaper-tools = pkgs.callPackage ./wallpaper-tools { };
   xboxdownload = pkgs.callPackage ./xboxdownload.nix { };
 }

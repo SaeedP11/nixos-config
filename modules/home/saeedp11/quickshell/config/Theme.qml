@@ -30,12 +30,16 @@ Singleton {
         }
     }
 
-    readonly property color bg: wal.background ?? "#282828"
-    readonly property color fg: wal.foreground ?? "#ebdbb2"
+    // The fallbacks are the session's pre-wallust seed, the same values the
+    // login screen starts from (../../../../../pkgs/greeter-wallust),
+    // so a fresh machine's login screen matches the first frame of its bar.
+    readonly property color bg: wal.background ?? "#1c1c1e"
+    readonly property color fg: wal.foreground ?? "#e6e6e6"
     // color4 blended halfway into the foreground, computed by wallust
-    // itself; see the fuzzel template for why raw color4 is not used.
-    readonly property color accent: wal.accent ?? "#83a598"
-    readonly property var colors: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15].map(i => wal["color" + i] ?? "#928374")
+    // itself; see the Quickshell template in ../../wallust.nix for why raw
+    // color4 is not used.
+    readonly property color accent: wal.accent ?? "#8899ff"
+    readonly property var colors: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15].map(i => wal["color" + i] ?? "#818182")
 
     readonly property bool dark: luminance(bg) < 0.5
 

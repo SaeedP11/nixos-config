@@ -6,8 +6,8 @@
 
     # Source of single packages that 25.05 carries too old to be usable here,
     # taken one attribute at a time in ./overlays rather than followed by the
-    # system as a whole. waybar (see ./overlays/waybar.nix for what 0.14.0 does
-    # to the tray) and vicinae, which 25.05 does not carry at all.
+    # system as a whole: vicinae and quickshell, neither of which 25.05 carries
+    # at all.
     nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
 
     home-manager = {

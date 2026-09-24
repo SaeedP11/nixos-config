@@ -11,7 +11,8 @@ Singleton {
     property string screen: ""
     property bool keepAwake: false
 
-    // Panels with a text field need the keyboard for themselves.
+    // Panels driven from the keyboard -- a search field, or the power
+    // menu's arrow keys -- take it exclusively (see PopoutLayer).
     readonly property bool wantsKeyboard: ["clipboard", "wallpaper", "power"].includes(open)
 
     function toggle(name, screenName) {

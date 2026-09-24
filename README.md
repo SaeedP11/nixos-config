@@ -18,18 +18,18 @@ modules/nixos/
   default.nix          everything BOTH machines get
   core/                nix daemon, boot, locale, networking, power, storage
   hardware/            cpu/{amd,intel}, gpu/nvidia, bluetooth, laptop
-  desktop/             niri, portals, audio, services, sddm, lockscreen,
+  desktop/             niri, portals, audio, services, greeter, lockscreen,
                        theme, idle, notifications, media-keys, fonts
   programs/            shell, cli, gui, dev, misc
   services/            docker, ollama, vpn-share, hotspot-share
   users.nix            the account, its groups, its bootstrap password
 
-modules/home/saeedp11/ Home Manager: niri, waybar, alacritty, zellij, mako,
+modules/home/saeedp11/ Home Manager: niri, quickshell, alacritty, zellij,
                        gtk, wallust, darkman + hooks, fish + starship,
                        mimeapps, git identity, user packages
-pkgs/                  sddm-astronaut-themed, wallpaper-tools, rtk, openwhip
+pkgs/                  greeter-wallust, wallpaper-tools, rtk, openwhip
 overlays/              exposes pkgs/ as ordinary pkgs.* attributes
-assets/                sddm background
+assets/                login screen fallback background
 ```
 
 ## Rebuilding
@@ -65,11 +65,10 @@ those files now.
 | Path | Module |
 | --- | --- |
 | `~/.config/niri/config.kdl` | `niri.nix` — compositor, binds, autostarts; generated, see below |
-| `~/.config/waybar/{config.jsonc,style.css,scripts/}` | `waybar.nix` |
+| `~/.config/quickshell/shell/` | `quickshell.nix` — bar, notifications, OSD, dock, popouts |
 | `~/.config/alacritty/alacritty.toml` | `alacritty.nix` |
 | `~/.config/zellij/config.kdl` | `zellij.nix` |
-| `~/.config/mako/config` | `mako.nix` |
-| `~/.config/gtk-3.0/gtk.css` | `gtk.nix` — every GTK3 tray menu |
+| `~/.config/gtk-3.0/gtk.css` | `gtk.nix` — every GTK3 menu |
 | `~/.config/wallust/{wallust.toml,templates/*}` | `wallust.nix` |
 | `~/.config/darkman/config.toml`, `~/.local/share/{dark,light}-mode.d/*.sh` | `darkman.nix` |
 | `~/.config/fish/config.fish`, `~/.config/starship.toml` | `shell.nix` |
@@ -77,13 +76,12 @@ those files now.
 | `~/.config/git/config` | `git.nix` |
 | `~/.config/Code/User/{settings.json,keybindings.json}` | `vscode.nix` — and the extensions nixpkgs carries |
 | `~/.config/vicinae/settings.json` | `desktop/niri.nix` — seeded once, then vicinae's |
-| `~/.config/waypaper/config.ini`, `~/.config/fuzzel/wallust-colors.ini` | `desktop/theme.nix` — seeded once |
 
 Intentionally left unmanaged, because something rewrites them at runtime and
 a read-only store symlink would break it:
 
 - `~/.config/gtk-{3,4}.0/settings.ini` — the darkman `10-gtk` hook writes these
-- `~/.config/{waybar,alacritty,mako,fuzzel}/wallust-colors.*` — `wallust run` writes these
+- `~/.config/alacritty/colors.toml`, `~/.config/quickshell/wallust-colors.json` — `wallust run` writes these
 - `~/.config/niri/{config.kdl,wallust-colors.sed}` — niri has no `include`
   directive and rejects a second `layout` node, so its colours cannot live in
   a file it reads: the whole config is rendered from `niri.nix`'s template by
@@ -115,12 +113,12 @@ the first login. To bootstrap with a real secret instead, swap that option
 for `hashedPasswordFile` and place the file before the first boot.
 
 **Wallpapers.** `~/Pictures/wallpapers` is roughly a gigabyte of images and
-is not in git. The whole palette — waybar, niri, mako, fuzzel, alacritty and
-the SDDM greeter — is generated from whichever one is set, so until the
+is not in git. The whole palette — the shell, niri, alacritty and
+the login screen — is generated from whichever one is set, so until the
 directory is populated the session comes up on wallust's seed colours. Copy
 it across, or point `WALLPAPER_DIR` at somewhere else: every script in
-`pkgs/wallpaper-tools` honours that variable, and `desktop/theme.nix` seeds
-waypaper's own `folder` setting from the same default.
+`pkgs/wallpaper-tools` honours that variable, and the shell's wallpaper
+panel reads the same list through them.
 
 **nekoray.** `~/.config/nekoray/` holds the subscription URL and the
 Shadowsocks password and is rewritten on exit, so it is neither tracked nor

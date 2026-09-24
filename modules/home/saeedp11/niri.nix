@@ -20,7 +20,7 @@
 # That in turn is why the file cannot simply be an xdg.configFile source any
 # more: a read-only store symlink is exactly what the renderer needs to
 # overwrite. So ~/.config/niri/config.kdl becomes a generated file, like
-# ~/.config/waybar/wallust-colors.css and the other wallust targets (see
+# ~/.config/quickshell/wallust-colors.json and the other wallust targets (see
 # ./default.nix's list of deliberately unmanaged paths), and the template
 # it is generated from stays in this repository, read from the store.
 #

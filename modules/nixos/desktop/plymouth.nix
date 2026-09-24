@@ -1,4 +1,4 @@
-# Graphical boot splash, from the initrd handover to the SDDM greeter.
+# Graphical boot splash, from the initrd handover to the greeter.
 #
 # ../core/boot.nix sets `boot.loader.timeout = 0`, so the firmware hands
 # straight to the kernel with no menu; everything from that point to the
@@ -77,11 +77,11 @@ in
   ];
 
   # Without this the splash is torn down before the greeter exists, so the
-  # sequence is splash, black console for as long as SDDM takes to start, then
+  # sequence is splash, black console for as long as the greeter takes to start, then
   # greeter. --retain-splash leaves the last frame on the framebuffer when
-  # plymouthd exits, so that gap holds the image instead, and SDDM draws over
-  # it -- nothing else changes, display-manager.service is already ordered
-  # after plymouth-quit.service by the sddm module.
+  # plymouthd exits, so that gap holds the image instead, and the greeter draws
+  # over it -- nothing else changes, display-manager.service (greetd) is
+  # already ordered after plymouth-quit-wait.service by the greetd module.
   #
   # The cost is that a display manager which fails to start now fails behind a
   # frozen splash rather than in front of a console. The VT is still live:

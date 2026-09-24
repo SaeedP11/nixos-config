@@ -1,6 +1,7 @@
 // This output's workspaces. Named ones keep their glyph in every state and
-// unnamed ones get a dot; emptiness is opacity, never a different glyph,
-// for the reason waybar/config.jsonc gives.
+// unnamed ones get a dot. Emptiness is opacity, never a different glyph:
+// an empty "dev" would otherwise lose its glyph exactly when the glyph is
+// the only hint of what belongs there.
 import QtQuick
 import qs.config
 import qs.services

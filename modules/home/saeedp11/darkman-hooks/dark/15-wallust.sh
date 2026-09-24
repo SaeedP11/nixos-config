@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # darkman dark-mode hook: re-run wallust on the current wallpaper with a
-# dark palette, so everything wallust drives — waybar (imports
-# ~/.config/waybar/wallust-colors.css, see style.css:1) and Alacritty
+# dark palette, so everything wallust drives — the Quickshell shell (watches
+# ~/.config/quickshell/wallust-colors.json) and Alacritty
 # (imports ~/.config/alacritty/colors.toml, hot-reloaded automatically) —
 # switches along with GTK/Qt instead of staying stuck on whatever palette
 # was set in wallust.toml.

@@ -64,7 +64,11 @@ Singleton {
         command: ["sh", "-c", `
             head -1 /proc/stat
             awk '/^(MemTotal|MemAvailable|SwapTotal|SwapFree):/ { print "mem", $1, $2 }' /proc/meminfo
-            awk -F'[: ]+' 'NR > 2 && $2 !~ /^(lo|tun|docker|veth|br-|virbr)/ { rx += $3; tx += $11 } END { print "net", rx, tx }' /proc/net/dev
+            # The kernel right-aligns names in 6 columns, so a long one
+            # ("wlp2s0:123") has no space before its colon; split on the
+            # colon first. Tunnels are skipped wherever "tun" appears in the
+            # name: their traffic is already counted on the physical link.
+            awk 'NR > 2 { sub(/:/, " "); if ($1 !~ /^(lo|docker|veth|br-|virbr)/ && $1 !~ /tun/) { rx += $2; tx += $10 } } END { print "net", rx + 0, tx + 0 }' /proc/net/dev
             t=
             for h in /sys/class/hwmon/hwmon*; do
                 case "$(cat "$h/name" 2>/dev/null)" in

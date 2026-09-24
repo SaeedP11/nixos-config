@@ -34,7 +34,12 @@ PanelWindow {
         spacing: 8
 
         Repeater {
-            model: Notifs.popups.slice(0, 5)
+            // ScriptModel diffs by identity, so a toast arriving or leaving
+            // does not rebuild the others -- each card owns its expiry timer
+            // and entry animation, and a plain array would reset both.
+            model: ScriptModel {
+                values: Notifs.popups.slice(0, 5)
+            }
 
             NotificationCard {
                 id: card

@@ -20,8 +20,8 @@
     # true, so the real password lives in /etc/shadow and is changed with
     # `passwd` -- which is fine on a machine that has one, and useless on a
     # machine that does not. Without a password declared anywhere, a fresh
-    # install from this flake creates the account with no password set: SDDM
-    # refuses the login (it will not accept an empty one) and `sudo` fails,
+    # install from this flake creates the account with no password set: the
+    # greeter cannot log it in (PAM will not accept an empty one) and `sudo` fails,
     # so the only way in is a root shell from the installer. Every other
     # thing this repository configures is unreachable until that is fixed by
     # hand, which is precisely the kind of manual step the repository exists

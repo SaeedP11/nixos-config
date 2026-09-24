@@ -12,11 +12,15 @@ Singleton {
     readonly property var players: Mpris.players.values
     property var chosen: null
 
+    // A playing player always wins over the chosen one, so that Play/Pause
+    // acts on whatever is audible; the choice only breaks ties -- between
+    // several playing, or when nothing is.
     readonly property var player: {
         const ps = players;
-        if (chosen && ps.includes(chosen))
-            return chosen;
-        return ps.find(p => p.isPlaying) ?? ps[0] ?? null;
+        const kept = chosen && ps.includes(chosen) ? chosen : null;
+        if (kept?.isPlaying)
+            return kept;
+        return ps.find(p => p.isPlaying) ?? kept ?? ps[0] ?? null;
     }
     readonly property bool active: player !== null && (player.trackTitle ?? "") !== ""
 

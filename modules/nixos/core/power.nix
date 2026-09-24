@@ -14,7 +14,7 @@
     UserStopDelaySec=0
   '';
 
-  # Battery/AC state for waybar and friends; also used on the desktop by
+  # Battery/AC state for the Quickshell bar and friends; also used on the desktop by
   # anything that queries power state over D-Bus.
   services.upower.enable = true;
 }

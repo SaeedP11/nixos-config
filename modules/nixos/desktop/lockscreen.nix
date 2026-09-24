@@ -1,7 +1,7 @@
 # Screen locker (qylock, from the flake input of the same name).
 #
-# Split out of ./sddm.nix: a lock screen and a display manager are separate
-# concerns that only happened to share a themes directory.
+# Separate from the login screen (./greeter.nix): a lock screen and a
+# display manager are separate concerns.
 { ... }:
 
 {

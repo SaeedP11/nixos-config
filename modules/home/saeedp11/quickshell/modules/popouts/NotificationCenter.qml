@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Layouts
+import Quickshell
 import qs.config
 import qs.services
 import qs.widgets
@@ -40,7 +41,10 @@ PanelSurface {
             visible: Notifs.count > 0
             clip: true
             spacing: 8
-            model: Notifs.list
+            // Keeps existing cards, and the scroll position, when one arrives.
+            model: ScriptModel {
+                values: Notifs.list
+            }
             boundsBehavior: Flickable.StopAtBounds
             delegate: NotificationCard {
                 required property var modelData

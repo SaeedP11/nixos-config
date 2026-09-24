@@ -20,7 +20,7 @@
     ./desktop/portals.nix
     ./desktop/audio.nix
     ./desktop/services.nix
-    ./desktop/sddm.nix
+    ./desktop/greeter.nix
     ./desktop/plymouth.nix
     ./desktop/lockscreen.nix
     ./desktop/theme.nix

@@ -33,7 +33,7 @@ palette = "softlight"
 #  11 - 49    Colors are more similar than opposite
 #  100        Colors are exact opposite
 # Bumped from 11 -> 20: pulls the picks further apart from each other so
-# waybar/mako/alacritty end up with a more differentiated set of accents
+# the shell and alacritty end up with a more differentiated set of accents
 # instead of several near-identical hues from the same wallpaper region.
 threshold = 20
 
@@ -48,21 +48,12 @@ saturation = 45
 check_contrast = true
 
 [templates]
-waybar.template = 'colors-waybar.css'
-waybar.target = '~/.config/waybar/wallust-colors.css'
-
 alacritty.template = 'colors-alacritty.toml'
 alacritty.target = '~/.config/alacritty/colors.toml'
 
 # Quickshell watches this file and recolours live; no reload signal needed.
 quickshell.template = 'colors-quickshell.json'
 quickshell.target = '~/.config/quickshell/wallust-colors.json'
-
-# fuzzel reads this via an `include` in /etc/xdg/fuzzel/fuzzel.ini, which
-# nixos-config generates (modules/nixos/desktop/theme.nix). Colors only --
-# the layout stays declarative in the repo.
-fuzzel.template = 'colors-fuzzel.ini'
-fuzzel.target = '~/.config/fuzzel/wallust-colors.ini'
 
 # niri. This target is not read by niri: it is a sed script that the renderer
 # in modules/home/saeedp11/niri.nix applies to that module's config.kdl

@@ -51,7 +51,7 @@ ShellRoot {
     IpcHandler {
         target: "osd"
         function brightness(): void {
-            Brightness.refresh();
+            Brightness.refresh(true);
         }
     }
     IpcHandler {

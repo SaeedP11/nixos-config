@@ -6,7 +6,7 @@
 # They are a package, so they live in pkgs/.
 #
 # Runtime dependencies (swww, darkman, wallust, imagemagick, fzf,
-# chafa, fuzzel, procps) are deliberately resolved from PATH rather than
+# chafa, procps) are deliberately resolved from PATH rather than
 # baked in: the whole point of set-wallpaper is to drive the *running*
 # session's tools, and the wallpaper-thumbs systemd user unit supplies its
 # own explicit PATH for the non-interactive case.
@@ -24,37 +24,23 @@
 let
   # Shared "actually apply this wallpaper" logic: sets it via swww,
   # regenerates wallust colors (respecting the current darkman dark/light
-  # mode), and repaints the SDDM greeter from the same image. The shell
+  # mode), and repaints the login screen from the same image. The shell
   # needs no nudge: Quickshell watches the palette file wallust writes.
-  # Both randomWallpaper and wallpaper-picker call this, so
-  # the reload-safety fixes only need to live in one place.
-  #
-  # --no-swww runs everything except the swww call. That is for waypaper,
-  # which is a wallpaper setter in its own right: it drives swww itself and
-  # then runs a post-command, so without this the image would be set twice
-  # and the two-second wipe would play through a second time. Everything
-  # after the swww call is what waypaper has no idea about and is the whole
-  # reason it calls back in here.
+  # Both randomWallpaper and wallpaper-picker call this, and so does the
+  # Quickshell wallpaper panel, so the reload-safety fixes only need to
+  # live in one place.
   setWallpaperScript = writeShellScriptBin "set-wallpaper" ''
     #!/usr/bin/env bash
     set -uo pipefail
 
-    SET_VIA_SWWW=1
-    if [ "''${1-}" = "--no-swww" ]; then
-        SET_VIA_SWWW=0
-        shift
-    fi
-
     if [ $# -lt 1 ] || [ ! -f "$1" ]; then
-        echo "Usage: set-wallpaper [--no-swww] <path-to-image>" >&2
+        echo "Usage: set-wallpaper <path-to-image>" >&2
         exit 1
     fi
     WALLPAPER="$1"
 
-    if [ "$SET_VIA_SWWW" = 1 ]; then
-        if ! swww img "$WALLPAPER" --transition-type wipe --transition-duration 2; then
-            echo "swww failed to set: $WALLPAPER" >&2
-        fi
+    if ! swww img "$WALLPAPER" --transition-type wipe --transition-duration 2; then
+        echo "swww failed to set: $WALLPAPER" >&2
     fi
     echo "Wallpaper changed to: $WALLPAPER"
 
@@ -70,12 +56,12 @@ let
     fi
 
     # Repaint the login screen from the same wallpaper. Resolved from PATH
-    # like every other tool here, so on a host without the SDDM module the
+    # like every other tool here, so on a host without the greeter module the
     # command is simply absent and this is a no-op. It pins its own palette
     # rather than reusing the mode above: the greeter is what you see at
     # boot, before any session -- and so any dark/light mode -- exists.
-    if command -v sddm-sync-theme >/dev/null 2>&1; then
-        sddm-sync-theme "$WALLPAPER"
+    if command -v greeter-sync-theme >/dev/null 2>&1; then
+        greeter-sync-theme "$WALLPAPER"
     fi
   '';
 
@@ -84,9 +70,9 @@ let
   # resizing ~150 wallpapers one at a time.
   #
   # `[0]` takes the first frame, which is what makes animated GIFs work.
-  # The result is a *square* centre crop: fuzzel sizes icons to a square
-  # box, so cropping fills that box instead of leaving a letterboxed
-  # sliver. Written to a temp file and renamed so an interrupted run can
+  # The result is a *square* centre crop: the Quickshell wallpaper panel
+  # crops every thumbnail to a tile anyway, so a square is all it needs.
+  # Written to a temp file and renamed so an interrupted run can
   # never leave a truncated PNG behind that later looks "cached".
   thumbWorkerScript = writeShellScript "wallpaper-thumb-one" ''
     set -uo pipefail
@@ -110,12 +96,9 @@ let
   #   wallpaper-thumbs sync   -> refresh the cache, then print
   #                              "<wallpaper>\t<thumbnail>" per line
   #
-  # Thumbnails are always PNG. That is not cosmetic: fuzzel is built with
-  # +png +svg only (it links libpng and nothing else), so pointing it at a
-  # .jpg/.jpeg wallpaper silently yields no icon at all. Rendering every
-  # format down to PNG is what makes the GUI picker show thumbnails for
-  # the whole library rather than just part of it. It also keeps fuzzel
-  # from decoding a full 4K wallpaper per row on every popup.
+  # Thumbnails are always small PNGs, whatever the source format, so the
+  # Quickshell wallpaper panel never decodes a full 4K wallpaper per tile
+  # and never meets a format its Qt build cannot read.
   wallpaperThumbsScript = writeShellScriptBin "wallpaper-thumbs" ''
     #!/usr/bin/env bash
     set -uo pipefail
@@ -203,58 +186,24 @@ let
   #    chafa (works in plain Alacritty, no Sixel/Kitty-graphics needed).
   #    chafa gets the original file, so the preview keeps the real aspect
   #    ratio rather than the square cache crop.
-  #  - Run with no terminal attached (e.g. a niri keybind) -> a fuzzel
-  #    popup with a real thumbnail per wallpaper, from the PNG cache.
-  # Same underlying file list and the same set-wallpaper apply step
-  # either way, so both paths behave identically once you pick a file.
+  #  - Run with no terminal attached (e.g. from a launcher) -> the
+  #    Quickshell wallpaper panel, the same grid Mod+Shift+B opens. It reads
+  #    the same thumbnail cache and applies through the same set-wallpaper.
   wallpaperPickerScript = writeShellScriptBin "wallpaper-picker" ''
     #!/usr/bin/env bash
     set -uo pipefail
 
-    WALLPAPER_DIR="''${WALLPAPER_DIR:-${wallpaperDir}}"
-    THUMBS=${wallpaperThumbsScript}/bin/wallpaper-thumbs
-
-    if [ -t 0 ] && [ -t 1 ]; then
-        mapfile -t files < <("$THUMBS" list)
-        [ ''${#files[@]} -eq 0 ] && exit 1
-
-        selected=$(printf '%s\n' "''${files[@]}" | fzf \
-            --prompt="Wallpaper> " \
-            --preview 'chafa --size=''${FZF_PREVIEW_COLUMNS}x''${FZF_PREVIEW_LINES} {}' \
-            --preview-window=right:60%)
-    else
-        # Cold cache costs one render pass over the library; the
-        # wallpaper-thumbs user unit below normally warms it at login, so
-        # in practice this only touches wallpapers added since.
-        mapfile -t rows < <("$THUMBS" sync)
-        [ ''${#rows[@]} -eq 0 ] && exit 1
-
-        files=()
-        for row in "''${rows[@]}"; do
-            files+=("''${row%%$'\t'*}")
-        done
-
-        # The icon has to be emitted with printf. A NUL cannot survive
-        # inside a bash variable, so building the "label NUL icon US path"
-        # entry as a string first silently drops the separator and fuzzel
-        # ends up showing the raw text with no icon.
-        index=$(
-            for row in "''${rows[@]}"; do
-                f="''${row%%$'\t'*}"
-                printf '%s\0icon\x1f%s\n' "''${f#"$WALLPAPER_DIR"/}" "''${row#*$'\t'}"
-            done | fuzzel --dmenu --index \
-                --placeholder "Wallpaper" \
-                --match-mode=fzf \
-                --line-height=64px \
-                --lines=8 \
-                --width=45
-        )
-
-        if [ -z "''${index:-}" ]; then
-            exit 0
-        fi
-        selected="''${files[$index]}"
+    if ! { [ -t 0 ] && [ -t 1 ]; }; then
+        exec qs -c shell ipc call panel toggle wallpaper
     fi
+
+    mapfile -t files < <(${wallpaperThumbsScript}/bin/wallpaper-thumbs list)
+    [ ''${#files[@]} -eq 0 ] && exit 1
+
+    selected=$(printf '%s\n' "''${files[@]}" | fzf \
+        --prompt="Wallpaper> " \
+        --preview 'chafa --size=''${FZF_PREVIEW_COLUMNS}x''${FZF_PREVIEW_LINES} {}' \
+        --preview-window=right:60%)
 
     if [ -z "''${selected:-}" ]; then
         exit 0

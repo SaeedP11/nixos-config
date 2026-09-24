@@ -7,18 +7,17 @@
 { pkgs, vars, ... }:
 
 let
-  # vicinae's starting configuration, handled exactly as ./theme.nix handles
-  # waypaper's: a seed copied once, not a managed file. vicinae rewrites
-  # settings.json whenever anything is changed through its own GUI -- it
-  # says so in the header it writes into the file -- so a read-only store
-  # symlink would break the preferences window.
+  # vicinae's starting configuration: a seed copied once, not a managed
+  # file. vicinae rewrites settings.json whenever anything is changed
+  # through its own GUI -- it says so in the header it writes into the file
+  # -- so a read-only store symlink would break the preferences window.
   #
   # The one thing in it that is not a default is the dark theme. vicinae
   # ships its own, which is a flat grey that sits oddly next to a session
   # whose colours all come out of the wallpaper; catppuccin-mocha is the
   # closest of the bundled themes to what ../../home/saeedp11/wallust.nix
   # generates for everything else. It cannot simply follow wallust the way
-  # waybar, mako and fuzzel do, because vicinae reads its theme by name from
+  # Quickshell does, because vicinae reads its theme by name from
   # this file rather than including a generated colour file.
   vicinaeSettingsSeed = pkgs.writeText "vicinae-settings-seed.json" (
     builtins.toJSON {
@@ -30,23 +29,16 @@ in
 
 {
   # Components of the niri session itself. Configuration for these lives in
-  # Home Manager (../home/), except fuzzel's layout, which ../desktop/theme.nix
-  # ships in /etc/xdg so wallust can own only the colors.
+  # Home Manager (../home/).
   environment.systemPackages = with pkgs; [
-    waybar
     # The Mod+D launcher. Comes from ../../../overlays/vicinae.nix, since
     # 25.05 has no vicinae attribute of its own.
     #
-    # Unlike fuzzel it is not a popup that starts and exits per invocation:
-    # a `vicinae server` runs for the session and the keybind toggles it, so
+    # It is not a popup that starts and exits per invocation: a
+    # `vicinae server` runs for the session and the keybind toggles it, so
     # the window appears without a cold start and the clipboard history has
     # something to record into. The user service below is what runs it.
     vicinae
-    # Kept alongside vicinae rather than removed. It is what ./theme.nix
-    # themes from the wallust palette and what the wallpaper picker in
-    # ../../../pkgs/wallpaper-tools calls, so it is still a working part of
-    # the session even with the Mod+D bind pointed elsewhere.
-    fuzzel
     # The desktop shell -- bar, notifications, OSD, dock, popouts -- from
     # ../../../overlays/quickshell.nix. Its QML is
     # ../../home/saeedp11/quickshell, and the user service below runs it.
@@ -54,8 +46,6 @@ in
     # reach it with `qs -c shell ipc call ...`.
     quickshell
     alacritty
-    wlogout
-    wleave
     wlr-randr
     wdisplays
     grim
@@ -137,7 +127,8 @@ in
   ];
 
   # niri reads its own keyboard layout from ~/.config/niri/config.kdl, so
-  # this mainly covers SDDM's greeter and XWayland clients.
+  # this mainly covers the greeter (./greeter.nix reads it) and XWayland
+  # clients.
   services.xserver.xkb = {
     layout = "us,ir";
     options = "grp:alt_shift_toggle";

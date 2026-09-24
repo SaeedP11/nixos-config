@@ -18,6 +18,22 @@
     sound-theme-freedesktop # standard "message-new-instant" event sound
   ];
 
+  # Quickshell's own activation file, in mako's place. Without one, a
+  # Notify call made before the quickshell user service has started -- or
+  # during its two-second restart after a crash -- fails with ServiceUnknown
+  # and the notification is lost. With it, the bus asks systemd to start
+  # quickshell.service and holds the call until the shell has claimed the
+  # name. Exec= is never run (SystemdService= takes precedence) but the
+  # format requires one.
+  services.dbus.packages = [
+    (pkgs.writeTextDir "share/dbus-1/services/org.freedesktop.Notifications.service" ''
+      [D-BUS Service]
+      Name=org.freedesktop.Notifications
+      Exec=${pkgs.coreutils}/bin/false
+      SystemdService=quickshell.service
+    '')
+  ];
+
   # Watches the session bus for incoming Notify calls and plays the
   # standard freedesktop notification sound. It listens to the bus, not to
   # any daemon, so it is indifferent to which server answers the call.

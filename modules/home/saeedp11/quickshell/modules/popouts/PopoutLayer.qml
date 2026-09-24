@@ -64,7 +64,9 @@ PanelWindow {
     exclusionMode: ExclusionMode.Ignore
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.namespace: "quickshell-popout"
-    WlrLayershell.keyboardFocus: visible ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
+    // Only the panels driven from the keyboard take it; the rest leave it
+    // with the focused window, and get it on demand if clicked.
+    WlrLayershell.keyboardFocus: !visible ? WlrKeyboardFocus.None : Panels.wantsKeyboard ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.OnDemand
 
     mask: Region {
         item: backdrop

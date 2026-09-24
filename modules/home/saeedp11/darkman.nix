@@ -5,11 +5,10 @@
 # also supplies the PATH these hooks inherit (bash, glib for gsettings, niri,
 # wallust, procps). This module only places files.
 #
-# These eight files were previously tracked nowhere at all, which is what
+# These files were previously tracked nowhere at all, which is what
 # modules/nixos/desktop/theme.nix meant by "those live outside of Nix and
-# need to be placed by hand". 20-reload-bar.sh and 25-thunar.sh are
-# byte-identical between the two modes, so both directories point at one
-# shared copy.
+# need to be placed by hand". 25-thunar.sh is byte-identical between the
+# two modes, so both directories point at one shared copy.
 { lib, ... }:
 
 let
@@ -22,10 +21,6 @@ let
     };
     "${mode}-mode.d/15-wallust.sh" = {
       source = ./darkman-hooks/${mode}/15-wallust.sh;
-      executable = true;
-    };
-    "${mode}-mode.d/20-reload-bar.sh" = {
-      source = ./darkman-hooks/common/20-reload-bar.sh;
       executable = true;
     };
     "${mode}-mode.d/25-thunar.sh" = {

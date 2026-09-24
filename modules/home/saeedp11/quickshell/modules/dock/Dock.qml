@@ -60,18 +60,21 @@ PanelWindow {
     implicitWidth: body.implicitWidth + 40
     implicitHeight: 112
 
-    // Input only reaches the dock itself when shown, and only a thin strip
-    // along the bottom edge when hidden; the tooltip area above never
-    // takes clicks.
+    // Input reaches only a thin strip along the bottom edge while hidden,
+    // and the dock plus the gap below it while shown. The gap matters: the
+    // pointer that revealed the dock is still resting on the edge, and a
+    // mask ending at the dock's lower border would register as the pointer
+    // leaving, hide the dock, and reveal it again, forever. The tooltip area
+    // above never takes clicks.
     mask: Region {
-        item: dock.revealed ? body : trigger
+        item: zone
     }
 
     Item {
-        id: trigger
+        id: zone
         anchors.bottom: parent.bottom
         width: parent.width
-        height: 3
+        height: dock.revealed ? body.implicitHeight + 8 : 3
     }
 
     HoverHandler {

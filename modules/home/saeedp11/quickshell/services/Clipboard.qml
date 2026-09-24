@@ -26,18 +26,28 @@ Singleton {
     }
     function remove(entry) {
         entries = entries.filter(e => e !== entry);
-        Quickshell.execDetached(["sh", "-c", 'printf "%s\\n" "$1" | cliphist delete', "sh", entry.line]);
+        Quickshell.execDetached(["sh", "-c", 'printf "%s\\n" "$1" | cliphist delete; rm -f "$2/$3"', "sh", entry.line, imageDir, entry.id]);
     }
+    // cliphist's ids restart after a wipe, so the cached thumbnails have to
+    // go with it or a new image would show an old one's picture.
     function wipe() {
         entries = [];
-        Quickshell.execDetached(["cliphist", "wipe"]);
+        Quickshell.execDetached(["sh", "-c", 'cliphist wipe; rm -rf "$1"', "sh", imageDir]);
     }
 
     Process {
         id: list
         command: ["sh", "-c", `
             d="$1"; mkdir -p "$d"
-            cliphist list | head -n 150 | while IFS= read -r line; do
+            listing=$(cliphist list | head -n 150)
+            # Drop thumbnails whose id is no longer listed before decoding,
+            # so a reused id is never matched to a stale file.
+            for f in "$d"/*; do
+                [ -e "$f" ] || continue
+                printf '%s\\n' "$listing" | cut -f1 | grep -qx "\${f##*/}" || rm -f "$f"
+            done
+            printf '%s\\n' "$listing" | while IFS= read -r line; do
+                [ -n "$line" ] || continue
                 case "$line" in
                     *"[[ binary data"*)
                         id=$(printf '%s' "$line" | cut -f1)

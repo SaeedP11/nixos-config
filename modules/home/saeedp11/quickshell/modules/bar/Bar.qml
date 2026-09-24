@@ -1,5 +1,5 @@
 // The top bar, one per output. Same module set and grouping as the waybar
-// layout it replaces (../../../waybar/config.jsonc): workspaces, window
+// layout it replaced: workspaces, window
 // and system stats on the left, date and time in the centre, quick toggles,
 // status and power on the right. The modules that used to launch a GUI now
 // open a popout instead; the GUI moved to right click.
