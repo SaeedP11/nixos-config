@@ -1,27 +1,30 @@
-# Laptop function ("Fn") / hardware key support: the SwayOSD daemon that
-# every one of those key bindings goes through.
+# Laptop function ("Fn") / hardware key support.
 #
 # The bindings themselves live in niri's config, which Home Manager owns:
 # ../../home/saeedp11/niri.nix. swayidle is spawned from the same file (see
 # ./idle.nix).
 #
-# Why the binds call one tool instead of wpctl/brightnessctl plus a
-# separate OSD call: swayosd-client performs the change *and* draws the
-# on-screen display in a single call. Splitting the two would apply every
-# step twice, since SwayOSD has no display-only mode for volume or
-# brightness. Underneath it still drives the existing stack — PipeWire
-# through its PulseAudio API (services.pipewire.pulse is enabled in
-# ./audio.nix), brightnessctl for the backlight, and plain
-# MPRIS over D-Bus for media players — so nothing is bypassed.
+# Volume, brightness and media keys call the tools directly -- wpctl,
+# brightnessctl, and Quickshell's MPRIS IPC -- and the OSD for them is
+# Quickshell's (../../home/saeedp11/quickshell/modules/osd). Volume needs no
+# help: the OSD watches PipeWire, so it appears whatever changed the
+# volume. Brightness has nothing to watch, so its binds poke the OSD over
+# IPC after brightnessctl has run. The keys therefore still work, without an
+# OSD, if the shell is down.
 #
-# mako remains the notification daemon (./notifications.nix). SwayOSD
-# is not a notification daemon and does not compete with it: it only draws
-# the transient volume/brightness/playback overlay.
+# SwayOSD stays for one thing only: Caps/Num/Scroll Lock, which no niri
+# bind can handle (see below). It is not a notification daemon and does not
+# compete with Quickshell's.
 
 { config, lib, pkgs, ... }:
 
 {
-  environment.systemPackages = [ pkgs.swayosd ];
+  environment.systemPackages = [
+    pkgs.swayosd
+    # Called by name from the niri brightness binds and by the Quickshell
+    # brightness slider.
+    pkgs.brightnessctl
+  ];
 
   # The server is a Wayland client, so it needs the session's
   # WAYLAND_DISPLAY. niri exports that into the systemd user environment
@@ -54,10 +57,8 @@
   services.dbus.packages = [ pkgs.swayosd ];
   systemd.services.swayosd-libinput-backend.wantedBy = [ "graphical.target" ];
 
-  # brightnessctl is the backend SwayOSD shells out to for the backlight.
-  # It is already inside swayosd's wrapper PATH, so it is deliberately not
-  # added to systemPackages again — only its udev rules are needed. They
-  # chgrp /sys/class/backlight/*/brightness to the "video" group (which the
+  # brightnessctl's udev rules, which the Quickshell slider depends on in
+  # particular, since it runs from a systemd user service. They chgrp /sys/class/backlight/*/brightness to the "video" group (which the
   # user is in, see ../users.nix) and make it group-writable. Without
   # them the write only succeeds while the caller is attached to a logind
   # session, which a systemd *user* service is not guaranteed to be.

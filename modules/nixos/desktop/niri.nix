@@ -47,6 +47,12 @@ in
     # ../../../pkgs/wallpaper-tools calls, so it is still a working part of
     # the session even with the Mod+D bind pointed elsewhere.
     fuzzel
+    # The desktop shell -- bar, notifications, OSD, dock, popouts -- from
+    # ../../../overlays/quickshell.nix. Its QML is
+    # ../../home/saeedp11/quickshell, and the user service below runs it.
+    # On PATH as well, not only named by the unit, because the niri binds
+    # reach it with `qs -c shell ipc call ...`.
+    quickshell
     alacritty
     wlogout
     wleave
@@ -205,6 +211,36 @@ in
       # itself: NixOS merges this as a drop-in when the package ships one,
       # and systemd refuses two ExecStart lines on a non-oneshot service.
       ExecStart = [ "" "${pkgs.vicinae}/bin/vicinae server" ];
+      Restart = "on-failure";
+      RestartSec = 2;
+    };
+  };
+
+  # The Quickshell shell (../../home/saeedp11/quickshell.nix). A unit rather
+  # than a spawn-at-startup line, unlike the waybar it replaces, so that a
+  # crash restarts it instead of leaving the session with no bar and no
+  # notification server.
+  #
+  # It needs the same PATH as vicinae above, for the same reason and more
+  # of it: the dock launches desktop entries, the power menu runs
+  # systemctl and qylock-lock, and the wallpaper picker runs set-wallpaper,
+  # all by bare name. NIRI_SOCKET and WAYLAND_DISPLAY arrive through the
+  # manager's environment, which niri populates before
+  # graphical-session.target is reached.
+  systemd.user.services.quickshell = {
+    description = "Quickshell desktop shell";
+    wantedBy = [ "graphical-session.target" ];
+    partOf = [ "graphical-session.target" ];
+    after = [ "graphical-session.target" ];
+
+    path = [
+      "/run/wrappers"
+      "/etc/profiles/per-user/${vars.username}"
+      "/run/current-system/sw"
+    ];
+
+    serviceConfig = {
+      ExecStart = "${pkgs.quickshell}/bin/qs -c shell";
       Restart = "on-failure";
       RestartSec = 2;
     };

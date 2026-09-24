@@ -17,7 +17,8 @@
 #   ~/.config/gtk-{3,4}.0/settings.ini  -- rewritten by the darkman 10-gtk
 #     hook on every dark/light switch. Its neighbour gtk-3.0/gtk.css is not
 #     rewritten by anything and *is* owned here, by ./gtk.nix.
-#   ~/.config/{waybar,alacritty,mako,fuzzel}/wallust-colors.*  -- written by
+#   ~/.config/{waybar,alacritty,fuzzel}/wallust-colors.* and
+#   ~/.config/quickshell/wallust-colors.json  -- written by
 #     `wallust run`, i.e. on every wallpaper change and every dark/light
 #     switch. ./wallust.nix owns the templates that produce them instead.
 #   ~/.config/niri/{config.kdl,wallust-colors.sed}  -- the same arrangement,
@@ -45,7 +46,7 @@
     ./thunar.nix
     ./niri.nix
     ./waybar.nix
-    ./mako.nix
+    ./quickshell.nix
     ./alacritty.nix
     ./zellij.nix
     ./darkman.nix

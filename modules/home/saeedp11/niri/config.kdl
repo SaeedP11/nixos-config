@@ -318,7 +318,6 @@ layout {
 // which may be more convenient to use.
 // See the binds section below for more spawn examples.
 
-// This line starts waybar, a commonly used bar for Wayland compositors.
 // Export niri/Wayland env vars to D-Bus activation AND the systemd --user
 // manager, so independently-started user services (like darkman) can see
 // NIRI_SOCKET, WAYLAND_DISPLAY, etc. Without this, `niri msg` inside any
@@ -337,15 +336,18 @@ spawn-at-startup "swayidle" "-w" \
     "before-sleep" "qylock-lock" \
     "after-resume" "niri msg action power-on-monitors"
 
-spawn-at-startup "mako"
-spawn-at-startup "waybar"
+// The bar, notifications, OSD and dock are Quickshell, which runs as the
+// `quickshell` systemd user service (modules/nixos/desktop/niri.nix) rather
+// than from here, so that it is restarted if it crashes.
+// It replaced the mako and waybar lines that used to be here.
 spawn-at-startup "swww-daemon"
 spawn-at-startup "nm-applet"
 spawn-at-startup "blueman-applet"
 
 // OpenWhip, the Claude Code whip; ../../../../pkgs/openwhip.nix. Like the two
-// applets above it is a tray icon and nothing else, so it belongs with them,
-// and after waybar, which is the StatusNotifierWatcher this session has.
+// applets above it is a tray icon and nothing else, so it belongs with them.
+// Quickshell's bar is the StatusNotifierWatcher this session has; an item
+// that starts first registers as soon as the watcher appears.
 spawn-at-startup "openwhip"
 // To run a shell command (with variables, pipes, etc.), use spawn-sh-at-startup:
 // spawn-sh-at-startup "qs -c ~/source/qs/MyAwesomeShell"
@@ -607,44 +609,52 @@ binds {
     // app series after nekoray, telegram and kooha.
     Mod+F4 hotkey-overlay-title="Open VS Code: Editor" { spawn "raise-or-run" "code$" "code"; }
     Mod+Shift+W hotkey-overlay-title="Spawn Random Walpaper" { spawn "randomWallpaper"; }
-    Mod+Shift+B hotkey-overlay-title="Pick Wallpaper" { spawn "wallpaper-picker"; }
+    // Quickshell popouts. Each bind toggles its panel on the focused output;
+    // Escape or a click outside closes it. The terminal fzf picker is still
+    // `wallpaper-picker`, run from a shell.
+    Mod+Shift+B hotkey-overlay-title="Pick Wallpaper" { spawn "qs" "-c" "shell" "ipc" "call" "panel" "toggle" "wallpaper"; }
+    Mod+A hotkey-overlay-title="Quick Settings" { spawn "qs" "-c" "shell" "ipc" "call" "panel" "toggle" "control"; }
+    Mod+N hotkey-overlay-title="Notifications" { spawn "qs" "-c" "shell" "ipc" "call" "panel" "toggle" "notifications"; }
+    Mod+X hotkey-overlay-title="Power Menu" { spawn "qs" "-c" "shell" "ipc" "call" "panel" "toggle" "power"; }
+    Mod+Alt+V hotkey-overlay-title="Clipboard History" { spawn "qs" "-c" "shell" "ipc" "call" "panel" "toggle" "clipboard"; }
     Mod+Shift+D hotkey-overlay-title="Toggle Dark/Light Theme" { spawn "darkman" "toggle"; }
     // Use spawn-sh to run a shell command. Do this if you need pipes, multiple commands, etc.
     // Note: the entire command goes as a single argument. It's passed verbatim to `sh -c`.
     // For example, this is a standard bind to toggle the screen reader (orca).
     Super+Alt+S allow-when-locked=true hotkey-overlay-title=null { spawn-sh "pkill orca || exec orca"; }
 
-    // Hardware / Fn keys. Every one of these goes through swayosd-client,
-    // which performs the action *and* draws the on-screen display in a
-    // single call (the daemon behind it is nixos-config/modules/media-keys.nix).
-    // Underneath it is still the existing stack: PipeWire via its PulseAudio
-    // API for volume, brightnessctl for the backlight, MPRIS over D-Bus for
-    // media players. Values are passed as "--opt=value" on purpose — a bare
-    // "-5" would be parsed as a flag, and an unsigned "5" means "set to 5%"
-    // rather than "step by 5%".
+    // Hardware / Fn keys. Each calls the real tool directly -- wpctl for
+    // PipeWire, brightnessctl for the backlight, and the Quickshell shell's
+    // MPRIS IPC for media -- so volume and brightness keep working even if
+    // the shell is down; only the media keys need it running.
+    // The OSD is Quickshell's (modules/nixos/desktop/media-keys.nix): it
+    // watches PipeWire on its own, while brightness has nothing to watch and
+    // so is poked over IPC after brightnessctl has run. Values are passed as
+    // "5%+", not "+5": wpctl and brightnessctl both read a bare number as an
+    // absolute level. `-l 1` caps the volume at 100%.
     //
     // allow-when-locked=true is set only on the controls that reveal nothing
     // about the session: volume, mute, mic mute and brightness.
-    XF86AudioRaiseVolume allow-when-locked=true { spawn "swayosd-client" "--output-volume=+5"; }
-    XF86AudioLowerVolume allow-when-locked=true { spawn "swayosd-client" "--output-volume=-5"; }
-    XF86AudioMute        allow-when-locked=true { spawn "swayosd-client" "--output-volume=mute-toggle"; }
-    XF86AudioMicMute     allow-when-locked=true { spawn "swayosd-client" "--input-volume=mute-toggle"; }
+    XF86AudioRaiseVolume allow-when-locked=true { spawn "wpctl" "set-volume" "-l" "1" "@DEFAULT_AUDIO_SINK@" "5%+"; }
+    XF86AudioLowerVolume allow-when-locked=true { spawn "wpctl" "set-volume" "@DEFAULT_AUDIO_SINK@" "5%-"; }
+    XF86AudioMute        allow-when-locked=true { spawn "wpctl" "set-mute" "@DEFAULT_AUDIO_SINK@" "toggle"; }
+    XF86AudioMicMute     allow-when-locked=true { spawn "wpctl" "set-mute" "@DEFAULT_AUDIO_SOURCE@" "toggle"; }
 
-    XF86MonBrightnessUp   allow-when-locked=true { spawn "swayosd-client" "--brightness=+5"; }
-    XF86MonBrightnessDown allow-when-locked=true { spawn "swayosd-client" "--brightness=-5"; }
+    XF86MonBrightnessUp   allow-when-locked=true { spawn-sh "brightnessctl -q -c backlight set 5%+; qs -c shell ipc call osd brightness"; }
+    XF86MonBrightnessDown allow-when-locked=true { spawn-sh "brightnessctl -q -c backlight -n set 5%-; qs -c shell ipc call osd brightness"; }
 
     // Media transport. Deliberately *not* allow-when-locked: skipping tracks
     // from a locked screen would let a passer-by both see and control what is
-    // playing. --player is left at its default ("auto"), so any MPRIS client
-    // works without naming one here.
+    // playing. The shell picks the player -- the one playing, else the last
+    // one chosen in its media popout -- so any MPRIS client works.
     //
     // The built-in keyboard emits KEY_PLAYPAUSE, which XKB maps to
     // XF86AudioPlay; XF86AudioPause is only the second level of that same
     // physical key and no device on this machine emits it, so it is not bound.
-    XF86AudioPlay { spawn "swayosd-client" "--playerctl=play-pause"; }
-    XF86AudioPrev { spawn "swayosd-client" "--playerctl=prev"; }
-    XF86AudioNext { spawn "swayosd-client" "--playerctl=next"; }
-    XF86AudioStop { spawn "swayosd-client" "--playerctl=stop"; }
+    XF86AudioPlay { spawn "qs" "-c" "shell" "ipc" "call" "media" "playPause"; }
+    XF86AudioPrev { spawn "qs" "-c" "shell" "ipc" "call" "media" "previous"; }
+    XF86AudioNext { spawn "qs" "-c" "shell" "ipc" "call" "media" "next"; }
+    XF86AudioStop { spawn "qs" "-c" "shell" "ipc" "call" "media" "stop"; }
 
     // Open/close the Overview: a zoomed-out view of workspaces and windows.
     // You can also move the mouse into the top-left hot corner,

@@ -5,7 +5,7 @@
 # bash sat inside a NixOS module whose actual job is declaring one account.
 # They are a package, so they live in pkgs/.
 #
-# Runtime dependencies (swww, darkman, wallust, waybar, imagemagick, fzf,
+# Runtime dependencies (swww, darkman, wallust, imagemagick, fzf,
 # chafa, fuzzel, procps) are deliberately resolved from PATH rather than
 # baked in: the whole point of set-wallpaper is to drive the *running*
 # session's tools, and the wallpaper-thumbs systemd user unit supplies its
@@ -24,8 +24,9 @@
 let
   # Shared "actually apply this wallpaper" logic: sets it via swww,
   # regenerates wallust colors (respecting the current darkman dark/light
-  # mode), repaints the SDDM greeter from the same image, and refreshes
-  # waybar in place. Both randomWallpaper and wallpaper-picker call this, so
+  # mode), and repaints the SDDM greeter from the same image. The shell
+  # needs no nudge: Quickshell watches the palette file wallust writes.
+  # Both randomWallpaper and wallpaper-picker call this, so
   # the reload-safety fixes only need to live in one place.
   #
   # --no-swww runs everything except the swww call. That is for waypaper,
@@ -75,13 +76,6 @@ let
     # boot, before any session -- and so any dark/light mode -- exists.
     if command -v sddm-sync-theme >/dev/null 2>&1; then
         sddm-sync-theme "$WALLPAPER"
-    fi
-
-    # Always make sure waybar is actually up, regardless of whether
-    # wallust succeeded above.
-    if ! pkill -SIGUSR2 waybar 2>/dev/null; then
-        waybar &
-        disown
     fi
   '';
 

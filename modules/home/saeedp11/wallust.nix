@@ -7,7 +7,7 @@
 #
 # THE TEMPLATES ARE MANAGED, THE TARGETS ARE NOT.
 # ~/.config/waybar/wallust-colors.css, ~/.config/alacritty/colors.toml,
-# ~/.config/mako/wallust-colors and ~/.config/fuzzel/wallust-colors.ini are
+# ~/.config/quickshell/wallust-colors.json and ~/.config/fuzzel/wallust-colors.ini are
 # all written by `wallust run`; a read-only store symlink in any of those
 # places would break the wallpaper switch outright.
 #
@@ -28,10 +28,22 @@
     # background, never the numbered colours.
     "wallust/templates/colors-waybar.css".source = ./wallust/colors-waybar.css;
 
-    "wallust/templates/colors-mako.ini".text = ''
-      background-color={{background}}
-      text-color={{foreground}}
-      border-color={{color4}}
+    # Quickshell's palette (./quickshell.nix). JSON, because the shell parses
+    # it rather than including it, and the one derived colour -- the accent
+    # -- is computed here with the same blend the fuzzel template below
+    # explains, so the QML never has to second-guess wallust. The numbered
+    # colours go through raw; Theme.qml does waybar's 45% mix itself.
+    "wallust/templates/colors-quickshell.json".text = ''
+      {
+        "background": "{{background}}",
+        "foreground": "{{foreground}}",
+        "cursor": "{{cursor}}",
+        "accent": "{{color4 | blend(foreground)}}",
+        "color0": "{{color0}}", "color1": "{{color1}}", "color2": "{{color2}}", "color3": "{{color3}}",
+        "color4": "{{color4}}", "color5": "{{color5}}", "color6": "{{color6}}", "color7": "{{color7}}",
+        "color8": "{{color8}}", "color9": "{{color9}}", "color10": "{{color10}}", "color11": "{{color11}}",
+        "color12": "{{color12}}", "color13": "{{color13}}", "color14": "{{color14}}", "color15": "{{color15}}"
+      }
     '';
 
     "wallust/templates/colors-alacritty.toml".text = ''

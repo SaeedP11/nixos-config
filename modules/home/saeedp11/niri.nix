@@ -90,12 +90,14 @@
 #
 # WHAT DEPENDS ON THE TEMPLATE FROM THE NIXOS SIDE, i.e. what a change there
 # can break:
-#   * ../../nixos/desktop/media-keys.nix -- every XF86Audio*/XF86MonBrightness*
-#     bind goes through swayosd-client, whose daemon that module enables.
+#   * ../../nixos/desktop/media-keys.nix -- the XF86MonBrightness* binds call
+#     brightnessctl, which that module installs along with its udev rules.
 #   * ../../nixos/desktop/idle.nix -- the swayidle timers are the
 #     spawn-at-startup line there, not a systemd unit.
-#   * ../../nixos/desktop/notifications.nix -- mako is started there, which is
-#     also why ./mako.nix places only mako's config file and not a service.
+#   * ../../nixos/desktop/niri.nix (again) -- the Mod+A/N/X, Mod+Alt+V,
+#     Mod+Shift+B and XF86Audio{Play,Prev,Next,Stop} binds call `qs -c shell`,
+#     the Quickshell shell whose package and user service that module holds
+#     and whose config is ./quickshell.nix.
 #   * ../../nixos/desktop/theme.nix -- swww-daemon is started there, and the
 #     Mod+Shift+{W,B} binds call the wallpaper-tools scripts that module
 #     installs.

@@ -1,24 +1,26 @@
-# Notification daemon (mako) plus a lightweight sound-on-notify watcher,
-# since mako itself has no built-in support for the sound-file/sound-name
-# notification hints (see github.com/emersion/mako/issues/424).
+# Notification sound. The notification server itself is Quickshell
+# (../../home/saeedp11/quickshell/services/Notifs.qml), which, like mako
+# before it, has no support for the sound-file/sound-name hints, so a
+# lightweight watcher plays one instead.
 #
-# Visual config now lives in Home Manager (../../home/saeedp11/mako.nix)
-# rather than being hand-placed; this module just makes sure the binaries
-# exist and runs the sound watcher as a systemd user service.
+# mako is deliberately NOT installed any more, not merely left unstarted:
+# its package ships a D-Bus activation file for org.freedesktop.Notifications
+# and the system profile is one of the session bus's service directories, so
+# any notification sent at login before Quickshell is up -- nm-applet's
+# "connection established" is the usual one -- would activate mako, and
+# mako would then hold the name for the rest of the session.
 
 { config, lib, pkgs, ... }:
 
 {
   environment.systemPackages = with pkgs; [
-    mako
     libcanberra-gtk3       # provides `canberra-gtk-play`
     sound-theme-freedesktop # standard "message-new-instant" event sound
   ];
 
   # Watches the session bus for incoming Notify calls and plays the
-  # standard freedesktop notification sound. mako reloads its colors via
-  # the existing `makoctl reload` call in the darkman 20-reload-bar hook
-  # (../../home/saeedp11/darkman-hooks/common/) — no changes needed there.
+  # standard freedesktop notification sound. It listens to the bus, not to
+  # any daemon, so it is indifferent to which server answers the call.
   systemd.user.services.notify-sound = {
     description = "Play a sound on incoming desktop notifications";
     wantedBy = [ "graphical-session.target" ];

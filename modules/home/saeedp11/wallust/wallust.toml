@@ -54,8 +54,9 @@ waybar.target = '~/.config/waybar/wallust-colors.css'
 alacritty.template = 'colors-alacritty.toml'
 alacritty.target = '~/.config/alacritty/colors.toml'
 
-mako.template = 'colors-mako.ini'
-mako.target = '~/.config/mako/wallust-colors'
+# Quickshell watches this file and recolours live; no reload signal needed.
+quickshell.template = 'colors-quickshell.json'
+quickshell.target = '~/.config/quickshell/wallust-colors.json'
 
 # fuzzel reads this via an `include` in /etc/xdg/fuzzel/fuzzel.ini, which
 # nixos-config generates (modules/nixos/desktop/theme.nix). Colors only --
