@@ -48,7 +48,7 @@ PanelSurface {
             }
             IconButton {
                 icon: Icons.lock
-                onClicked: root.run("qylock-lock")
+                onClicked: Panels.lock()
             }
             IconButton {
                 icon: Icons.power
@@ -73,6 +73,8 @@ PanelSurface {
                 tint: Theme.tone(6)
                 onToggled: Net.toggleWifi()
                 onSecondary: root.run("nm-connection-editor")
+                expandable: true
+                onExpand: Panels.toggle("network", Panels.screen)
             }
             ToggleTile {
                 Layout.fillWidth: true
@@ -85,6 +87,8 @@ PanelSurface {
                 onToggled: if (root.bt)
                     root.bt.enabled = !root.bt.enabled
                 onSecondary: root.run("blueman-manager")
+                expandable: true
+                onExpand: Panels.toggle("bluetooth", Panels.screen)
             }
             ToggleTile {
                 Layout.fillWidth: true
@@ -126,6 +130,8 @@ PanelSurface {
                 tint: Theme.tone(5)
                 onToggled: Audio.toggleMicMute()
                 onSecondary: root.run("pavucontrol", "--tab=4")
+                expandable: true
+                onExpand: Panels.toggle("sound", Panels.screen)
             }
         }
 
@@ -165,12 +171,95 @@ PanelSurface {
                     tint: Theme.tone(3)
                     onMoved: v => Brightness.set(v)
                 }
-                StyledText {
+                RowLayout {
                     Layout.fillWidth: true
                     Layout.leftMargin: 4
-                    text: Audio.sink?.description ?? ""
-                    color: Theme.textFaint
-                    font.pointSize: Theme.fontSize - 2
+                    StyledText {
+                        Layout.fillWidth: true
+                        text: Audio.sink?.description ?? ""
+                        color: Theme.textFaint
+                        font.pointSize: Theme.fontSize - 2
+                    }
+                    IconButton {
+                        icon: Icons.chevronRight
+                        size: 26
+                        tint: Theme.textDim
+                        onClicked: Panels.toggle("sound", Panels.screen)
+                    }
+                }
+            }
+        }
+
+        // Tools that do not need a tile of their own.
+        RowLayout {
+            Layout.fillWidth: true
+            spacing: 6
+
+            Repeater {
+                model: [
+                    {
+                        icon: Icons.camera,
+                        tone: 4,
+                        on: Recorder.recording,
+                        run: () => Panels.toggle("capture", Panels.screen)
+                    },
+                    {
+                        icon: Icons.eyedropper,
+                        tone: 3,
+                        on: false,
+                        run: () => root.run("sh", "-c", 'c=$(hyprpicker -a -f hex) && notify-send -a "Colour picker" "$c" "Copied to the clipboard"')
+                    },
+                    {
+                        icon: Icons.emoji,
+                        tone: 10,
+                        on: false,
+                        run: () => Panels.toggle("emoji", Panels.screen)
+                    },
+                    {
+                        icon: Icons.keyboard,
+                        tone: 7,
+                        on: Osk.shown,
+                        run: () => Osk.toggle()
+                    },
+                    {
+                        icon: Icons.grid,
+                        tone: 6,
+                        on: false,
+                        run: () => Panels.toggle("overview", Panels.screen)
+                    },
+                    {
+                        icon: Icons.terminal,
+                        tone: 5,
+                        on: false,
+                        run: () => Panels.toggle("keybinds", Panels.screen)
+                    }
+                ]
+
+                Rectangle {
+                    id: tool
+                    required property var modelData
+                    readonly property color tint: Theme.tone(modelData.tone)
+
+                    Layout.fillWidth: true
+                    implicitHeight: 42
+                    radius: Theme.radius
+                    color: modelData.on ? Theme.alpha(tint, 0.3) : toolMouse.containsMouse ? Theme.surfaceHigher : Theme.surfaceHigh
+                    border.width: 1
+                    border.color: modelData.on ? Theme.alpha(tint, 0.4) : Theme.outline
+
+                    Icon {
+                        anchors.centerIn: parent
+                        text: tool.modelData.icon
+                        color: tool.tint
+                        font.pointSize: Theme.iconSize + 2
+                    }
+                    MouseArea {
+                        id: toolMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: tool.modelData.run()
+                    }
                 }
             }
         }

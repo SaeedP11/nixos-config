@@ -6,39 +6,10 @@
 # ./services.nix.
 { pkgs, vars, ... }:
 
-let
-  # vicinae's starting configuration: a seed copied once, not a managed
-  # file. vicinae rewrites settings.json whenever anything is changed
-  # through its own GUI -- it says so in the header it writes into the file
-  # -- so a read-only store symlink would break the preferences window.
-  #
-  # The one thing in it that is not a default is the dark theme. vicinae
-  # ships its own, which is a flat grey that sits oddly next to a session
-  # whose colours all come out of the wallpaper; catppuccin-mocha is the
-  # closest of the bundled themes to what ../../home/saeedp11/wallust.nix
-  # generates for everything else. It cannot simply follow wallust the way
-  # Quickshell does, because vicinae reads its theme by name from
-  # this file rather than including a generated colour file.
-  vicinaeSettingsSeed = pkgs.writeText "vicinae-settings-seed.json" (
-    builtins.toJSON {
-      "$schema" = "https://vicinae.com/schemas/config.json";
-      theme.dark.name = "catppuccin-mocha";
-    }
-  );
-in
-
 {
   # Components of the niri session itself. Configuration for these lives in
   # Home Manager (../home/).
   environment.systemPackages = with pkgs; [
-    # The Mod+D launcher. Comes from ../../../overlays/vicinae.nix, since
-    # 25.05 has no vicinae attribute of its own.
-    #
-    # It is not a popup that starts and exits per invocation: a
-    # `vicinae server` runs for the session and the keybind toggles it, so
-    # the window appears without a cold start and the clipboard history has
-    # something to record into. The user service below is what runs it.
-    vicinae
     # The desktop shell -- bar, notifications, OSD, dock, popouts -- from
     # ../../../overlays/quickshell.nix. Its QML is
     # ../../home/saeedp11/quickshell, and the user service below runs it.
@@ -58,6 +29,28 @@ in
     # Shell's D-Bus interface and an X11 fallback that under niri would see
     # nothing but XWayland clients.
     satty
+    # The Quickshell capture panel's recorder, the control centre's colour
+    # picker and on-screen keyboard, and notify-send, which the shell uses
+    # to post its own warnings (battery, temperature, recording saved).
+    wf-recorder
+    hyprpicker
+    wvkbd
+    libnotify
+
+    # Locks through the Quickshell lock screen and returns only once niri
+    # has confirmed the lock, or fails after five seconds. That wait is the
+    # point: swayidle's before-sleep hook blocks suspend until it returns,
+    # so the screen is never shown unlocked on resume. Bound to Super+Alt+L
+    # and swayidle's before-sleep and lock hooks in the niri config.
+    (writeShellScriptBin "shell-lock" ''
+      qs=${quickshell}/bin/qs
+      $qs -c shell ipc call lock lock || exit 1
+      for _ in $(seq 50); do
+        [ "$($qs -c shell ipc call lock isLocked 2>/dev/null)" = true ] && exit 0
+        sleep 0.1
+      done
+      exit 1
+    '')
     wl-clipboard
     xdg-utils
 
@@ -159,26 +152,30 @@ in
     MOZ_ENABLE_WAYLAND = "1";
   };
 
-  # vicinae splits into a server and a thin client: `vicinae toggle`, which
-  # Mod+D runs, only talks to an already-running server and does nothing on
-  # its own. So the session needs one, and this is it.
+  # The Quickshell shell (../../home/saeedp11/quickshell.nix): bar,
+  # launcher, lock screen, polkit agent, notifications and the rest. A unit
+  # rather than a spawn-at-startup line, unlike the waybar it replaces, so
+  # that a crash restarts it instead of leaving the session with no bar, no
+  # notification server and no way to unlock (the lock re-arms itself on
+  # restart; see its Lock.qml).
   #
-  # Written out here rather than relying on a unit the package might ship,
-  # so the ordering against graphical-session.target is explicit -- the
-  # server opens a Wayland connection at startup and exits if there is no
-  # compositor to connect to yet.
-  systemd.user.services.vicinae = {
-    description = "Vicinae launcher server";
+  # NIRI_SOCKET and WAYLAND_DISPLAY arrive through the manager's
+  # environment, which niri populates before graphical-session.target is
+  # reached.
+  systemd.user.services.quickshell = {
+    description = "Quickshell desktop shell";
     wantedBy = [ "graphical-session.target" ];
     partOf = [ "graphical-session.target" ];
     after = [ "graphical-session.target" ];
 
-    # A launcher exists to start other programs, and it starts them the way
-    # their desktop entry says to: Qt execs the first word of Exec= directly,
-    # so a relative one is resolved against this service's own PATH. Almost
-    # every entry on this system has one -- `Exec=libreoffice %U`,
-    # `Exec=firefox %U` -- because that is what upstream .desktop files ship
-    # and nixpkgs rewrites only a few of them.
+    # The launcher and the dock start programs the way their desktop entry
+    # says to: Qt execs the first word of Exec= directly, so a relative one
+    # is resolved against this service's own PATH. Almost every entry on
+    # this system has one -- `Exec=libreoffice %U`, `Exec=firefox %U` --
+    # because that is what upstream .desktop files ship and nixpkgs rewrites
+    # only a few of them. The power menu, capture panel and wallpaper picker
+    # likewise run systemctl, grim, wf-recorder and set-wallpaper by bare
+    # name.
     #
     # The PATH a NixOS service gets is deliberately minimal: coreutils,
     # findutils, grep, sed and systemd, with no profile of any kind in it
@@ -197,41 +194,9 @@ in
       "/run/current-system/sw"
     ];
 
-    serviceConfig = {
-      # The leading "" clears any ExecStart= from a unit vicinae installs
-      # itself: NixOS merges this as a drop-in when the package ships one,
-      # and systemd refuses two ExecStart lines on a non-oneshot service.
-      ExecStart = [
-        ""
-        "${pkgs.vicinae}/bin/vicinae server"
-      ];
-      Restart = "on-failure";
-      RestartSec = 2;
-    };
-  };
-
-  # The Quickshell shell (../../home/saeedp11/quickshell.nix). A unit rather
-  # than a spawn-at-startup line, unlike the waybar it replaces, so that a
-  # crash restarts it instead of leaving the session with no bar and no
-  # notification server.
-  #
-  # It needs the same PATH as vicinae above, for the same reason and more
-  # of it: the dock launches desktop entries, the power menu runs
-  # systemctl and qylock-lock, and the wallpaper picker runs set-wallpaper,
-  # all by bare name. NIRI_SOCKET and WAYLAND_DISPLAY arrive through the
-  # manager's environment, which niri populates before
-  # graphical-session.target is reached.
-  systemd.user.services.quickshell = {
-    description = "Quickshell desktop shell";
-    wantedBy = [ "graphical-session.target" ];
-    partOf = [ "graphical-session.target" ];
-    after = [ "graphical-session.target" ];
-
-    path = [
-      "/run/wrappers"
-      "/etc/profiles/per-user/${vars.username}"
-      "/run/current-system/sw"
-    ];
+    # The emoji picker's data: Unicode's own list, straight from the store,
+    # since /run/current-system/sw does not link share/unicode.
+    environment.QS_EMOJI_DATA = "${pkgs.unicode-emoji}/share/unicode/emoji/emoji-test.txt";
 
     serviceConfig = {
       ExecStart = "${pkgs.quickshell}/bin/qs -c shell";
@@ -239,12 +204,4 @@ in
       RestartSec = 2;
     };
   };
-
-  # `C` copies only when the target is missing, so this is the theme a new
-  # account starts with and never a file that comes back on the next
-  # rebuild. See the note on vicinaeSettingsSeed above.
-  systemd.user.tmpfiles.rules = [
-    "d %h/.config/vicinae 0755 - - -"
-    "C %h/.config/vicinae/settings.json 0644 - - - ${vicinaeSettingsSeed}"
-  ];
 }

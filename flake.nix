@@ -6,19 +6,13 @@
 
     # Source of single packages that 25.05 carries too old to be usable here,
     # taken one attribute at a time in ./overlays rather than followed by the
-    # system as a whole: vicinae and quickshell, neither of which 25.05 carries
-    # at all.
+    # system as a whole: quickshell, which 25.05 does not carry at all.
     nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
 
     home-manager = {
       url = "github:nix-community/home-manager/release-25.05";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-
-    # Deliberately NOT following nixpkgs: qylock is built against
-    # nixos-unstable and pinning it to 25.05 breaks its Quickshell build.
-    # The cost is a second nixpkgs in flake.lock.
-    qylock.url = "github:Darkkal44/qylock";
   };
 
   outputs =

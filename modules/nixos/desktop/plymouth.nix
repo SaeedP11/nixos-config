@@ -21,8 +21,7 @@
 
 let
   # nixpkgs defaults this theme to the macchiato flavour. Mocha is the one the
-  # rest of the desktop is on -- ./niri.nix seeds vicinae with catppuccin-mocha
-  # -- and it is the darkest of the four, so the splash matches the greeter
+  # rest of the desktop is on, and it is the darkest of the four, so the splash matches the greeter
   # that follows it rather than being a lighter rectangle in front of it.
   #
   # The theme draws on #1e1e2e (mocha base) with a 204x34 throbber strip below

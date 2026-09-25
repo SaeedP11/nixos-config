@@ -333,7 +333,8 @@ spawn-at-startup "swayidle" "-w" \
     "timeout" "300" "niri msg action power-off-monitors" \
     "resume" "niri msg action power-on-monitors" \
     "timeout" "1800" "systemctl suspend" \
-    "before-sleep" "qylock-lock" \
+    "before-sleep" "shell-lock" \
+    "lock" "shell-lock" \
     "after-resume" "niri msg action power-on-monitors"
 
 // The bar, notifications, OSD and dock are Quickshell, which runs as the
@@ -592,8 +593,8 @@ binds {
     // want several of. Mod+Return is the single zellij window, and it gets
     // `--class zellij` so raise-or-run can tell it apart from those.
     Mod+Return hotkey-overlay-title="Open a Zellij session" { spawn "raise-or-run" "^zellij$" "alacritty" "--class" "zellij" "-e" "zellij"; }
-    Mod+D hotkey-overlay-title="Run an Application: vicinae" { spawn "vicinae" "toggle"; }
-    Super+Alt+L hotkey-overlay-title="Lock the Screen: qylock-lock" { spawn "qylock-lock"; }
+    Mod+D hotkey-overlay-title="Run an Application" { spawn "qs" "-c" "shell" "ipc" "call" "panel" "toggle" "launcher"; }
+    Super+Alt+L hotkey-overlay-title="Lock the Screen" { spawn "shell-lock"; }
     Mod+B hotkey-overlay-title="Open Firefox: Web browser" { spawn "raise-or-run" "firefox$" "firefox"; }
     Mod+F1 hotkey-overlay-title="Open Nekoray: V2ray graphical client" { spawn "nekoray"; }
     Mod+F2 hotkey-overlay-title="Open Telegram Desktop" { spawn "telegram-desktop"; }
@@ -617,6 +618,15 @@ binds {
     Mod+N hotkey-overlay-title="Notifications" { spawn "qs" "-c" "shell" "ipc" "call" "panel" "toggle" "notifications"; }
     Mod+X hotkey-overlay-title="Power Menu" { spawn "qs" "-c" "shell" "ipc" "call" "panel" "toggle" "power"; }
     Mod+Alt+V hotkey-overlay-title="Clipboard History" { spawn "qs" "-c" "shell" "ipc" "call" "panel" "toggle" "clipboard"; }
+    Mod+Shift+S hotkey-overlay-title="Screenshot or Record" { spawn "qs" "-c" "shell" "ipc" "call" "panel" "toggle" "capture"; }
+    Mod+Shift+O hotkey-overlay-title="Workspaces and Windows" { spawn "qs" "-c" "shell" "ipc" "call" "panel" "toggle" "overview"; }
+    Mod+Slash hotkey-overlay-title="All Keybindings" { spawn "qs" "-c" "shell" "ipc" "call" "panel" "toggle" "keybinds"; }
+    Mod+Semicolon hotkey-overlay-title="Emoji" { spawn "qs" "-c" "shell" "ipc" "call" "panel" "toggle" "emoji"; }
+    // Window switcher, most recent first. niri keeps handling these while
+    // the switcher holds the keyboard, so repeats step through it; letting
+    // go of Alt switches.
+    Alt+Tab hotkey-overlay-title="Switch Windows" { spawn "qs" "-c" "shell" "ipc" "call" "switcher" "next"; }
+    Alt+Shift+Tab hotkey-overlay-title=null { spawn "qs" "-c" "shell" "ipc" "call" "switcher" "prev"; }
     Mod+Shift+D hotkey-overlay-title="Toggle Dark/Light Theme" { spawn "darkman" "toggle"; }
     // Use spawn-sh to run a shell command. Do this if you need pipes, multiple commands, etc.
     // Note: the entire command goes as a single argument. It's passed verbatim to `sh -c`.

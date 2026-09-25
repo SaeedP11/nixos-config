@@ -155,6 +155,18 @@ PanelWindow {
             anchors.top: parent.top
             spacing: 6
 
+            // Only while wf-recorder runs; click stops it.
+            Group {
+                visible: Recorder.recording
+                Chip {
+                    icon: Icons.record
+                    text: Math.floor(Recorder.elapsed / 60) + ":" + String(Recorder.elapsed % 60).padStart(2, "0")
+                    tint: Theme.critical
+                    active: true
+                    onClicked: Recorder.stop()
+                }
+            }
+
             Group {
                 Chip {
                     icon: Darkman.dark ? Icons.moon : Icons.sun
@@ -187,6 +199,14 @@ PanelWindow {
                     text: Net.wifiNetwork && !Net.wired ? Math.round(Net.signal * 100) + "%" : ""
                     tint: Theme.tone(6)
                     onClicked: m => m.button === Qt.RightButton ? bar.run("nm-connection-editor") : bar.open("control")
+                }
+                // nekoray's tunnel. Lit while it is up; click raises nekoray.
+                Chip {
+                    icon: Icons.vpn
+                    text: Vpn.up ? "VPN" : ""
+                    tint: Vpn.up ? Theme.tone(2) : Theme.textFaint
+                    active: Vpn.up
+                    onClicked: Vpn.open()
                 }
                 Chip {
                     visible: bar.btAdapter !== null

@@ -19,4 +19,18 @@ Singleton {
     readonly property int osdTimeout: 1400
     readonly property int notificationTimeout: 6000
     readonly property string terminal: "alacritty"
+
+    // sing-box's tun, created by nekoray's VPN mode; the bar's VPN chip is
+    // lit while it exists. The same name hotspot-share.nix routes into.
+    readonly property string vpnInterface: "nekoray-tun"
+
+    // Where the capture panel saves. Screenshots match the Shift+Print
+    // satty bind in niri/config.kdl.
+    readonly property string screenshotDir: Quickshell.env("HOME") + "/Pictures/Screenshots"
+    readonly property string recordingDir: Quickshell.env("HOME") + "/Videos/Recordings"
+
+    // Battery percentages that raise a notification while discharging, and
+    // the CPU temperature (°C) that raises one until it drops 10° below.
+    readonly property var batteryWarnings: [20, 10, 5]
+    readonly property int tempWarning: 90
 }

@@ -3,7 +3,8 @@
 // A click anywhere outside the panel closes it, except on the bar strip,
 // which the input mask leaves to the bar underneath so that clicking a
 // different module switches panels in one click instead of two. The
-// centred, modal panels (power, clipboard, wallpaper) take the whole
+// centred, modal panels (power, clipboard, wallpaper, launcher, switcher,
+// overview, capture, keybinds, emoji) take the whole
 // screen and dim it instead.
 import QtQuick
 import Quickshell
@@ -52,6 +53,42 @@ PanelWindow {
             wallpaper: {
                 align: "modal",
                 comp: wallpaper
+            },
+            launcher: {
+                align: "modal",
+                comp: launcher
+            },
+            switcher: {
+                align: "modal",
+                comp: switcher
+            },
+            overview: {
+                align: "modal",
+                comp: overview
+            },
+            capture: {
+                align: "modal",
+                comp: capture
+            },
+            keybinds: {
+                align: "modal",
+                comp: keybinds
+            },
+            emoji: {
+                align: "modal",
+                comp: emoji
+            },
+            network: {
+                align: "right",
+                comp: network
+            },
+            bluetooth: {
+                align: "right",
+                comp: bluetooth
+            },
+            sound: {
+                align: "right",
+                comp: sound
             }
         })[Panels.open] ?? null
     readonly property bool modal: spec?.align === "modal"
@@ -199,5 +236,43 @@ PanelWindow {
         WallpaperPanel {
             availableWidth: popout.modelData.width - 160
         }
+    }
+    Component {
+        id: launcher
+        Launcher {}
+    }
+    Component {
+        id: switcher
+        WindowSwitcher {}
+    }
+    Component {
+        id: overview
+        Overview {
+            availableWidth: popout.modelData.width - 120
+        }
+    }
+    Component {
+        id: capture
+        CapturePanel {}
+    }
+    Component {
+        id: keybinds
+        KeybindsPanel {}
+    }
+    Component {
+        id: emoji
+        EmojiPanel {}
+    }
+    Component {
+        id: network
+        NetworkPanel {}
+    }
+    Component {
+        id: bluetooth
+        BluetoothPanel {}
+    }
+    Component {
+        id: sound
+        SoundPanel {}
     }
 }

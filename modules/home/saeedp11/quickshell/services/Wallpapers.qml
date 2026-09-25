@@ -23,6 +23,10 @@ Singleton {
         current = path;
         Quickshell.execDetached(["set-wallpaper", path]);
     }
+    // Only the current image, for the lock screen, without the library.
+    function queryCurrent() {
+        query.running = true;
+    }
     function random() {
         Quickshell.execDetached(["randomWallpaper"]);
         settle.restart();

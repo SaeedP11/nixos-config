@@ -94,15 +94,18 @@
 #     brightnessctl, which that module installs along with its udev rules.
 #   * ../../nixos/desktop/idle.nix -- the swayidle timers are the
 #     spawn-at-startup line there, not a systemd unit.
-#   * ../../nixos/desktop/niri.nix (again) -- the Mod+A/N/X, Mod+Alt+V,
-#     Mod+Shift+B and XF86Audio{Play,Prev,Next,Stop} binds call `qs -c shell`,
+#   * ../../nixos/desktop/niri.nix (again) -- the Mod+D, Mod+A/N/X,
+#     Mod+Alt+V, Mod+Shift+{B,S,O}, Mod+Slash, Mod+Semicolon, Alt+Tab and
+#     XF86Audio{Play,Prev,Next,Stop} binds call `qs -c shell`,
 #     the Quickshell shell whose package and user service that module holds
 #     and whose config is ./quickshell.nix.
 #   * ../../nixos/desktop/theme.nix -- swww-daemon is started there, and the
 #     Mod+Shift+{W,B} binds call the wallpaper-tools scripts that module
 #     installs.
-#   * ../../nixos/desktop/lockscreen.nix -- Super+Alt+L and swayidle's
-#     before-sleep both call qylock-lock.
+#   * ../../nixos/desktop/niri.nix (again) -- Super+Alt+L and swayidle's
+#     before-sleep and lock hooks call `shell-lock`, which that module
+#     defines; the PAM service the lock screen checks passwords against is
+#     ../../nixos/desktop/lockscreen.nix.
 #   * ../../nixos/desktop/niri.nix -- the Mod+B, Mod+E, Mod+Return and Mod+F4
 #     app binds go through raise-or-run, which that module installs; it is
 #     also where alacritty itself comes from.

@@ -16,6 +16,8 @@ Singleton {
     property var windows: ({})
     property var focusedWindowId: null
     property bool overviewOpen: false
+    // Window ids, most recently focused first, for the Alt+Tab switcher.
+    property var recent: []
 
     readonly property var focusedWindow: focusedWindowId !== null ? (windows[focusedWindowId] ?? null) : null
     readonly property string focusedOutput: {
@@ -38,6 +40,16 @@ Singleton {
     }
     function windowList() {
         return Object.values(windows);
+    }
+    function recentWindows() {
+        const seen = recent.filter(id => windows[id]);
+        const rest = Object.keys(windows).map(Number).filter(id => !seen.includes(id));
+        return [...seen, ...rest].map(id => windows[id]);
+    }
+    function touch(id) {
+        if (id === null || id === undefined)
+            return;
+        recent = [id, ...recent.filter(r => r !== id)];
     }
 
     function action(...args) {
@@ -115,14 +127,17 @@ Singleton {
                         focusedWindowId = w.id;
                 }
                 windows = m;
+                touch(focusedWindowId);
                 break;
             }
         case "WindowOpenedOrChanged":
             {
                 const m = Object.assign({}, windows);
                 m[d.window.id] = d.window;
-                if (d.window.is_focused)
+                if (d.window.is_focused) {
                     focusedWindowId = d.window.id;
+                    touch(d.window.id);
+                }
                 windows = m;
                 break;
             }
@@ -133,10 +148,12 @@ Singleton {
                 windows = m;
                 if (focusedWindowId === d.id)
                     focusedWindowId = null;
+                recent = recent.filter(r => r !== d.id);
                 break;
             }
         case "WindowFocusChanged":
             focusedWindowId = d.id;
+            touch(d.id);
             break;
         case "OverviewOpenedOrClosed":
             overviewOpen = d.is_open;

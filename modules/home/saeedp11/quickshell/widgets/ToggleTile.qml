@@ -1,5 +1,6 @@
 // Quick-settings tile. Left click toggles, right click opens `secondary`
-// (the full settings app) when one is given.
+// (the full settings app) when one is given, and the arrow shown when
+// `expandable` is set opens the detail panel through `expand`.
 import QtQuick
 import QtQuick.Layouts
 import qs.config
@@ -12,9 +13,11 @@ Rectangle {
     property string subtitle: ""
     property bool checked: false
     property color tint: Theme.accent
+    property bool expandable: false
 
     signal toggled
     signal secondary
+    signal expand
 
     implicitHeight: 58
     radius: Theme.radius
@@ -37,7 +40,7 @@ Rectangle {
     RowLayout {
         anchors.fill: parent
         anchors.leftMargin: 12
-        anchors.rightMargin: 12
+        anchors.rightMargin: root.expandable ? 38 : 12
         spacing: 10
 
         Rectangle {
@@ -81,5 +84,16 @@ Rectangle {
         acceptedButtons: Qt.LeftButton | Qt.RightButton
         cursorShape: Qt.PointingHandCursor
         onClicked: m => m.button === Qt.RightButton ? root.secondary() : root.toggled()
+    }
+
+    IconButton {
+        anchors.right: parent.right
+        anchors.rightMargin: 6
+        anchors.verticalCenter: parent.verticalCenter
+        visible: root.expandable
+        icon: Icons.chevronRight
+        size: 30
+        tint: root.checked ? root.tint : Theme.textDim
+        onClicked: root.expand()
     }
 }

@@ -31,10 +31,7 @@
     # Custom packages from ../../../pkgs, reachable as ordinary pkgs.* attrs.
     (import ../../../overlays)
 
-    # vicinae from nixos-unstable, which is the only place it exists.
-    (import ../../../overlays/vicinae.nix { inherit inputs; })
-
-    # quickshell from nixos-unstable, for the same reason as vicinae.
+    # quickshell from nixos-unstable, which is the only place it exists.
     (import ../../../overlays/quickshell.nix { inherit inputs; })
   ];
 }

@@ -17,7 +17,7 @@ PanelSurface {
             label: "Lock",
             icon: Icons.lock,
             tone: 4,
-            cmd: ["qylock-lock"]
+            cmd: null
         },
         {
             key: Qt.Key_S,
@@ -51,7 +51,11 @@ PanelSurface {
 
     function trigger(i) {
         Panels.close();
-        Quickshell.execDetached(actions[i].cmd);
+        // Lock is the shell's own (modules/lock), not a command.
+        if (actions[i].cmd)
+            Quickshell.execDetached(actions[i].cmd);
+        else
+            Panels.lock();
     }
 
     focus: true

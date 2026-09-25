@@ -16,8 +16,19 @@ import qs.modules.notifications
 import qs.modules.osd
 import qs.modules.dock
 import qs.modules.desktop
+import qs.modules.lock
+import qs.modules.polkit
 
 ShellRoot {
+    // Singletons are created on first use; this one only watches, so it
+    // is touched here to start it.
+    Component.onCompleted: Warnings.checkBattery()
+
+    Lock {
+        id: lockScreen
+    }
+    PolkitDialog {}
+
     Variants {
         model: Quickshell.screens
         Bar {}
@@ -38,7 +49,9 @@ ShellRoot {
     Osd {}
 
     // `qs -c shell ipc call panel toggle control`. Panels: control,
-    // notifications, calendar, media, sysmon, power, clipboard, wallpaper.
+    // notifications, calendar, persian, media, sysmon, power, clipboard,
+    // wallpaper, launcher, overview, capture, keybinds, emoji, network,
+    // bluetooth, sound.
     IpcHandler {
         target: "panel"
         function toggle(name: string): void {
@@ -46,6 +59,43 @@ ShellRoot {
         }
         function close(): void {
             Panels.close();
+        }
+    }
+    // `lock` returns at once; `isLocked` is true only once niri has
+    // confirmed the lock, which is what `shell-lock` waits for.
+    IpcHandler {
+        target: "lock"
+        function lock(): void {
+            lockScreen.lock();
+        }
+        function isLocked(): bool {
+            return lockScreen.secure;
+        }
+    }
+    // Alt+Tab and Alt+Shift+Tab.
+    IpcHandler {
+        target: "switcher"
+        function next(): void {
+            Panels.cycle(1);
+        }
+        function prev(): void {
+            Panels.cycle(-1);
+        }
+    }
+    IpcHandler {
+        target: "recorder"
+        // `region` is a slurp geometry, or "" for the focused output.
+        function start(region: string, audio: bool): void {
+            Recorder.start(region, audio);
+        }
+        function stop(): void {
+            Recorder.stop();
+        }
+        function toggle(): void {
+            if (Recorder.recording)
+                Recorder.stop();
+            else
+                Recorder.start("", false);
         }
     }
     IpcHandler {

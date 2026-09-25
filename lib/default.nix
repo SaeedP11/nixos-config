@@ -53,8 +53,6 @@ in
             users.${vars.username} = import ../modules/home/saeedp11;
           };
         }
-
-        inputs.qylock.nixosModules.default
       ];
     };
 }

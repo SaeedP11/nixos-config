@@ -75,7 +75,6 @@ those files now.
 | `~/.config/mimeapps.list` | `xdg.nix` |
 | `~/.config/git/config` | `git.nix` |
 | `~/.config/Code/User/{settings.json,keybindings.json}` | `vscode.nix` — and the extensions nixpkgs carries |
-| `~/.config/vicinae/settings.json` | `desktop/niri.nix` — seeded once, then vicinae's |
 
 Intentionally left unmanaged, because something rewrites them at runtime and
 a read-only store symlink would break it:
@@ -147,9 +146,6 @@ hostapd refuses to start without it, which is the point.
 
 ## Notes
 
-- `qylock` deliberately does **not** follow this flake's nixpkgs: it is built
-  against nixos-unstable and pinning it to 25.05 breaks its Quickshell build.
-  The cost is a second nixpkgs in `flake.lock`.
 - `hosts/shared/hardware-configuration.nix` is shared by both machines. That
   only works because both label their partitions `NIXROOT`/`NIXBOOT`. Split it
   per host (step 1 above) when convenient.
