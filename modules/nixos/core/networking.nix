@@ -87,4 +87,30 @@
     precedence fec0::/10     1
     precedence 3ffe::/16     1
   '';
+
+  # Let Docker container traffic past the reverse path filter while
+  # nekoray's VPN is up.
+  #
+  # sing-box's auto_redirect chains mark forwarded packets 0x2023 so they
+  # route through table 2022, and the firewall's rpfilter test,
+  #
+  #     fib saddr . mark . iif oif exists accept
+  #
+  # resolves the source in the table the mark selects. Table 2022 holds only
+  # the tunnel's default route, so a container's address on docker0 or a
+  # compose bridge resolves to nekoray-tun rather than the bridge it came in
+  # on, and every packet is dropped. ../services/vpn-share.nix dodges the
+  # same test by ordering its own mark after rpfilter; sing-box's mark is
+  # not ours to order.
+  #
+  # Repeating the lookup without the mark checks the source against the
+  # main table, where the bridge networks are connected routes, so spoofed
+  # sources are still dropped. The rules are appended to rpfilter-allow,
+  # which the rpfilter chain jumps to before its drop. Two rules rather than
+  # one set, since a wildcard name in an anonymous set needs a newer
+  # nftables than a plain wildcard match.
+  networking.firewall.extraReversePathFilterRules = ''
+    iifname "docker0" fib saddr . iif oif exists accept comment "docker bridge, ignoring sing-box's mark"
+    iifname "br-*" fib saddr . iif oif exists accept comment "docker compose bridges, ignoring sing-box's mark"
+  '';
 }
