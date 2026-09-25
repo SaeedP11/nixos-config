@@ -16,7 +16,7 @@
 # bind can handle (see below). It is not a notification daemon and does not
 # compete with Quickshell's.
 
-{ config, lib, pkgs, ... }:
+{ pkgs, ... }:
 
 {
   environment.systemPackages = [

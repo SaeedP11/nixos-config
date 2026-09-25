@@ -10,11 +10,11 @@
 # "connection established" is the usual one -- would activate mako, and
 # mako would then hold the name for the rest of the session.
 
-{ config, lib, pkgs, ... }:
+{ pkgs, ... }:
 
 {
   environment.systemPackages = with pkgs; [
-    libcanberra-gtk3       # provides `canberra-gtk-play`
+    libcanberra-gtk3 # provides `canberra-gtk-play`
     sound-theme-freedesktop # standard "message-new-instant" event sound
   ];
 
@@ -41,7 +41,12 @@
     description = "Play a sound on incoming desktop notifications";
     wantedBy = [ "graphical-session.target" ];
     partOf = [ "graphical-session.target" ];
-    path = with pkgs; [ dbus libcanberra-gtk3 gnugrep bash ];
+    path = with pkgs; [
+      dbus
+      libcanberra-gtk3
+      gnugrep
+      bash
+    ];
     serviceConfig = {
       ExecStart = pkgs.writeShellScript "notify-sound-watch" ''
         dbus-monitor --session "interface='org.freedesktop.Notifications',member='Notify',type='method_call'" |

@@ -2,8 +2,7 @@
 { config, ... }:
 
 {
-  hardware.cpu.intel.updateMicrocode =
-    config.hardware.enableRedistributableFirmware;
+  hardware.cpu.intel.updateMicrocode = config.hardware.enableRedistributableFirmware;
 
   boot.kernelModules = [ "kvm-intel" ];
 }

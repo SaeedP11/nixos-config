@@ -18,7 +18,7 @@
 # dark-mode.d/light-mode.d hook scripts — are managed by Home Manager in
 # ../../home/saeedp11/darkman.nix. They used to have to be placed by hand.
 
-{ config, lib, pkgs, vars, ... }:
+{ pkgs, ... }:
 
 {
   environment.systemPackages = with pkgs; [
@@ -56,14 +56,23 @@
     # shebang, glib for `gsettings`, niri for `niri msg`, wallust, and
     # procps for `pkill`. Belt-and-suspenders on top of the usual
     # /run/current-system/sw/bin NixOS already puts on the PATH.
-    path = with pkgs; [ bash glib niri wallust procps ];
+    path = with pkgs; [
+      bash
+      glib
+      niri
+      wallust
+      procps
+    ];
     serviceConfig = {
       # darkman ships its own systemd user unit (that's why NixOS merges our
       # config here as a drop-in on top of it, rather than a fresh unit).
       # The leading "" clears the ExecStart= it already sets, otherwise we
       # end up with two ExecStart lines, which systemd refuses for anything
       # other than Type=oneshot ("has more than one ExecStart= setting").
-      ExecStart = [ "" "${pkgs.darkman}/bin/darkman run" ];
+      ExecStart = [
+        ""
+        "${pkgs.darkman}/bin/darkman run"
+      ];
       Restart = "on-failure";
       RestartSec = 2;
     };
@@ -81,7 +90,11 @@
     wantedBy = [ "graphical-session.target" ];
     partOf = [ "graphical-session.target" ];
     # imagemagick for `magick`, the rest for find/xargs/nproc/mkdir.
-    path = with pkgs; [ imagemagick findutils coreutils ];
+    path = with pkgs; [
+      imagemagick
+      findutils
+      coreutils
+    ];
     serviceConfig = {
       Type = "oneshot";
       ExecStart = "${pkgs.wallpaper-tools}/bin/wallpaper-thumbs sync";

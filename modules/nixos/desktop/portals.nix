@@ -19,7 +19,10 @@
 
 let
   preferred = {
-    default = [ "wlr" "gtk" ];
+    default = [
+      "wlr"
+      "gtk"
+    ];
     # Route the appearance/color-scheme portion of the Settings interface
     # through darkman (./theme.nix) so GTK4/libadwaita, Firefox, and
     # portal-aware Electron apps follow dark/light live.

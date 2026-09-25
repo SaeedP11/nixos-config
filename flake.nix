@@ -22,12 +22,20 @@
   };
 
   outputs =
-    inputs@{ self, nixpkgs, ... }:
+    inputs@{ nixpkgs, ... }:
     let
       inherit (import ./lib { inherit inputs; }) mkHost;
 
       forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" ];
-      pkgsFor = system: nixpkgs.legacyPackages.${system};
+      # Same unfree policy as the hosts (modules/nixos/core/nix.nix), so the
+      # `packages` output -- xboxdownload is unfree -- evaluates under
+      # `nix flake check` and `nix build .#<name>`.
+      pkgsFor =
+        system:
+        import nixpkgs {
+          inherit system;
+          config.allowUnfree = true;
+        };
     in
     {
       nixosConfigurations = {

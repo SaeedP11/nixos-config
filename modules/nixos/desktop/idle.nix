@@ -9,7 +9,7 @@
 # so there's exactly one thing driving suspend-on-idle, not two competing
 # timers.
 
-{ config, lib, pkgs, ... }:
+{ pkgs, ... }:
 
 {
   environment.systemPackages = [ pkgs.swayidle ];

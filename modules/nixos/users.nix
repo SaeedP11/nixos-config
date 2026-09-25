@@ -10,9 +10,21 @@
     isNormalUser = true;
     description = "Saeed P11";
     extraGroups = [
-      "wheel" "docker" "input" "video" "audio" "network" "netdev"
-      "tty" "disk" "plugdev" "pipewire" "bluetooth" "networkmanager"
-      "storage" "seat"
+      "wheel"
+      "docker"
+      "input"
+      "video"
+      "audio"
+      "network"
+      "netdev"
+      "tty"
+      "disk"
+      "plugdev"
+      "pipewire"
+      "bluetooth"
+      "networkmanager"
+      "storage"
+      "seat"
     ];
     shell = pkgs.fish;
 
@@ -45,13 +57,11 @@
     #
     # and place that file by hand before the first boot, or bring in
     # sops-nix/agenix.
-    initialHashedPassword =
-      "$6$oS0sU89fKMFC0Pum$EgAUACT2d7JpHw49h5NyMRXrc7ftfapc3vPW/01dvbTP/2RnvaoBS5ieQF3NNPE3MxoT2Ab0C4PPdJWRrC801.";
+    initialHashedPassword = "$6$oS0sU89fKMFC0Pum$EgAUACT2d7JpHw49h5NyMRXrc7ftfapc3vPW/01dvbTP/2RnvaoBS5ieQF3NNPE3MxoT2Ab0C4PPdJWRrC801.";
   };
 
   # Same reasoning for root, which is otherwise left with no password at all
   # and so cannot be used for recovery from a console. wheel + sudo is the
   # normal path in; this is the way back when that account is the broken one.
-  users.users.root.initialHashedPassword =
-    "$6$oS0sU89fKMFC0Pum$EgAUACT2d7JpHw49h5NyMRXrc7ftfapc3vPW/01dvbTP/2RnvaoBS5ieQF3NNPE3MxoT2Ab0C4PPdJWRrC801.";
+  users.users.root.initialHashedPassword = "$6$oS0sU89fKMFC0Pum$EgAUACT2d7JpHw49h5NyMRXrc7ftfapc3vPW/01dvbTP/2RnvaoBS5ieQF3NNPE3MxoT2Ab0C4PPdJWRrC801.";
 }

@@ -201,7 +201,10 @@ in
       # The leading "" clears any ExecStart= from a unit vicinae installs
       # itself: NixOS merges this as a drop-in when the package ships one,
       # and systemd refuses two ExecStart lines on a non-oneshot service.
-      ExecStart = [ "" "${pkgs.vicinae}/bin/vicinae server" ];
+      ExecStart = [
+        ""
+        "${pkgs.vicinae}/bin/vicinae server"
+      ];
       Restart = "on-failure";
       RestartSec = 2;
     };

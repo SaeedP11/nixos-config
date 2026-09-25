@@ -1,6 +1,6 @@
 # Font packages and default font mapping (monospace/sans/serif/emoji).
 
-{ config, lib, pkgs, ... }:
+{ lib, pkgs, ... }:
 
 let
   # The B series -- B Nazanin, B Titr, B Lotus and the rest -- is what Persian
@@ -58,16 +58,15 @@ let
     "Zeytoon"
   ];
 
-  bSeriesAliases =
-    {
-      # Traffic and Yagut are spelled as they are pronounced in the IR set.
-      # "B Yaghut" is listed too: both romanisations show up in real documents.
-      "B Traffic" = "IRTerafik";
-      "B Yagut" = "IRYakout";
-      "B Yaghut" = "IRYakout";
-      "B Dast Nevis" = "IRDast Nevis";
-    }
-    // lib.listToAttrs (map (n: lib.nameValuePair "B ${n}" "IR${n}") irFamilies);
+  bSeriesAliases = {
+    # Traffic and Yagut are spelled as they are pronounced in the IR set.
+    # "B Yaghut" is listed too: both romanisations show up in real documents.
+    "B Traffic" = "IRTerafik";
+    "B Yagut" = "IRYakout";
+    "B Yaghut" = "IRYakout";
+    "B Dast Nevis" = "IRDast Nevis";
+  }
+  // lib.listToAttrs (map (n: lib.nameValuePair "B ${n}" "IR${n}") irFamilies);
 
   # binding="same" keeps the alias from outranking a real "B Nazanin" should
   # the licensed file ever be installed into ~/.local/share/fonts by hand.
@@ -104,9 +103,15 @@ in
       enable = true;
       defaultFonts = {
         monospace = [ "JetBrains Mono" ];
-        sansSerif = [ "Ubuntu" "Vazirmatn" ];
+        sansSerif = [
+          "Ubuntu"
+          "Vazirmatn"
+        ];
         serif = [ "Ubuntu" ];
-        emoji = [ "Font Awesome 6" "Noto Color Emoji" ];
+        emoji = [
+          "Font Awesome 6"
+          "Noto Color Emoji"
+        ];
       };
       localConf = ''
         <?xml version="1.0"?>

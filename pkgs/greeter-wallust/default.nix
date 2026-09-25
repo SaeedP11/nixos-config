@@ -10,7 +10,6 @@
 # The greeter falls back to the seed palette and background below when a
 # file is missing, so it is correct before this has ever run.
 {
-  lib,
   runCommand,
   writeText,
   writeShellScriptBin,

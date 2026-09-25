@@ -18,7 +18,12 @@
 #
 # Recovery: greetd takes only tty1. The other VTs keep their getty, so if the
 # greeter ever fails to come up, Ctrl+Alt+F2 still gives a text login.
-{ config, pkgs, vars, ... }:
+{
+  config,
+  pkgs,
+  vars,
+  ...
+}:
 
 let
   theme = pkgs.greeter-wallust;
