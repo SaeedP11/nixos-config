@@ -12,6 +12,7 @@ PanelSurface {
     id: root
 
     required property int availableWidth
+    required property int availableHeight
     readonly property var outputs: [...new Set(Niri.workspaces.map(w => w.output))].sort()
 
     function go(win) {
@@ -23,7 +24,7 @@ PanelSurface {
 
     Flickable {
         width: Math.min(root.availableWidth, grid.implicitWidth)
-        height: Math.min(grid.implicitHeight, 720)
+        height: Math.min(grid.implicitHeight, 720, root.availableHeight - 2 * root.pad)
         contentWidth: grid.implicitWidth
         contentHeight: grid.implicitHeight
         clip: true

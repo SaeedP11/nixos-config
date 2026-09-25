@@ -9,6 +9,7 @@ import qs.widgets
 PanelSurface {
     id: root
 
+    required property int availableHeight
     readonly property var shown: {
         const q = search.text.toLowerCase();
         return q ? Clipboard.entries.filter(e => !e.isImage && e.preview.toLowerCase().includes(q)) : Clipboard.entries;
@@ -65,7 +66,8 @@ PanelSurface {
         ListView {
             id: list
             Layout.fillWidth: true
-            Layout.preferredHeight: 460
+            // Less the header, the search field and the padding around them.
+            Layout.preferredHeight: Math.min(460, root.availableHeight - 140)
             clip: true
             spacing: 4
             model: root.shown

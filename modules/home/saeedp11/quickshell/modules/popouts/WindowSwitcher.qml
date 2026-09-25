@@ -14,6 +14,7 @@ import qs.widgets
 PanelSurface {
     id: root
 
+    required property int availableWidth
     readonly property var windows: Panels.switcherWindows
     readonly property int current: windows.length ? ((Panels.switcherIndex % windows.length) + windows.length) % windows.length : 0
 
@@ -56,7 +57,7 @@ PanelSurface {
 
         ListView {
             id: strip
-            Layout.preferredWidth: Math.min(contentWidth, 5 * 264)
+            Layout.preferredWidth: Math.min(contentWidth, 5 * 264, root.availableWidth - 2 * root.pad)
             Layout.preferredHeight: 166
             visible: root.windows.length > 0
             orientation: ListView.Horizontal

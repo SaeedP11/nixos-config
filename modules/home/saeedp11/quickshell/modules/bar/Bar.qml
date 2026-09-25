@@ -51,7 +51,34 @@ PanelWindow {
     readonly property var btAdapter: Bluetooth.defaultAdapter
     readonly property bool btConnected: Bluetooth.devices.values.some(d => d.connected)
 
+    // Nothing in the bar shrinks by itself and its three rows are placed
+    // independently, so on a narrow output they ran into each other -- at
+    // 1920px already, once a long window title met the date. Below
+    // `compact` the Gregorian date chip goes (the clock opens the calendar)
+    // and the media title is cut shorter; below `narrow` (a portrait 1080p
+    // monitor, a 1366px laptop) the Persian date and the labels of the
+    // media, audio, network and VPN chips go too. The left row then fits
+    // itself into whatever is left; see `body`.
+    readonly property bool compact: width < 1760
+    readonly property bool narrow: width < 1440
+
     Item {
+        id: body
+
+        // Clear space kept between the three rows.
+        readonly property int rowGap: 12
+
+        // What the left row may take after the workspaces: everything short
+        // of the centre row. The pieces are measured by implicitWidth, which
+        // does not change when a piece is hidden, so hiding one never feeds
+        // back into the decision to hide it. The CPU and memory chips come
+        // before the title; the disk chip only while the title keeps 200px.
+        readonly property real leftRoom: centre.x - rowGap - workspaces.implicitWidth - 6
+        readonly property real statsWidth: cpuChip.implicitWidth + memChip.implicitWidth + 4 + 2 * stats.pad
+        readonly property bool showStats: leftRoom >= statsWidth
+        readonly property bool showDisk: leftRoom - statsWidth - diskChip.implicitWidth - 4 >= 200 + 6
+        readonly property real titleRoom: leftRoom - (showStats ? stats.implicitWidth + 6 : 0) - 2 * titleGroup.pad
+
         anchors.fill: parent
         anchors.topMargin: Theme.barGap
         anchors.leftMargin: Theme.barInset
@@ -64,22 +91,28 @@ PanelWindow {
             spacing: 6
 
             Group {
+                id: workspaces
                 Workspaces {
                     output: bar.output
                 }
             }
 
             Group {
-                visible: title.text !== ""
+                id: titleGroup
+                visible: title.text !== "" && body.titleRoom >= 60
                 WindowTitle {
                     id: title
                     output: bar.output
+                    maxWidth: body.titleRoom
                     anchors.verticalCenter: parent.verticalCenter
                 }
             }
 
             Group {
+                id: stats
+                visible: body.showStats
                 Chip {
+                    id: cpuChip
                     icon: Icons.cpu
                     text: String(Math.round(SysStats.cpu * 100)).padStart(2, "0") + "%"
                     tint: Theme.tone(0)
@@ -87,12 +120,15 @@ PanelWindow {
                     onClicked: m => m.button === Qt.RightButton ? bar.run(Config.terminal, "-e", "btm") : bar.open("sysmon")
                 }
                 Chip {
+                    id: memChip
                     icon: Icons.memory
                     text: String(Math.round(SysStats.memFraction * 100)).padStart(2, "0") + "%"
                     tint: Theme.tone(1)
                     onClicked: m => m.button === Qt.RightButton ? bar.run("gnome-system-monitor") : bar.open("sysmon")
                 }
                 Chip {
+                    id: diskChip
+                    visible: body.showDisk
                     icon: Icons.disk
                     text: SysStats.human(SysStats.diskUsed) + " / " + SysStats.human(SysStats.diskTotal)
                     tint: Theme.tone(2)
@@ -102,8 +138,11 @@ PanelWindow {
         }
 
         // ---- centre -----------------------------------------------------
+        // Centred, unless that would run it into the right row; then it
+        // moves left and the left row gives way.
         Row {
-            anchors.horizontalCenter: parent.horizontalCenter
+            id: centre
+            x: Math.max(0, Math.min((parent.width - width) / 2, rightRow.x - body.rowGap - width))
             anchors.top: parent.top
             spacing: 6
 
@@ -114,6 +153,7 @@ PanelWindow {
 
             Group {
                 Chip {
+                    visible: !bar.compact
                     icon: Icons.calendar
                     text: Qt.formatDateTime(clock.date, "yyyy MMM dd ddd")
                     tint: Theme.tone(3)
@@ -121,6 +161,7 @@ PanelWindow {
                     onClicked: m => m.button === Qt.RightButton ? bar.run("gnome-calendar") : bar.open("calendar")
                 }
                 Chip {
+                    visible: !bar.narrow
                     text: Jalali.format(clock.date)
                     fontFamily: Theme.persianFont
                     tint: Theme.tone(3)
@@ -139,8 +180,8 @@ PanelWindow {
                 visible: Media.active
                 Chip {
                     icon: Media.player?.isPlaying ? Icons.music : Icons.pause
-                    text: [Media.player?.trackTitle, Media.player?.trackArtist].filter(s => s).join(" — ")
-                    maxTextWidth: 260
+                    text: bar.narrow ? "" : [Media.player?.trackTitle, Media.player?.trackArtist].filter(s => s).join(" — ")
+                    maxTextWidth: bar.compact ? 160 : 260
                     tint: Theme.tone(5)
                     active: Panels.open === "media" && Panels.screen === bar.output
                     onClicked: m => m.button === Qt.MiddleButton ? Media.playPause() : bar.open("media")
@@ -151,6 +192,7 @@ PanelWindow {
 
         // ---- right ------------------------------------------------------
         Row {
+            id: rightRow
             anchors.right: parent.right
             anchors.top: parent.top
             spacing: 6
@@ -188,7 +230,7 @@ PanelWindow {
             Group {
                 Chip {
                     icon: Audio.icon
-                    text: Audio.muted ? "" : Math.round(Audio.volume * 100) + "%"
+                    text: Audio.muted || bar.narrow ? "" : Math.round(Audio.volume * 100) + "%"
                     tint: Theme.tone(5)
                     active: Panels.open === "control" && Panels.screen === bar.output
                     onClicked: m => m.button === Qt.RightButton ? bar.run("pavucontrol") : m.button === Qt.MiddleButton ? Audio.toggleMute() : bar.open("control")
@@ -196,14 +238,14 @@ PanelWindow {
                 }
                 Chip {
                     icon: Net.icon
-                    text: Net.wifiNetwork && !Net.wired ? Math.round(Net.signal * 100) + "%" : ""
+                    text: Net.wifiNetwork && !Net.wired && !bar.narrow ? Math.round(Net.signal * 100) + "%" : ""
                     tint: Theme.tone(6)
                     onClicked: m => m.button === Qt.RightButton ? bar.run("nm-connection-editor") : bar.open("control")
                 }
                 // nekoray's tunnel. Lit while it is up; click raises nekoray.
                 Chip {
                     icon: Icons.vpn
-                    text: Vpn.up ? "VPN" : ""
+                    text: Vpn.up && !bar.narrow ? "VPN" : ""
                     tint: Vpn.up ? Theme.tone(2) : Theme.textFaint
                     active: Vpn.up
                     onClicked: Vpn.open()

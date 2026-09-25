@@ -10,11 +10,13 @@ StyledText {
     id: root
 
     required property string output
+    // Set by the bar from the room left before its centre row.
+    property real maxWidth: 380
 
     readonly property var rewrites: [[/ [—-] Mozilla Firefox$/, ""], [/ - Visual Studio Code$/, ""], [/ - Insomnia$/, ""], [/^\[Admin\].*Nekoray.*/, "Nekoray"]]
 
     text: rewrites.reduce((t, [re, to]) => t.replace(re, to), Niri.titleOn(output))
-    width: Math.min(implicitWidth, 380)
+    width: Math.max(0, Math.min(implicitWidth, 380, maxWidth))
     leftPadding: 10
     rightPadding: 10
     font.weight: Font.Medium

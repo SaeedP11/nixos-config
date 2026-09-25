@@ -13,6 +13,7 @@ import qs.widgets
 PanelSurface {
     id: root
 
+    required property int availableHeight
     property var binds: []
     readonly property var shown: {
         const q = search.text.toLowerCase();
@@ -116,7 +117,8 @@ PanelSurface {
         ListView {
             id: list
             Layout.fillWidth: true
-            Layout.preferredHeight: 520
+            // Less the header, the search field and the padding around them.
+            Layout.preferredHeight: Math.min(520, root.availableHeight - 140)
             clip: true
             spacing: 2
             model: root.shown

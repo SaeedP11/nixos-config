@@ -235,7 +235,9 @@ PanelWindow {
     }
     Component {
         id: clipboard
-        ClipboardPanel {}
+        ClipboardPanel {
+            availableHeight: popout.modelData.height - 120
+        }
     }
     Component {
         id: wallpaper
@@ -249,12 +251,15 @@ PanelWindow {
     }
     Component {
         id: switcher
-        WindowSwitcher {}
+        WindowSwitcher {
+            availableWidth: popout.modelData.width - 120
+        }
     }
     Component {
         id: overview
         Overview {
             availableWidth: popout.modelData.width - 120
+            availableHeight: popout.modelData.height - 120
         }
     }
     Component {
@@ -263,7 +268,9 @@ PanelWindow {
     }
     Component {
         id: keybinds
-        KeybindsPanel {}
+        KeybindsPanel {
+            availableHeight: popout.modelData.height - 120
+        }
     }
     Component {
         id: emoji
