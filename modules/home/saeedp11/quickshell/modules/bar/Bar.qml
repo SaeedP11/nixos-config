@@ -121,6 +121,13 @@ PanelWindow {
                     onClicked: m => m.button === Qt.RightButton ? bar.run("gnome-calendar") : bar.open("calendar")
                 }
                 Chip {
+                    text: Jalali.format(clock.date)
+                    fontFamily: Theme.persianFont
+                    tint: Theme.tone(3)
+                    active: Panels.open === "persian" && Panels.screen === bar.output
+                    onClicked: m => m.button === Qt.RightButton ? bar.open("calendar") : bar.open("persian")
+                }
+                Chip {
                     icon: Icons.clock
                     text: Qt.formatDateTime(clock.date, "HH:mm")
                     tint: Theme.tone(3)

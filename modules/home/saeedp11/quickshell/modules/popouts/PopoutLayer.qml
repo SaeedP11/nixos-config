@@ -25,6 +25,10 @@ PanelWindow {
                 align: "center",
                 comp: calendar
             },
+            persian: {
+                align: "center",
+                comp: persian
+            },
             media: {
                 align: "center",
                 comp: media
@@ -163,6 +167,10 @@ PanelWindow {
     Component {
         id: calendar
         CalendarPanel {}
+    }
+    Component {
+        id: persian
+        PersianCalendarPanel {}
     }
     Component {
         id: media

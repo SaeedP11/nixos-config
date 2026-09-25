@@ -77,6 +77,8 @@ Singleton {
     readonly property string font: "Ubuntu"
     readonly property string iconFont: "FiraCode Nerd Font"
     readonly property string monoFont: "JetBrains Mono"
+    // Persian text: Ubuntu has no Arabic-script glyphs. fonts.nix installs it.
+    readonly property string persianFont: "Vazirmatn"
     readonly property int fontSize: 11
     readonly property int iconSize: 14
 

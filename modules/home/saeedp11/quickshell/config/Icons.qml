@@ -68,6 +68,10 @@ Singleton {
     readonly property string dice: g(0xF1B51)
     readonly property string chevronLeft: g(0xF0141)
     readonly property string chevronRight: g(0xF0142)
+    readonly property string checkOn: g(0xF0132)
+    readonly property string checkOff: g(0xF0131)
+    readonly property string radioOn: g(0xF043E)
+    readonly property string radioOff: g(0xF043D)
     readonly property string terminal: g(0xF018D)
     readonly property string apps: g(0xF003B)
 

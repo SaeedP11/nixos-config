@@ -13,6 +13,12 @@ Row {
 
     spacing: 2
 
+    // One menu for the whole tray, so opening another item's menu replaces
+    // the one already open.
+    TrayMenu {
+        id: menu
+    }
+
     Repeater {
         model: SystemTray.items
 
@@ -45,7 +51,7 @@ Row {
                     else if (m.button === Qt.RightButton || it.onlyMenu) {
                         if (it.hasMenu) {
                             const p = item.mapToItem(null, 0, item.height + 6);
-                            it.display(root.window, p.x, p.y);
+                            menu.open(it.menu, root.window, p.x, p.y);
                         }
                     } else
                         it.activate();

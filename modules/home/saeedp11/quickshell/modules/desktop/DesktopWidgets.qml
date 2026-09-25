@@ -62,6 +62,20 @@ PanelWindow {
                 font.pointSize: Theme.fontSize + 5
                 font.weight: Font.DemiBold
             }
+            Text {
+                text: Jalali.formatLong(clock.date)
+                color: Theme.textDim
+                font.family: Theme.persianFont
+                font.pointSize: Theme.fontSize + 3
+            }
+
+            JalaliCalendar {
+                Layout.topMargin: 14
+                Layout.preferredWidth: 7 * cellSize + 6 * 4
+                today: clock.date
+                interactive: false
+                cellSize: 30
+            }
 
             RowLayout {
                 Layout.topMargin: 14

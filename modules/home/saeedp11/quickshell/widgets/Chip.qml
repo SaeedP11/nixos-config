@@ -12,6 +12,7 @@ Rectangle {
     property bool active: false
     property bool interactive: true
     property int maxTextWidth: 100000
+    property string fontFamily: Theme.font
     property alias hovered: mouse.containsMouse
 
     signal clicked(var mouse)
@@ -58,6 +59,7 @@ Rectangle {
             width: Math.min(implicitWidth, root.maxTextWidth)
             text: root.text
             color: root.tint
+            font.family: root.fontFamily
             font.weight: Font.DemiBold
         }
     }
