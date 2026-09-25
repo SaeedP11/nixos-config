@@ -29,12 +29,14 @@
     ./desktop/media-keys.nix
     ./desktop/monitors.nix
     ./desktop/fonts.nix
+    ./desktop/screen-cast.nix
 
     ./programs/shell.nix
     ./programs/cli.nix
     ./programs/gui.nix
     ./programs/dev.nix
     ./programs/misc.nix
+    ./programs/android.nix
 
     ./services/docker.nix
 
