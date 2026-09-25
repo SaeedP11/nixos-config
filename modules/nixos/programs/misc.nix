@@ -1,6 +1,6 @@
 # System-wide `programs.*` enables that don't belong to the shell, the
 # desktop, or the dev toolchain.
-{ config, ... }:
+{ config, pkgs, ... }:
 
 {
   # The git *package* system-wide, so root has it too (`sudo nixos-rebuild
@@ -14,6 +14,18 @@
   programs.nekoray = {
     enable = true;
     tunMode.enable = true;
+
+    # Add 172.16.0.0/12 to the tun inbound's route_exclude_address, so
+    # traffic to Docker's bridge networks (docker0 on 172.17.0.0/16, compose
+    # networks carved from the rest of the /12) stays on the main table
+    # instead of being captured by sing-box's auto_route. nekoray builds the
+    # tun inbound in C++ and only fills route_exclude_address from the route
+    # profile's direct IP rules while "tun routing" is on, so there is no
+    # setting to reach it from here. The tunnel's own 172.19.0.1/24 is still
+    # reached through its connected route on nekoray-tun.
+    package = pkgs.nekoray.overrideAttrs (old: {
+      patches = (old.patches or [ ]) ++ [ ./nekoray-route-exclude-docker.patch ];
+    });
   };
 
   # Start nekoray with the graphical session, the same way darkman and
