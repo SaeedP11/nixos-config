@@ -5,58 +5,64 @@
 // and not styled by gtk.css (../../../gtk.nix) or by anything here -- so the
 // menu model is read over QsMenuOpener and rendered like the rest of the
 // shell. Submenus replace the list in place, with a back row on top.
+//
+// Shown as the "tray" popout (PopoutLayer.qml), so a click
+// outside closes it like any other panel.
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Widgets
 import qs.config
+import qs.services
 import qs.widgets
 
-PopupWindow {
+Rectangle {
     id: root
 
-    property QsMenuHandle menu
+    readonly property QsMenuHandle menu: Panels.trayMenu
     // Submenu entries pushed on top of `menu`; the last one is shown.
     property var stack: []
+    property int maxHeight: 600
 
-    function open(handle, anchorWindow, x, y) {
-        stack = [];
-        menu = handle;
-        anchor.window = anchorWindow;
-        anchor.rect.x = x;
-        anchor.rect.y = y;
-        visible = true;
-    }
-    function close() {
-        visible = false;
-        stack = [];
-    }
+    onMenuChanged: stack = []
 
-    grabFocus: true
-    color: "transparent"
-    implicitWidth: body.implicitWidth
-    implicitHeight: body.implicitHeight
+    implicitWidth: Math.max(200, list.implicitWidth + 12)
+    implicitHeight: Math.min(list.implicitHeight, maxHeight - 12) + 12
+    radius: Theme.radiusSmall
+    color: Theme.bg
+    border.color: Theme.outline
+    border.width: 1
 
     QsMenuOpener {
         id: opener
         menu: root.stack.length ? root.stack[root.stack.length - 1] : root.menu
     }
 
-    Rectangle {
-        id: body
-        anchors.fill: parent
-        implicitWidth: Math.max(200, list.implicitWidth + 12)
-        implicitHeight: list.implicitHeight + 12
-        radius: Theme.radiusSmall
-        color: Theme.bg
-        border.color: Theme.outline
-        border.width: 1
+    // Keep every menu on the way down open. When a dbusmenu's last opener
+    // lets go, Quickshell deletes its children -- and for the parent of the
+    // submenu being shown, that includes the submenu itself.
+    Instantiator {
+        model: 8
+        delegate: QsMenuOpener {
+            required property int index
+            menu: index === 0 ? root.menu : root.stack[index - 1] ?? null
+        }
+    }
+
+    // Long menus (nm-applet's network list) scroll instead of running off
+    // the screen.
+    Flickable {
+        x: 6
+        y: 6
+        width: parent.width - 12
+        height: parent.height - 12
+        contentHeight: list.implicitHeight
+        clip: true
+        boundsBehavior: Flickable.StopAtBounds
 
         ColumnLayout {
             id: list
-            x: 6
-            y: 6
-            width: parent.width - 12
+            width: root.width - 12
             spacing: 1
 
             Row_ {
@@ -104,7 +110,7 @@ PopupWindow {
                                     root.stack = root.stack.concat([slot.modelData]);
                                 } else {
                                     slot.modelData.triggered();
-                                    root.close();
+                                    Panels.close();
                                 }
                             }
                         }

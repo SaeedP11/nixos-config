@@ -5,6 +5,7 @@ import Quickshell
 import Quickshell.Services.SystemTray
 import Quickshell.Widgets
 import qs.config
+import qs.services
 
 Row {
     id: root
@@ -12,12 +13,6 @@ Row {
     required property var window
 
     spacing: 2
-
-    // One menu for the whole tray, so opening another item's menu replaces
-    // the one already open.
-    TrayMenu {
-        id: menu
-    }
 
     Repeater {
         model: SystemTray.items
@@ -49,10 +44,11 @@ Row {
                     if (m.button === Qt.MiddleButton)
                         it.secondaryActivate();
                     else if (m.button === Qt.RightButton || it.onlyMenu) {
-                        if (it.hasMenu) {
-                            const p = item.mapToItem(null, 0, item.height + 6);
-                            menu.open(it.menu, root.window, p.x, p.y);
-                        }
+                        // One menu for the whole tray, drawn as a popout
+                        // (../popouts/TrayMenu.qml). The bar spans the
+                        // output, so its x is the output's.
+                        if (it.hasMenu)
+                            Panels.openTray(it.menu, root.window.output, item.mapToItem(null, 0, 0).x);
                     } else
                         it.activate();
                 }

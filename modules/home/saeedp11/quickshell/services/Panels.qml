@@ -28,6 +28,21 @@ Singleton {
         open = "";
     }
 
+    // The tray item menu the "tray" popout shows, and the x it drops from.
+    property QsMenuHandle trayMenu: null
+    property real trayX: 0
+
+    function openTray(menu, screenName, x) {
+        if (open === "tray" && trayMenu === menu && screen === screenName) {
+            open = "";
+            return;
+        }
+        trayMenu = menu;
+        trayX = x;
+        screen = screenName;
+        open = "tray";
+    }
+
     // Handled by modules/lock/Lock.qml, which lives in shell.qml; this is
     // how the panels reach it.
     signal lockRequested

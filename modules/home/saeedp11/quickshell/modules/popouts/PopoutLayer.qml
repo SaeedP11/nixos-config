@@ -89,6 +89,10 @@ PanelWindow {
             sound: {
                 align: "right",
                 comp: sound
+            },
+            tray: {
+                align: "tray",
+                comp: tray
             }
         })[Panels.open] ?? null
     readonly property bool modal: spec?.align === "modal"
@@ -150,6 +154,8 @@ PanelWindow {
                 return Theme.barInset;
             case "right":
                 return popout.width - width - Theme.barInset;
+            case "tray":
+                return Math.max(Theme.barInset, Math.min(Panels.trayX, popout.width - width - Theme.barInset));
             default:
                 return (popout.width - width) / 2;
             }
@@ -274,5 +280,11 @@ PanelWindow {
     Component {
         id: sound
         SoundPanel {}
+    }
+    Component {
+        id: tray
+        TrayMenu {
+            maxHeight: popout.modelData.height - Theme.barReserved - 40
+        }
     }
 }
