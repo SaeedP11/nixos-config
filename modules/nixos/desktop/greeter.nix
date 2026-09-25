@@ -30,6 +30,28 @@ let
   niri = config.programs.niri.package;
   xkb = config.services.xserver.xkb;
 
+  # Where the greeter remembers the last account and session. Its own, and
+  # persistent, unlike the runtime directory below.
+  stateDir = "/var/lib/quickshell-greeter";
+
+  # ./greeter plus the session shell's Jalali date helper, which the greeter
+  # shows the Persian date with and could not otherwise reach.
+  greeterConfig = pkgs.runCommand "quickshell-greeter" { } ''
+    cp -r ${./greeter} $out
+    chmod u+w $out
+    cp ${../../home/saeedp11/quickshell/services/Jalali.qml} $out/Jalali.qml
+  '';
+
+  # Name and Exec of every installed Wayland session, for the session picker.
+  sessions = pkgs.runCommand "greeter-sessions.json" { nativeBuildInputs = [ pkgs.jq ]; } ''
+    for f in ${config.services.displayManager.sessionData.desktops}/share/wayland-sessions/*.desktop; do
+      [ -e "$f" ] || continue
+      jq -n --arg name "$(sed -n 's/^Name=//p' "$f" | head -n1)" \
+            --arg exec "$(sed -n 's/^Exec=//p' "$f" | head -n1)" \
+            '{name: $name, exec: $exec}'
+    done | jq -s . > $out
+  '';
+
   # Quickshell wants writable cache and state directories, and the greeter
   # user's home is /var/empty; its logind runtime directory is the one
   # writable place it has.
@@ -37,7 +59,7 @@ let
     export XDG_CACHE_HOME="$XDG_RUNTIME_DIR/greeter/cache"
     export XDG_STATE_HOME="$XDG_RUNTIME_DIR/greeter/state"
     export XDG_DATA_HOME="$XDG_RUNTIME_DIR/greeter/data"
-    ${pkgs.quickshell}/bin/qs -p ${./greeter}
+    ${pkgs.quickshell}/bin/qs -p ${greeterConfig}
     exec ${niri}/bin/niri msg action quit --skip-confirmation
   '';
 
@@ -64,7 +86,11 @@ let
         GREETER_DEFAULT_COLORS "${theme.defaultColors}"
         GREETER_DEFAULT_BG "${theme.defaultBackground}"
         GREETER_SESSION "${niri}/bin/niri-session"
+        GREETER_SESSIONS "${sessions}"
         GREETER_DEFAULT_USER "${vars.username}"
+        GREETER_STATE_DIR "${stateDir}"
+        GREETER_NIRI "${niri}/bin/niri"
+        GREETER_XKB_LAYOUTS "${xkb.layout}"
     }
 
     spawn-at-startup "${runGreeter}"
@@ -91,5 +117,6 @@ in
   # named in the environment above until the first sync.
   systemd.tmpfiles.rules = [
     "d ${theme.stateDir} 0755 ${vars.username} users -"
+    "d ${stateDir} 0700 greeter greeter -"
   ];
 }
