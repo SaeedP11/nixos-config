@@ -50,15 +50,21 @@
   # The keys are "remember_enable" (Preferences -> Remember last profile),
   # "remember_id" (the profile to restart) and "spmode2", the list of special
   # modes to restore, which contains "vpn" while VPN mode is on.
+  #
+  # Restart=always rather than on-failure, so the VPN also comes back after
+  # nekoray is quit from its tray or exits cleanly, and no start limit, so a
+  # run of quick crashes (a flapping network at login) cannot leave it dead
+  # for the rest of the session.
   systemd.user.services.nekoray = {
     description = "nekoray proxy configuration manager";
     wantedBy = [ "graphical-session.target" ];
     partOf = [ "graphical-session.target" ];
     after = [ "graphical-session.target" ];
     path = [ "/run/wrappers" ];
+    startLimitIntervalSec = 0;
     serviceConfig = {
       ExecStart = "${config.programs.nekoray.package}/bin/nekoray";
-      Restart = "on-failure";
+      Restart = "always";
       RestartSec = 2;
     };
   };

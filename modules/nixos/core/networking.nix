@@ -45,11 +45,24 @@
   # Enable the OpenSSH daemon.
   services.openssh.enable = false;
 
-  # Open ports in the firewall.
-  # networking.firewall.allowedTCPPorts = [ ... ];
-  # networking.firewall.allowedUDPPorts = [ ... ];
-  # Or disable the firewall altogether.
-  # networking.firewall.enable = false;
+  # Let devices on the local network reach this machine's services by
+  # address and port -- a dev server, a container's published port -- with
+  # nekoray's VPN up or not.
+  #
+  # The firewall drops every new inbound connection that is not on an
+  # allowed port, so a server listening on 0.0.0.0 was still unreachable
+  # from the LAN. Rather than list ports that change with whatever is
+  # running, anything from a private (RFC 1918) source is accepted; the
+  # internet still sees nothing, since nothing it sends arrives from those
+  # ranges. The flip side is that on a public wifi the other clients on it
+  # can reach the same ports. Services bound to 127.0.0.1 stay local either
+  # way.
+  #
+  # Appended to input-allow, like vpn-share.nix's rule, which the input
+  # chain jumps to for `new` packets.
+  networking.firewall.extraInputRules = ''
+    ip saddr { 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16 } accept comment "LAN clients reaching local services"
+  '';
 
   # Prefer IPv4 over IPv6 loopback when resolving "localhost".
   #
