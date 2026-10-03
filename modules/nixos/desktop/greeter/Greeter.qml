@@ -265,10 +265,36 @@ Singleton {
             root.failed();
         }
         function onError(error) {
+            console.warn("greetd:", error);
             root.cancel();
-            root.note(error, true);
+            // An error while launching would otherwise leave the field
+            // ignoring every later submit.
+            root.launching = false;
+            root.note(root.friendlyError(error), true);
             root.failed();
         }
+    }
+
+    // greetd's errors are Rust error chains ("unable to send message:
+    // Connection refused (os error 111)"); the raw text goes to the journal
+    // above, the screen gets what it means for the person logging in.
+    function friendlyError(error) {
+        const e = String(error).toLowerCase();
+        if (/unable to (send|recieve|receive) message|connection refused|broken pipe|os error (32|104|111)/.test(e))
+            return "Login was interrupted. Please try again";
+        if (e.includes("authentication error") || e.includes("auth_err"))
+            return "Wrong password";
+        if (/acct_mgmt|expired|new_authtok/.test(e))
+            return "This account's password has expired";
+        if (/maxtries|locked|perm_denied/.test(e))
+            return "This account is locked. Try again later";
+        if (/user_unknown|unknown user/.test(e))
+            return "Unknown user";
+        if (/session already|session is already/.test(e))
+            return "A login is already in progress. Please wait";
+        if (/exec|no such file|command not found/.test(e))
+            return "The selected session could not be started";
+        return "Couldn't log in. Please try again";
     }
 
     Timer {
