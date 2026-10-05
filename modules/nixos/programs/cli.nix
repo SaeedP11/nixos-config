@@ -4,6 +4,8 @@
 {
   environment.systemPackages = with pkgs; [
     vim
+    # Terminal editor; defined in ../../../pkgs/fresh-editor.nix.
+    fresh-editor
     wget
     curl
     tree

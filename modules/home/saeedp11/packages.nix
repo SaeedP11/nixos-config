@@ -35,5 +35,9 @@
     # driven by ~/.claude/RTK.md and the Claude Code hook that reads it,
     # both of which belong to this account, not to the machine.
     rtk
+
+    # Claude Code CLI, the upstream release defined in
+    # ../../../pkgs/claude-code.nix rather than nixpkgs' lagging one.
+    claude-code
   ];
 }

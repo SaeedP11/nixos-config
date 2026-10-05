@@ -53,7 +53,7 @@
 
     # Second browser beside Firefox (../programs/misc.nix), for sites that only
     # work properly in Chromium. Unfree, which ../core/nix.nix allows.
-    # google-chrome
+    google-chrome
 
     # Media
     vlc
@@ -115,5 +115,8 @@
     font-manager
     gnome-font-viewer
     snapshot
+
+    # CAD
+    freecad
   ];
 }
