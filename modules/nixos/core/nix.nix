@@ -33,5 +33,8 @@
 
     # quickshell from nixos-unstable, which is the only place it exists.
     (import ../../../overlays/quickshell.nix { inherit inputs; })
+
+    # google-chrome from nixos-unstable, because Google deletes old .debs.
+    (import ../../../overlays/google-chrome.nix { inherit inputs; })
   ];
 }
