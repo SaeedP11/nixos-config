@@ -549,6 +549,20 @@ window-rule {
     default-column-width {}
 }
 
+// File pickers and similar transient dialogs float. niri already floats a
+// dialog that has a parent *and* a fixed size, but file choosers are
+// resizable, so they would tile as a new column instead. Once floating, a
+// window with a parent opens centred on that parent. Matched on the title
+// because the dialog keeps its parent app's app-id; the portal's own picker
+// (Chrome, Electron, Flatpak apps) is matched on its app-id as well.
+window-rule {
+    match app-id=r#"^xdg-desktop-portal-(gtk|gnome|kde)$"#
+    match title=r#"^(Open|Save|Select|Choose|Upload|Export|Import)( [A-Za-z]+){0,2}( File| Files| Folder| Folders| Directory| As| Image| Location)?(…|\.\.\.)?$"#
+    match title=r#"^(File Upload|Save As|Enter name of file to save to…|Open With|Rename.*|Properties|Confirm.*|Replace File\?)$"#
+
+    open-floating true
+}
+
 // OpenWhip's whip animation draws on a borderless, transparent, full-screen
 // Electron window, and without this rule it runs over a flat rectangle in the
 // focus ring's colour instead of over the desktop. niri draws the ring and the
