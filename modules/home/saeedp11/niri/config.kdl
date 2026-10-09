@@ -500,6 +500,8 @@ window-rule {
     // nothing is meant to sit beside it -- it was half-width with the other
     // terminals before.
     match app-id=r#"(?i)^zellij$"#
+    // The Mod+Shift+Return Konsole window, which shows the same session.
+    match app-id=r#"(?i)^(org\.kde\.)?konsole$"#
 
     default-column-width { proportion 1.0; }
 }
@@ -593,6 +595,11 @@ binds {
     // want several of. Mod+Return is the single zellij window, and it gets
     // `--class zellij` so raise-or-run can tell it apart from those.
     Mod+Return hotkey-overlay-title="Open a Zellij session" { spawn "raise-or-run" "^zellij$" "alacritty" "--class" "zellij" "-e" "zellij"; }
+    // The same zellij session in Konsole, which renders right-to-left text
+    // (Persian in Claude Code) that alacritty prints left to right. Konsole
+    // is installed only for this, so its app-id alone identifies the window.
+    // The RTL profile comes from ../konsole.nix.
+    Mod+Shift+Return hotkey-overlay-title="Open Zellij in Konsole (RTL text)" { spawn "raise-or-run" "^(org\\.kde\\.)?konsole$" "konsole" "--profile" "RTL.profile" "-e" "zellij"; }
     Mod+D hotkey-overlay-title="Run an Application" { spawn "qs" "-c" "shell" "ipc" "call" "panel" "toggle" "launcher"; }
     Super+Alt+L hotkey-overlay-title="Lock the Screen" { spawn "shell-lock"; }
     Mod+B hotkey-overlay-title="Open Firefox: Web browser" { spawn "raise-or-run" "firefox$" "firefox"; }

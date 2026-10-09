@@ -11,9 +11,14 @@
 
     # This machine does not run ollama today. To change that, add
     # ../../modules/nixos/services/ollama.nix here.
+
+    # Shares the VPN with devices on the wired port.
+    ../../modules/nixos/services/vpn-share.nix
   ];
 
   networking.hostName = hostName;
+
+  services.vpn-share.interface = "eno1";
 
   # ../laptop/default.nix puts i915 in the initrd so that the splash in
   # ../../modules/nixos/desktop/plymouth.nix comes up at the panel's real

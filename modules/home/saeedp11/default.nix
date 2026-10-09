@@ -47,11 +47,13 @@
     ./niri.nix
     ./quickshell.nix
     ./alacritty.nix
+    ./konsole.nix
     ./zellij.nix
     ./darkman.nix
     ./wallust.nix
     ./gtk.nix
     ./packages.nix
+    ./freecad.nix
   ];
 
   home.username = vars.username;

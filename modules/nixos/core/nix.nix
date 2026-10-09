@@ -36,5 +36,8 @@
 
     # google-chrome from nixos-unstable, because Google deletes old .debs.
     (import ../../../overlays/google-chrome.nix { inherit inputs; })
+
+    # freecad-mcp needs an mcp Python package newer than 25.05 has.
+    (import ../../../overlays/freecad-mcp.nix { inherit inputs; })
   ];
 }

@@ -39,6 +39,8 @@
 
   networking.hostName = hostName;
 
+  services.vpn-share.interface = "enp2s0";
+
   # Load the display driver in the initrd rather than leaving it to stage 2,
   # so ../../modules/nixos/desktop/plymouth.nix draws its splash at the panel's
   # native resolution from the start. Without it plymouth comes up on the EFI

@@ -17,6 +17,7 @@ rec {
   # Shadows nixpkgs' claude-code, which lags upstream; see the file.
   claude-code = pkgs.callPackage ./claude-code.nix { };
   fresh-editor = pkgs.callPackage ./fresh-editor.nix { };
+  freecad-mcp-addon = pkgs.callPackage ./freecad-mcp-addon.nix { };
 
   greeter-wallust = pkgs.callPackage ./greeter-wallust { };
   wallpaper-tools = pkgs.callPackage ./wallpaper-tools { };
