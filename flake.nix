@@ -13,6 +13,13 @@
       url = "github:nix-community/home-manager/release-25.05";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    # Weekly prebuilt nix-index database, so command-not-found suggestions
+    # work on this channel-less system without indexing nixpkgs locally.
+    nix-index-database = {
+      url = "github:nix-community/nix-index-database";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =

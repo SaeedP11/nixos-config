@@ -39,6 +39,10 @@ in
         # Anything machine-specific, including the hardware scan.
         (../hosts + "/${hostName}")
 
+        # nix-index with a prebuilt database, replacing the channel-based
+        # command-not-found handler.
+        inputs.nix-index-database.nixosModules.nix-index
+
         # Per-user dotfiles.
         home-manager.nixosModules.home-manager
         {
