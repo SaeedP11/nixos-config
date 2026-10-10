@@ -5,6 +5,7 @@
 #
 # There is deliberately no amd.nix counterpart -- amdgpu is in-kernel and
 # needs no extra configuration beyond that same `hardware.graphics.enable`.
+# Intel graphics are in ./intel.nix.
 { config, ... }:
 
 {

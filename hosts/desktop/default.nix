@@ -20,8 +20,8 @@
 
   services.vpn-share.interface = "eno1";
 
-  # ../laptop/default.nix puts i915 in the initrd so that the splash in
-  # ../../modules/nixos/desktop/plymouth.nix comes up at the panel's real
+  # ../../modules/nixos/hardware/gpu/intel.nix puts i915 in the initrd so
+  # that the splash in ../../modules/nixos/desktop/plymouth.nix comes up at the panel's real
   # resolution instead of on the EFI framebuffer and then changing mode when
   # the driver binds. The same line for this machine would be
   #

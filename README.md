@@ -19,7 +19,7 @@ hosts/
 modules/nixos/
   default.nix          everything EVERY machine gets
   core/                nix daemon, boot, locale, networking, power, storage
-  hardware/            cpu/{amd,intel}, gpu/nvidia, bluetooth, laptop
+  hardware/            cpu/{amd,intel}, gpu/{intel,nvidia}, bluetooth, laptop
   desktop/             niri, portals, audio, services, greeter, lockscreen,
                        theme, idle, notifications, media-keys, fonts
   programs/            shell, cli, gui, dev, misc

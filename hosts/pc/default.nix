@@ -11,8 +11,9 @@
 # backend, so niri could not run on it anyway.
 #
 # The i5-6400's own HD 530 is switched off by the firmware while the card is
-# installed (no Intel device appears under /sys/class/drm), so unlike
-# ../laptop/default.nix there is no i915 in the initrd here.
+# installed (no Intel device appears under /sys/class/drm), so
+# ../../modules/nixos/hardware/gpu/intel.nix is not imported. Enable the iGPU
+# in the firmware and import it to move the desktop onto the HD 530.
 #
 # ## Virtualisation
 #
