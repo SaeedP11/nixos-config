@@ -8,3 +8,12 @@ output "HDMI-A-1" {
     transform "normal"
     position x=0 y=0
 }
+
+// nouveau on the GT 730 hands frames to KMS before the GPU has finished
+// drawing them, so parts of windows flicker with stale or half-drawn
+// content. Waiting for each frame to complete before queueing it fixes that
+// at a small latency cost. Lives here rather than in the shared template
+// because only this host runs on nouveau.
+debug {
+    wait-for-frame-completion-before-queueing
+}
