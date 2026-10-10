@@ -19,7 +19,8 @@
 # nvidia-suspend/resume/hibernate enabled for a device that was not there.
 #
 # To use the GPU instead of dropping it, import the module again and set
-# `open = false` in it -- the proprietary driver does support Pascal. Boot
+# `hardware.nvidia.open = false` here, which the module now requires every
+# host to choose -- the proprietary driver does support Pascal. Boot
 # will be slower than it is now, because the modules will really load, and
 # `services.ollama.acceleration` below should go back to "cuda".
 { vars, hostName, ... }:

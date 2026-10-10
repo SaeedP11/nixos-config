@@ -26,7 +26,13 @@
     # Enable NVIDIA settings app
     nvidiaSettings = true;
 
-    # Open kernel module (if you want open source components)
-    open = true; # For newer GPUs (RTX 20 series and up)
+    # `open` is deliberately NOT set here; each importing host must set
+    # `hardware.nvidia.open` itself, and NixOS refuses to evaluate the stable
+    # (>= 560) driver until it does. The open kernel module supports Turing
+    # (GTX 16xx / RTX 20xx) and newer only. This module used to set it to
+    # true for everyone, which is how the laptop's Pascal MX150 ended up with
+    # a driver that never bound -- see ../../../../hosts/laptop/default.nix.
+    # Pascal and Maxwell need `open = false`; Kepler and older are not
+    # supported by the stable driver at all (see ../../../../hosts/pc/default.nix).
   };
 }
