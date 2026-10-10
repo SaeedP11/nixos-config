@@ -27,6 +27,14 @@
     let
       inherit (import ./lib { inherit inputs; }) mkHost;
 
+      # Every hosts/<name>/ with a default.nix is a machine; hosts/shared/ has
+      # none and is skipped.
+      hostNames = builtins.attrNames (
+        nixpkgs.lib.filterAttrs (
+          name: type: type == "directory" && builtins.pathExists (./hosts + "/${name}/default.nix")
+        ) (builtins.readDir ./hosts)
+      );
+
       forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" ];
       # Same unfree policy as the hosts (modules/nixos/core/nix.nix), so the
       # `packages` output -- xboxdownload is unfree -- evaluates under
@@ -39,11 +47,7 @@
         };
     in
     {
-      nixosConfigurations = {
-        desktop = mkHost { hostName = "desktop"; };
-        laptop = mkHost { hostName = "laptop"; };
-        pc = mkHost { hostName = "pc"; };
-      };
+      nixosConfigurations = nixpkgs.lib.genAttrs hostNames (hostName: mkHost { inherit hostName; });
 
       # Packages defined by this repo, buildable directly:
       #   nix build .#wallpaper-tools

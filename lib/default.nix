@@ -1,6 +1,6 @@
 # Host builder.
 #
-# Adding a machine is one line in flake.nix plus a hosts/<name>/ directory;
+# Adding a machine is a hosts/<name>/ directory, which flake.nix picks up;
 # the shared module set, Home Manager wiring and specialArgs are assembled
 # here exactly once instead of being copy-pasted per host.
 { inputs }:

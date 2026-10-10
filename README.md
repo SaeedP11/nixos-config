@@ -6,7 +6,7 @@ parts of `~` that were previously placed by hand.
 ## Layout
 
 ```
-flake.nix              inputs + one nixosConfiguration per host
+flake.nix              inputs + one nixosConfiguration per hosts/<name>/
 lib/default.nix        mkHost + shared vars (username, stateVersion)
 
 hosts/
@@ -98,7 +98,8 @@ a read-only store symlink would break it:
 
 1. `nixos-generate-config --show-hardware-config > hosts/<name>/hardware-configuration.nix`
 2. Write `hosts/<name>/default.nix` importing the CPU/GPU modules it needs.
-3. Add `<name> = mkHost { hostName = "<name>"; };` to `flake.nix`.
+3. `git add hosts/<name>` -- `flake.nix` builds a configuration for every
+   `hosts/<name>/` with a `default.nix`, but a flake only sees tracked files.
 
 ## Moving to a new machine
 
