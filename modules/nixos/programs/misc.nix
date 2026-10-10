@@ -55,6 +55,9 @@
   # nekoray is quit from its tray or exits cleanly, and no start limit, so a
   # run of quick crashes (a flapping network at login) cannot leave it dead
   # for the rest of the session.
+  #
+  # -tray starts it hidden in the tray rather than opening the main window at
+  # every login and restart; its tray icon shows the window.
   systemd.user.services.nekoray = {
     description = "nekoray proxy configuration manager";
     wantedBy = [ "graphical-session.target" ];
@@ -63,7 +66,7 @@
     path = [ "/run/wrappers" ];
     startLimitIntervalSec = 0;
     serviceConfig = {
-      ExecStart = "${config.programs.nekoray.package}/bin/nekoray";
+      ExecStart = "${config.programs.nekoray.package}/bin/nekoray -tray";
       Restart = "always";
       RestartSec = 2;
     };
