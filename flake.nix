@@ -42,6 +42,7 @@
       nixosConfigurations = {
         desktop = mkHost { hostName = "desktop"; };
         laptop = mkHost { hostName = "laptop"; };
+        pc = mkHost { hostName = "pc"; };
       };
 
       # Packages defined by this repo, buildable directly:
