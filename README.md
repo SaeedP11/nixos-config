@@ -1,21 +1,23 @@
 # saeedp11's NixOS configuration
 
-Flake-based NixOS configuration for two machines, with Home Manager for the
+Flake-based NixOS configuration for three machines, with Home Manager for the
 parts of `~` that were previously placed by hand.
 
 ## Layout
 
 ```
-flake.nix              inputs + the two nixosConfigurations
+flake.nix              inputs + one nixosConfiguration per host
 lib/default.nix        mkHost + shared vars (username, stateVersion)
 
 hosts/
-  shared/hardware-configuration.nix   generated hardware scan, shared for now
+  shared/hardware-configuration.nix   generated hardware scan, shared by desktop and laptop
   desktop/default.nix                 AMD CPU
-  laptop/default.nix                  Intel CPU, NVIDIA, battery, ollama
+  laptop/default.nix                  Intel CPU + i915, MX150 unused, battery, ollama
+  pc/                                 ASUS H110M-C: i5-6400, GT 730 on nouveau, ollama;
+                                      has its own hardware-configuration.nix
 
 modules/nixos/
-  default.nix          everything BOTH machines get
+  default.nix          everything EVERY machine gets
   core/                nix daemon, boot, locale, networking, power, storage
   hardware/            cpu/{amd,intel}, gpu/nvidia, bluetooth, laptop
   desktop/             niri, portals, audio, services, greeter, lockscreen,
@@ -35,7 +37,7 @@ assets/                login screen fallback background
 ## Rebuilding
 
 ```bash
-sudo nixos-rebuild switch --flake .#laptop      # or .#desktop
+sudo nixos-rebuild switch --flake .#laptop      # or .#desktop, .#pc
 ```
 
 Because each host now sets its own `networking.hostName`, the short form
@@ -146,6 +148,6 @@ hostapd refuses to start without it, which is the point.
 
 ## Notes
 
-- `hosts/shared/hardware-configuration.nix` is shared by both machines. That
-  only works because both label their partitions `NIXROOT`/`NIXBOOT`. Split it
-  per host (step 1 above) when convenient.
+- `hosts/shared/hardware-configuration.nix` is shared by desktop and laptop.
+  That only works because both label their partitions `NIXROOT`/`NIXBOOT`.
+  Split it per host (step 1 above) when convenient, as `pc` already is.

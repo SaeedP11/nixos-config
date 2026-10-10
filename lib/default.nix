@@ -33,7 +33,7 @@ in
       modules = [
         { nixpkgs.hostPlatform = system; }
 
-        # Everything both machines get.
+        # Everything every machine gets.
         ../modules/nixos
 
         # Anything machine-specific, including the hardware scan.

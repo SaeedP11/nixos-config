@@ -1,4 +1,4 @@
-# Everything both machines get, unconditionally.
+# Everything every machine gets, unconditionally.
 #
 # Anything that depends on the specific machine -- CPU vendor, GPU, whether
 # it has a lid -- is NOT imported here. Those modules live under ./hardware
