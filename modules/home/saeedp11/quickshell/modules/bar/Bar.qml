@@ -8,6 +8,7 @@ import Quickshell
 import Quickshell.Wayland
 import Quickshell.Services.UPower
 import Quickshell.Bluetooth
+import Quickshell.Services.SystemTray
 import qs.config
 import qs.services
 import qs.widgets
@@ -54,13 +55,19 @@ PanelWindow {
     // Nothing in the bar shrinks by itself and its three rows are placed
     // independently, so on a narrow output they ran into each other -- at
     // 1920px already, once a long window title met the date. Below
-    // `compact` the Gregorian date chip goes (the clock opens the calendar)
-    // and the media title is cut shorter; below `narrow` (a portrait 1080p
-    // monitor, a 1366px laptop) the Persian date and the labels of the
-    // media, audio, network and VPN chips go too. The left row then fits
+    // `compact` the media title is cut shorter; below `narrow` (a portrait
+    // 1080p monitor, a 1366px laptop) the date chip (the clock opens the
+    // calendar) and the labels of the media, audio, network and VPN chips go
+    // too. The left row then fits
     // itself into whatever is left; see `body`.
     readonly property bool compact: width < 1760
     readonly property bool narrow: width < 1440
+
+    // The date chip shows the Gregorian or the Persian date; scroll or
+    // middle click swaps.
+    property bool persianDate: false
+    // The tray's icons stay folded behind a chevron until it is clicked.
+    property bool trayOpen: false
 
     Item {
         id: body
@@ -124,7 +131,7 @@ PanelWindow {
                     icon: Icons.memory
                     text: String(Math.round(SysStats.memFraction * 100)).padStart(2, "0") + "%"
                     tint: Theme.tone(1)
-                    onClicked: m => m.button === Qt.RightButton ? bar.run("gnome-system-monitor") : bar.open("sysmon")
+                    onClicked: m => m.button === Qt.RightButton ? bar.run(Config.terminal, "-e", "btm") : bar.open("sysmon")
                 }
                 Chip {
                     id: diskChip
@@ -132,7 +139,7 @@ PanelWindow {
                     icon: Icons.disk
                     text: SysStats.human(SysStats.diskUsed) + " / " + SysStats.human(SysStats.diskTotal)
                     tint: Theme.tone(2)
-                    onClicked: m => m.button === Qt.RightButton ? bar.run("baobab") : bar.open("sysmon")
+                    onClicked: m => m.button === Qt.RightButton ? bar.run(Config.terminal, "-e", "btm") : bar.open("sysmon")
                 }
             }
         }
@@ -153,20 +160,14 @@ PanelWindow {
 
             Group {
                 Chip {
-                    visible: !bar.compact
-                    icon: Icons.calendar
-                    text: Qt.formatDateTime(clock.date, "yyyy MMM dd ddd")
-                    tint: Theme.tone(3)
-                    active: Panels.open === "calendar" && Panels.screen === bar.output
-                    onClicked: m => m.button === Qt.RightButton ? bar.run("gnome-calendar") : bar.open("calendar")
-                }
-                Chip {
                     visible: !bar.narrow
-                    text: Jalali.format(clock.date)
-                    fontFamily: Theme.persianFont
+                    icon: Icons.calendar
+                    text: bar.persianDate ? Jalali.format(clock.date) : Qt.formatDateTime(clock.date, "yyyy MMM dd ddd")
+                    fontFamily: bar.persianDate ? Theme.persianFont : Theme.font
                     tint: Theme.tone(3)
-                    active: Panels.open === "persian" && Panels.screen === bar.output
-                    onClicked: m => m.button === Qt.RightButton ? bar.open("calendar") : bar.open("persian")
+                    active: (Panels.open === "calendar" || Panels.open === "persian") && Panels.screen === bar.output
+                    onClicked: m => m.button === Qt.MiddleButton ? (bar.persianDate = !bar.persianDate) : m.button === Qt.RightButton ? bar.run("gnome-calendar") : bar.open(bar.persianDate ? "persian" : "calendar")
+                    onScrolled: d => bar.persianDate = !bar.persianDate
                 }
                 Chip {
                     icon: Icons.clock
@@ -209,19 +210,19 @@ PanelWindow {
                 }
             }
 
+            // Dark mode and keep awake are tiles in the control centre. The
+            // tray folds behind a chevron; keep awake, having no chip of its
+            // own any more, lights that chevron while it is on.
             Group {
+                visible: SystemTray.items.values.length > 0 || Panels.keepAwake
                 Chip {
-                    icon: Darkman.dark ? Icons.moon : Icons.sun
-                    tint: Theme.tone(10)
-                    onClicked: Darkman.toggle()
-                }
-                Chip {
-                    icon: Panels.keepAwake ? Icons.coffee : Icons.coffeeOff
-                    tint: Theme.tone(10)
+                    icon: bar.trayOpen ? Icons.chevronRight : Icons.chevronLeft
+                    tint: Panels.keepAwake ? Theme.tone(10) : Theme.textDim
                     active: Panels.keepAwake
-                    onClicked: Panels.keepAwake = !Panels.keepAwake
+                    onClicked: bar.trayOpen = !bar.trayOpen
                 }
                 Tray {
+                    visible: bar.trayOpen
                     window: bar
                     anchors.verticalCenter: parent.verticalCenter
                 }
@@ -236,11 +237,14 @@ PanelWindow {
                     onClicked: m => m.button === Qt.RightButton ? bar.run("pavucontrol") : m.button === Qt.MiddleButton ? Audio.toggleMute() : bar.open("control")
                     onScrolled: d => Audio.setVolume(Audio.volume + (d > 0 ? 0.05 : -0.05))
                 }
+                // Ethernet or Wi-Fi. Click opens the network panel
+                // (addresses, VPN, Wi-Fi); right click the connection editor.
                 Chip {
                     icon: Net.icon
                     text: Net.wifiNetwork && !Net.wired && !bar.narrow ? Math.round(Net.signal * 100) + "%" : ""
                     tint: Theme.tone(6)
-                    onClicked: m => m.button === Qt.RightButton ? bar.run("nm-connection-editor") : bar.open("control")
+                    active: Panels.open === "network" && Panels.screen === bar.output
+                    onClicked: m => m.button === Qt.RightButton ? bar.run("nm-connection-editor") : bar.open("network")
                 }
                 // nekoray's tunnel. Lit while it is up; click raises nekoray.
                 Chip {
