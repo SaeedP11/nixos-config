@@ -90,8 +90,6 @@ in
       # above for why both halves are needed.
       ir-standard-fonts
       corefonts
-      dejavu_fonts
-      liberation_ttf
       roboto
       open-sans
       jetbrains-mono

@@ -10,8 +10,8 @@
     # vscode itself is installed by ./vscode.nix, which also owns its
     # settings, keybindings and the extensions that exist in nixpkgs.
 
-    # The docker CLI and daemon come from modules/nixos/services/docker.nix.
-    docker-compose
+    # The docker CLI and daemon, and with them the `docker compose` plugin,
+    # come from modules/nixos/services/docker.nix.
     telegram-desktop
     aria2
     loupe

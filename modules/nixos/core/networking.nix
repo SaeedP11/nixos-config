@@ -34,12 +34,9 @@
 
   programs.mtr.enable = true;
 
-  # Wireless inspection and the userspace pieces for running a hotspot.
+  # Wireless inspection.
   environment.systemPackages = with pkgs; [
     iw
-    hostapd
-    dnsmasq
-    haveged
   ];
 
   # Enable the OpenSSH daemon.
