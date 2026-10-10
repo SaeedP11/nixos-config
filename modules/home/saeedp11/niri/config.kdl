@@ -462,7 +462,6 @@ window-rule {
 window-rule {
     match app-id=r#"firefox$"#
     match app-id=r#"(?i)^vlc$"#
-    match app-id=r#"(?i)^u?mpv$"#
     // The Mod+Return zellij window: the same terminal under its own app-id.
     // A zellij session is tabs and panes of its own, so it is the task and
     // nothing is meant to sit beside it -- it was half-width with the other
@@ -490,10 +489,7 @@ window-rule {
     match app-id=r#"(?i)^thunar$"#
     match app-id=r#"(?i)^org\.telegram\.desktop$"#
     match app-id=r#"(?i)^nekoray$"#
-    match app-id=r#"^(org\.gnome\.Settings|gnome-control-center)$"#
-    match app-id=r#"^(org\.gnome\.SystemMonitor|gnome-system-monitor)$"#
     match app-id=r#"^(org\.gnome\.FileRoller|file-roller)$"#
-    match app-id=r#"^org\.gnome\.baobab$"#
     match app-id=r#"^org\.gnome\.Loupe$"#
 
     default-column-width { proportion 0.5; }

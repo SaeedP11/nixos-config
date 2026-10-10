@@ -15,7 +15,7 @@
   boot.initrd.kernelModules = [ "i915" ];
 
   # VA-API for Broadwell (Gen8) and newer: video decode/encode on the GPU for
-  # browsers, mpv and the screen recorder instead of the CPU. Mesa ships no
+  # browsers, VLC and the screen recorder instead of the CPU. Mesa ships no
   # VA-API driver for Intel at all, so without this every video is decoded
   # in software.
   hardware.graphics.extraPackages = [ pkgs.intel-media-driver ];

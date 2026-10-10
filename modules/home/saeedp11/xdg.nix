@@ -73,15 +73,15 @@
       "image/bmp" = "org.gnome.Loupe.desktop";
 
       # Audio and video
-      "audio/mpeg" = "mpv.desktop";
-      "audio/flac" = "mpv.desktop";
-      "audio/ogg" = "mpv.desktop";
-      "audio/x-wav" = "mpv.desktop";
-      "video/mp4" = "mpv.desktop";
-      "video/x-matroska" = "mpv.desktop";
-      "video/webm" = "mpv.desktop";
-      "video/quicktime" = "mpv.desktop";
-      "video/x-msvideo" = "mpv.desktop";
+      "audio/mpeg" = "vlc.desktop";
+      "audio/flac" = "vlc.desktop";
+      "audio/ogg" = "vlc.desktop";
+      "audio/x-wav" = "vlc.desktop";
+      "video/mp4" = "vlc.desktop";
+      "video/x-matroska" = "vlc.desktop";
+      "video/webm" = "vlc.desktop";
+      "video/quicktime" = "vlc.desktop";
+      "video/x-msvideo" = "vlc.desktop";
 
       # Archives. file-roller is also what thunar-archive-plugin drives from
       # the Extract Here / Create Archive context menu that

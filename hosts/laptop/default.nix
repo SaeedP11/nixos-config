@@ -21,8 +21,7 @@
 # To use the GPU instead of dropping it, import the module again and set
 # `hardware.nvidia.open = false` here, which the module now requires every
 # host to choose -- the proprietary driver does support Pascal. Boot
-# will be slower than it is now, because the modules will really load, and
-# `services.ollama.acceleration` below should go back to "cuda".
+# will be slower than it is now, because the modules will really load.
 { vars, hostName, ... }:
 
 {
@@ -33,8 +32,6 @@
     ../../modules/nixos/hardware/gpu/intel.nix
     ../../modules/nixos/hardware/laptop.nix
 
-    ../../modules/nixos/services/ollama.nix
-
     # Shares the VPN with the console and the TV over the wired port.
     ../../modules/nixos/services/vpn-share.nix
   ];
@@ -42,11 +39,6 @@
   networking.hostName = hostName;
 
   services.vpn-share.interface = "enp2s0";
-
-  # CPU inference. "cuda" was only ever aspirational here: it needs the NVIDIA
-  # driver that never loaded (see the note above), so ollama fell back to the
-  # CPU anyway while the CUDA closure was still built and stored.
-  services.ollama.acceleration = false;
 
   swapDevices = [
     {

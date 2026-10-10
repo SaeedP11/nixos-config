@@ -205,13 +205,6 @@ PanelSurface {
             spacing: 8
             Chip {
                 Layout.fillWidth: true
-                icon: Icons.apps
-                text: "System Monitor"
-                tint: Theme.accent
-                onClicked: root.run("gnome-system-monitor")
-            }
-            Chip {
-                Layout.fillWidth: true
                 icon: Icons.terminal
                 text: "btm"
                 tint: Theme.accent

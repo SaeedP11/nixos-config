@@ -4,7 +4,7 @@
 # gives them an address, a resolver and a route, and that route goes *into
 # the tunnel* rather than out to the wifi the tunnel itself rides on.
 #
-# Imported per host, like ./ollama.nix, and each importing host names its own
+# Imported per host, and each importing host names its own
 # wired port in `services.vpn-share.interface`. Everything here is inert until something is actually
 # plugged into that port: dnsmasq answers on one interface, and the NAT
 # rules match one source network that nothing else uses.

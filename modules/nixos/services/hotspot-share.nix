@@ -22,7 +22,7 @@
 #
 # ## Not imported by any host yet
 #
-# Like ./ollama.nix and ./vpn-share.nix this is a per-host import, and no
+# Like ./vpn-share.nix this is a per-host import, and no
 # host imports it. Two reasons to add it deliberately rather than by default:
 #
 #   * `radio` below must name a card that is not carrying the uplink and

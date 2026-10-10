@@ -9,9 +9,6 @@
     # hardware.graphics.enable, which modules/nixos/desktop/niri.nix sets.
     ../../modules/nixos/hardware/cpu/amd.nix
 
-    # This machine does not run ollama today. To change that, add
-    # ../../modules/nixos/services/ollama.nix here.
-
     # Shares the VPN with devices on the wired port.
     ../../modules/nixos/services/vpn-share.nix
   ];

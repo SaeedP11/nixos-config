@@ -28,8 +28,6 @@
 
     ../../modules/nixos/hardware/cpu/intel.nix
 
-    ../../modules/nixos/services/ollama.nix
-
     # Shares the VPN with devices on the wired port.
     ../../modules/nixos/services/vpn-share.nix
   ];
@@ -38,10 +36,6 @@
 
   # r8169 onboard port.
   services.vpn-share.interface = "enp6s0";
-
-  # CPU inference: the GT 730 is compute capability 3.5, below what ollama's
-  # CUDA backend supports.
-  services.ollama.acceleration = false;
 
   # The swap partition the installer created on the SSD, instead of a
   # swapfile on the root filesystem beside it.

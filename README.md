@@ -12,8 +12,8 @@ lib/default.nix        mkHost + shared vars (username, stateVersion)
 hosts/
   shared/hardware-configuration.nix   generated hardware scan, shared by desktop and laptop
   desktop/default.nix                 AMD CPU
-  laptop/default.nix                  Intel CPU + i915, MX150 unused, battery, ollama
-  pc/                                 ASUS H110M-C: i5-6400, GT 730 on nouveau, ollama;
+  laptop/default.nix                  Intel CPU + i915, MX150 unused, battery
+  pc/                                 ASUS H110M-C: i5-6400, GT 730 on nouveau;
                                       has its own hardware-configuration.nix
 
 modules/nixos/
@@ -23,7 +23,7 @@ modules/nixos/
   desktop/             niri, portals, audio, services, greeter, lockscreen,
                        theme, idle, notifications, media-keys, fonts
   programs/            shell, cli, gui, dev, misc
-  services/            docker, ollama, vpn-share, hotspot-share
+  services/            docker, vpn-share, hotspot-share
   users.nix            the account, its groups, its bootstrap password
 
 modules/home/saeedp11/ Home Manager: niri, quickshell, alacritty, zellij,

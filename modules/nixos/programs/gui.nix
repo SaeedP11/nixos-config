@@ -34,7 +34,6 @@
     # File management. Thunar itself is the programs.thunar block above.
     xfce.tumbler
     file-roller
-    baobab
 
     # Bootable USB media. ventoy-full-gtk, not ventoy or ventoy-full: the
     # filesystem backends (cryptsetup, xfs, ext4, ntfs) are what -full adds,
@@ -57,7 +56,6 @@
 
     # Media
     vlc
-    mpv
     # Screen recorder. Captures through the xdg-desktop-portal ScreenCast
     # interface (../desktop/portals.nix routes it to wlr) and PipeWire, so it
     # works under niri; GNOME's own recorder is a gnome-shell built-in and
@@ -96,8 +94,6 @@
     # Settings / system UI
     pavucontrol
     networkmanagerapplet
-    gnome-control-center
-    gnome-system-monitor
 
     # GNOME accessories
     gnome-calendar
