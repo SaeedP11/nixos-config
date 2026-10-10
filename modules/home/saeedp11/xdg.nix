@@ -53,6 +53,34 @@
 
       # Documents
       "application/pdf" = "org.gnome.Papers.desktop";
+      # DjVu went to Okular by cache order; Papers reads it too and is the
+      # viewer for every other paged document here.
+      "image/vnd.djvu" = "org.gnome.Papers.desktop";
+      "image/vnd.djvu+multipage" = "org.gnome.Papers.desktop";
+      # Plain-text office formats: LibreOffice first, Fresh second. The first
+      # entry that is installed wins, so on a host with LibreOffice switched
+      # off in ../../nixos/apps.nix these open in Fresh instead of nothing.
+      # The binary formats (.docx, .xlsx, .odt...) get no Fresh fallback --
+      # a text editor is no use for them.
+      "text/csv" = [
+        "calc.desktop"
+        "fresh.desktop"
+      ];
+      "text/tab-separated-values" = [
+        "calc.desktop"
+        "fresh.desktop"
+      ];
+      "application/rtf" = [
+        "writer.desktop"
+        "fresh.desktop"
+      ];
+
+      # Fonts. Font Manager and gnome-font-viewer both claim these, and .otf
+      # also matches LibreOffice Math's formula-template glob, so the
+      # previewer is pinned rather than left to cache order.
+      "font/ttf" = "org.gnome.font-viewer.desktop";
+      "font/otf" = "org.gnome.font-viewer.desktop";
+      "font/woff" = "org.gnome.font-viewer.desktop";
 
       # Text and code. Fresh (../../../pkgs/fresh-editor.nix, installed by
       # ../../nixos/programs/cli.nix) rather than VS Code, which a host can
@@ -64,6 +92,11 @@
       "application/json" = "fresh.desktop";
       "application/xml" = "fresh.desktop";
       "text/x-shellscript" = "fresh.desktop";
+      # What shared-mime-info actually calls a .sh file; text/x-shellscript
+      # above is only its alias. Left unpinned, it and C sources went to
+      # nvim.desktop, a console entry picked by cache order.
+      "application/x-shellscript" = "fresh.desktop";
+      "text/x-csrc" = "fresh.desktop";
 
       # Images
       "image/png" = "org.gnome.Loupe.desktop";
@@ -96,6 +129,11 @@
       "application/x-compressed-tar" = "org.gnome.FileRoller.desktop";
       "application/x-xz-compressed-tar" = "org.gnome.FileRoller.desktop";
       "application/zstd" = "org.gnome.FileRoller.desktop";
+      # .xz went to Impression, which claims it for compressed disk images;
+      # a disk image is the rarer .xz, and Impression is still in Open With.
+      "application/x-xz" = "org.gnome.FileRoller.desktop";
+      "application/x-bzip2" = "org.gnome.FileRoller.desktop";
+      "application/x-bzip2-compressed-tar" = "org.gnome.FileRoller.desktop";
     };
 
     associations.added = {
