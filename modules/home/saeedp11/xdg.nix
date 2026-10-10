@@ -54,14 +54,16 @@
       # Documents
       "application/pdf" = "org.gnome.Papers.desktop";
 
-      # Text and code. VS Code rather than vim.desktop or nvim.desktop:
-      # those are console entries, and while xdg-terminal-exec now makes them
-      # launchable, a double-click in a file manager wants a window.
-      "text/plain" = "code.desktop";
-      "text/markdown" = "code.desktop";
-      "application/json" = "code.desktop";
-      "application/xml" = "code.desktop";
-      "text/x-shellscript" = "code.desktop";
+      # Text and code. Fresh (../../../pkgs/fresh-editor.nix, installed by
+      # ../../nixos/programs/cli.nix) rather than VS Code, which a host can
+      # now switch off in ../../nixos/apps.nix. fresh.desktop is a
+      # Terminal=true entry, so a double-click opens it in Alacritty through
+      # the xdg-terminal-exec preference list above.
+      "text/plain" = "fresh.desktop";
+      "text/markdown" = "fresh.desktop";
+      "application/json" = "fresh.desktop";
+      "application/xml" = "fresh.desktop";
+      "text/x-shellscript" = "fresh.desktop";
 
       # Images
       "image/png" = "org.gnome.Loupe.desktop";
@@ -99,13 +101,16 @@
     associations.added = {
       "x-scheme-handler/tg" = "org.telegram.desktop.desktop";
       "x-scheme-handler/tonsite" = "org.telegram.desktop.desktop";
-      # Code is the default above; vim is here so it stays in the Open With
-      # list for the times a console editor is what is wanted.
+      # Fresh is the default above; Code and vim are here so they stay in the
+      # Open With list -- Code for when a window is wanted, on hosts that
+      # still install it.
       "application/json" = [
+        "fresh.desktop"
         "code.desktop"
         "vim.desktop"
       ];
       "text/plain" = [
+        "fresh.desktop"
         "code.desktop"
         "vim.desktop"
       ];
