@@ -13,6 +13,13 @@
   services.logind = {
     lidSwitch = "suspend";
     lidSwitchExternalPower = "lock"; # or "ignore", "suspend", "hibernate"
+    # With a second monitor connected logind counts the machine as docked,
+    # and this wins over both settings above: closing the lid neither
+    # suspends nor locks. niri turns the internal panel off on lid close
+    # (unless `debug { keep-laptop-panel-on-when-lid-is-closed; }`) and
+    # moves its workspaces and focus to the external monitor, which is then
+    # the only -- so the primary -- output; reopening the lid restores both.
+    lidSwitchDocked = "ignore";
   };
 
   services.auto-cpufreq = {
