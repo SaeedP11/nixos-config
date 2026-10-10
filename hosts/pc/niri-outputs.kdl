@@ -1,0 +1,10 @@
+// Output blocks for the pc host. Spliced into the shared niri template by
+// modules/home/saeedp11/niri.nix; see there.
+
+// PNP(CMT) GA2711, 27" 1440p on the GT 730's HDMI port.
+output "HDMI-A-1" {
+    mode "2560x1440@59.951"
+    scale 1
+    transform "normal"
+    position x=0 y=0
+}

@@ -110,13 +110,15 @@
 #     app binds go through raise-or-run, which that module installs; it is
 #     also where alacritty itself comes from.
 #
-# ONE FILE FOR BOTH MACHINES. The `output "DP-2"`/`output "DP-4"` blocks are
-# the desktop's monitors; niri ignores an output block naming a connector
-# that is not present, so the laptop (eDP-1 only, plus whatever is plugged
-# into HDMI) reads the same file harmlessly, and the saved state that grows
-# beside it is per-machine by construction, living in the home directory
-# rather than here. Split this per host only if the two ever need different
-# binds.
+# ONE TEMPLATE FOR EVERY MACHINE, EXCEPT ITS OUTPUTS. Binds, rules and
+# layout are shared; the `output` blocks are not, because connector names and
+# monitors differ per machine. They live in hosts/<host>/niri-outputs.kdl and
+# are spliced in at the template's `// @host-outputs@` line at evaluation
+# time; a host without that file (the laptop, eDP-1 plus whatever is plugged
+# into HDMI) gets none and niri places its outputs itself. Each block there
+# must keep the template's shape -- `output "NAME" {` and a closing `}` in
+# column one -- because that is what the renderer below matches when a saved
+# block replaces it.
 #
 # ~/.config/niri/scripts/ is NOT managed here. Those forty-odd scripts came
 # with the KooL dots this config started from and nothing in the template
@@ -126,11 +128,25 @@
 {
   lib,
   pkgs,
+  hostName,
   ...
 }:
 
 let
-  template = ./niri/config.kdl;
+  hostOutputsFile = ../../../hosts + "/${hostName}/niri-outputs.kdl";
+  hostOutputs = lib.optionalString (builtins.pathExists hostOutputsFile) (
+    builtins.readFile hostOutputsFile
+  );
+
+  marker = "// @host-outputs@\n";
+  templateSource = builtins.readFile ./niri/config.kdl;
+
+  template =
+    assert lib.assertMsg (lib.hasInfix marker templateSource)
+      "niri/config.kdl has lost its `// @host-outputs@` line";
+    pkgs.writeText "niri-config-template.kdl" (
+      builtins.replaceStrings [ marker ] [ hostOutputs ] templateSource
+    );
 
   # Where the snapshot of the live output layout lives: one file per output,
   # named after it, each holding exactly one `output "NAME" { ... }` block.
