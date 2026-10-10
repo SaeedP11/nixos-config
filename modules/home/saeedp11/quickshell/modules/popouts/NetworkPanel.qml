@@ -1,6 +1,7 @@
-// Wi-Fi networks, from quick settings. Scans while open. A known network
-// connects with its saved settings; a new secured one asks for the
-// passphrase inline. Right click on a known network forgets it.
+// The network, from the bar's network chip or quick settings: nekoray's
+// tunnel, the local and public addresses, then Wi-Fi networks. Scans while
+// open. A known network connects with its saved settings; a new secured one
+// asks for the passphrase inline. Right click on a known network forgets it.
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
@@ -39,7 +40,7 @@ PanelSurface {
 
         PanelHeader {
             Layout.fillWidth: true
-            title: "Wi-Fi"
+            title: "Network"
             IconButton {
                 icon: Icons.settings
                 onClicked: {
@@ -52,6 +53,37 @@ PanelSurface {
                 checked: Net.wifiEnabled
                 onToggled: Net.toggleWifi()
             }
+        }
+
+        // nekoray's tunnel, then the local and public addresses. Click an
+        // address to copy it.
+        ListRow {
+            Layout.fillWidth: true
+            icon: Icons.vpn
+            title: "VPN"
+            subtitle: Vpn.up ? "Connected · nekoray" : "Off · nekoray"
+            active: Vpn.up
+            tint: Theme.tone(2)
+            onClicked: {
+                Panels.close();
+                Vpn.open();
+            }
+        }
+        ListRow {
+            Layout.fillWidth: true
+            icon: Icons.lan
+            title: Ip.local || "No address"
+            subtitle: "Local IP"
+            tint: Theme.tone(6)
+            onClicked: Ip.copy(Ip.local)
+        }
+        ListRow {
+            Layout.fillWidth: true
+            icon: Icons.earth
+            title: Ip.pub || "Unknown"
+            subtitle: Vpn.up ? "Public IP · VPN exit" : "Public IP"
+            tint: Theme.tone(6)
+            onClicked: Ip.copy(Ip.pub)
         }
 
         ListRow {
