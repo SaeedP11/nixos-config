@@ -247,12 +247,5 @@ in
     networking.firewall.extraInputRules = ''
       iifname "${lan}" ct status dnat accept comment "sing-box auto-redirect listener"
     '';
-
-    # The AP variant is ./hotspot-share.nix, which is this ruleset with `lan`
-    # pointed at a radio and a hostapd block in front of it. It cannot be
-    # imported on *this* host: wlp3s0 is the radio carrying the uplink the
-    # tunnel rides on, and hostapd would take it away. Nor can the two be
-    # imported together on any host -- they claim the same subnet and the same
-    # single dnsmasq.
   };
 }

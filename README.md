@@ -23,7 +23,7 @@ modules/nixos/
   desktop/             niri, portals, audio, services, greeter, lockscreen,
                        theme, idle, notifications, media-keys, fonts
   programs/            shell, cli, gui, dev, misc
-  services/            docker, vpn-share, hotspot-share
+  services/            docker, vpn-share
   users.nix            the account, its groups, its bootstrap password
 
 modules/home/saeedp11/ Home Manager: niri, quickshell, alacritty, zellij,
@@ -126,8 +126,7 @@ panel reads the same list through them.
 Shadowsocks password and is rewritten on exit, so it is neither tracked nor
 trackable. Re-enter the subscription, then turn on *Preferences → Remember
 last profile* and VPN mode; `programs/misc.nix` explains which keys that
-writes. `services/vpn-share.nix` and `services/hotspot-share.nix` are inert
-until it is running.
+writes. `services/vpn-share.nix` is inert until it is running.
 
 **Wifi.** NetworkManager keeps saved connections in
 `/etc/NetworkManager/system-connections`, root-owned and containing the
@@ -142,10 +141,6 @@ them that exist in nixpkgs. claude-code, chatgpt, omnicopilot, wakatime,
 nuxtr and the devtools bridges are Marketplace-only and install themselves
 on first sign-in; `mutableExtensionsDir` is left true so they survive
 rebuilds.
-
-**The hotspot passphrase**, if `services/hotspot-share.nix` is imported:
-`/var/lib/hostapd/wpa-passphrase`, mode 600, written before the first boot.
-hostapd refuses to start without it, which is the point.
 
 ## Notes
 

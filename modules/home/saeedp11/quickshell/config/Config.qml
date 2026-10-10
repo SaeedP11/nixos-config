@@ -21,7 +21,7 @@ Singleton {
     readonly property string terminal: "alacritty"
 
     // sing-box's tun, created by nekoray's VPN mode; the bar's VPN chip is
-    // lit while it exists. The same name hotspot-share.nix routes into.
+    // lit while it exists.
     readonly property string vpnInterface: "nekoray-tun"
 
     // Where the capture panel saves. Screenshots match the Shift+Print
