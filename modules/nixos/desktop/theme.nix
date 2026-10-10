@@ -18,25 +18,33 @@
 # dark-mode.d/light-mode.d hook scripts — are managed by Home Manager in
 # ../../home/saeedp11/darkman.nix. They used to have to be placed by hand.
 
-{ pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 {
-  environment.systemPackages = with pkgs; [
-    darkman
+  environment.systemPackages =
+    with pkgs;
+    [
+      darkman
 
-    # Wallpaper engine + palette generator. set-wallpaper drives both, and
-    # the darkman hooks below re-run wallust on every dark/light switch.
-    swww
-    wallust
-    wallpaper-tools
+      # Wallpaper engine + palette generator. set-wallpaper drives both, and
+      # the darkman hooks below re-run wallust on every dark/light switch.
+      swww
+      wallust
+      wallpaper-tools
 
-    # GTK/Qt theme, icon and cursor assets the live switch selects between.
-    gnome-themes-extra
-    adwaita-icon-theme
-    adwaita-qt
-    phinger-cursors
-    nordzy-cursor-theme
-  ];
+      # GTK/Qt theme, icon and cursor assets the live switch selects between.
+      gnome-themes-extra
+      adwaita-icon-theme
+      adwaita-qt
+      phinger-cursors
+    ]
+    # Switched per host in ../apps.nix.
+    ++ lib.optional config.apps.nordzyCursor.enable pkgs.nordzy-cursor-theme;
 
   # Register darkman as the backend for the portal's Settings interface
   # (the actual "preferred=darkman" wiring is set in ./portals.nix, next to

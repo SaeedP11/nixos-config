@@ -1,6 +1,12 @@
 # Android phone mirroring and control: Escrcpy (../../../pkgs/escrcpy.nix)
 # on top of scrcpy and adb.
-{ pkgs, vars, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  vars,
+  ...
+}:
 
 {
   # adb plus the udev rules that give the adbusers group the phone's USB
@@ -9,10 +15,11 @@
   programs.adb.enable = true;
   users.users.${vars.username}.extraGroups = [ "adbusers" ];
 
-  environment.systemPackages = with pkgs; [
-    escrcpy
-    scrcpy
-  ];
+  environment.systemPackages = [
+    pkgs.scrcpy
+  ]
+  # Switched per host in ../apps.nix.
+  ++ lib.optional config.apps.escrcpy.enable pkgs.escrcpy;
 
   # Wireless debugging pairs and connects through mDNS: the phone announces
   # _adb-tls-pairing._tcp and _adb-tls-connect._tcp, and adb's built-in

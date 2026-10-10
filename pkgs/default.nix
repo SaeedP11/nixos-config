@@ -10,7 +10,6 @@
 { pkgs }:
 
 rec {
-  openwhip = pkgs.callPackage ./openwhip.nix { };
   raise-or-run = pkgs.callPackage ./raise-or-run.nix { };
   rtk = pkgs.callPackage ./rtk.nix { };
   escrcpy = pkgs.callPackage ./escrcpy.nix { };

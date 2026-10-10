@@ -1,7 +1,12 @@
 # Graphical applications. Session components that are part of the niri
 # desktop itself (bar, launcher, terminal, screenshot tools) live in
 # ../desktop/niri.nix instead.
-{ pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 {
   # Thunar comes from its NixOS module rather than environment.systemPackages,
@@ -30,51 +35,77 @@
     ];
   };
 
-  environment.systemPackages = with pkgs; [
-    # File management. Thunar itself is the programs.thunar block above.
-    xfce.tumbler
-    file-roller
+  environment.systemPackages =
+    with pkgs;
+    [
+      # File management. Thunar itself is the programs.thunar block above.
+      xfce.tumbler
+      file-roller
 
-    # Bootable USB media. ventoy-full-gtk, not ventoy or ventoy-full: the
-    # filesystem backends (cryptsetup, xfs, ext4, ntfs) are what -full adds,
-    # while the GUI is a separate override -- without a defaultGuiType the
-    # package installs no `ventoy-gui` and no desktop entry at all, only the
-    # Ventoy2Disk shell wrappers. gtk3 over qt5 because the rest of this
-    # desktop is GTK. Writing a stick needs root either way, so the launcher
-    # entry only works from a root session; `sudo ventoy` is the shell path.
-    #
-    # Ventoy prepares the stick once and then boots any ISO copied onto its
-    # exFAT partition, which is the everyday case; impression is for the times
-    # an image has to be written raw over the whole device, the job
-    # balenaEtcher did before it was dropped from nixpkgs.
-    ventoy-full-gtk
-    impression
+      # Bootable USB media. ventoy-full-gtk, not ventoy or ventoy-full: the
+      # filesystem backends (cryptsetup, xfs, ext4, ntfs) are what -full adds,
+      # while the GUI is a separate override -- without a defaultGuiType the
+      # package installs no `ventoy-gui` and no desktop entry at all, only the
+      # Ventoy2Disk shell wrappers. gtk3 over qt5 because the rest of this
+      # desktop is GTK. Writing a stick needs root either way, so the launcher
+      # entry only works from a root session; `sudo ventoy` is the shell path.
+      #
+      # Ventoy prepares the stick once and then boots any ISO copied onto its
+      # exFAT partition, which is the everyday case; impression is for the times
+      # an image has to be written raw over the whole device, the job
+      # balenaEtcher did before it was dropped from nixpkgs.
+      ventoy-full-gtk
+      impression
+
+      # Media
+      vlc
+      # Screen recorder. Captures through the xdg-desktop-portal ScreenCast
+      # interface (../desktop/portals.nix routes it to wlr) and PipeWire, so it
+      # works under niri; GNOME's own recorder is a gnome-shell built-in and
+      # ships no standalone package.
+      kooha
+
+      # Documents. Nothing here opened a PDF before -- application/pdf resolved
+      # to nothing at all, so a PDF saved out of Firefox and clicked in Thunar
+      # did nothing. Papers is the GNOME 48 successor to Evince and fits the
+      # rest of the GNOME accessories below.
+      papers
+      # Okular for the PDFs Papers only half-handles: digitally signed ones,
+      # which it verifies and can sign, and interactive forms, where its widget
+      # support is the one that holds up. Papers stays the default handler in
+      # ../../home/saeedp11/xdg.nix; this is the second entry in Open With.
+      # It is the one Qt/KDE application on an otherwise GTK desktop, so it
+      # brings a KDE Frameworks closure of its own and its dialogs will not
+      # match -- the signature and form support is what pays for that.
+      kdePackages.okular
+
+      # Settings / system UI
+      pavucontrol
+      networkmanagerapplet
+
+      # GNOME accessories
+      gnome-calendar
+      gnome-clocks
+      gnome-characters
+      gnome-calculator
+      # gnome-font-viewer previews one file at a time and is what supplies the
+      # font thumbnailer; font-manager is the browser over everything installed
+      # -- specimens by family, face comparison, licence and metadata, and the
+      # enable/disable toggles. Those toggles and its install button write to
+      # ~/.local/share/fonts, which is a real directory again now that the
+      # ONLYOFFICE workaround that owned it is gone. Anything wanted on this
+      # machine for good still belongs in ../desktop/fonts.nix; what is added
+      # through the GUI is user-local and will not survive a migration.
+      font-manager
+      gnome-font-viewer
+      snapshot
+    ]
+
+    # The heavy applications below are switched per host in ../apps.nix.
 
     # Second browser beside Firefox (../programs/misc.nix), for sites that only
     # work properly in Chromium. Unfree, which ../core/nix.nix allows.
-    google-chrome
-
-    # Media
-    vlc
-    # Screen recorder. Captures through the xdg-desktop-portal ScreenCast
-    # interface (../desktop/portals.nix routes it to wlr) and PipeWire, so it
-    # works under niri; GNOME's own recorder is a gnome-shell built-in and
-    # ships no standalone package.
-    kooha
-
-    # Documents. Nothing here opened a PDF before -- application/pdf resolved
-    # to nothing at all, so a PDF saved out of Firefox and clicked in Thunar
-    # did nothing. Papers is the GNOME 48 successor to Evince and fits the
-    # rest of the GNOME accessories below.
-    papers
-    # Okular for the PDFs Papers only half-handles: digitally signed ones,
-    # which it verifies and can sign, and interactive forms, where its widget
-    # support is the one that holds up. Papers stays the default handler in
-    # ../../home/saeedp11/xdg.nix; this is the second entry in Open With.
-    # It is the one Qt/KDE application on an otherwise GTK desktop, so it
-    # brings a KDE Frameworks closure of its own and its dialogs will not
-    # match -- the signature and form support is what pays for that.
-    kdePackages.okular
+    ++ lib.optional config.apps.chrome.enable pkgs.google-chrome
 
     # Office suite. The plain `libreoffice` attribute is the wrapped Fresh
     # build -- the wrapper is what puts the GTK VCL plugin and the bundled JRE
@@ -89,30 +120,8 @@
     # ONLYOFFICE was here for closer OOXML round-tripping, which is not worth
     # keeping a second suite installed for -- and it was the heavier of the
     # two, a prebuilt unfree Electron bundle.
-    libreoffice
+    ++ lib.optional config.apps.libreoffice.enable pkgs.libreoffice
 
-    # Settings / system UI
-    pavucontrol
-    networkmanagerapplet
-
-    # GNOME accessories
-    gnome-calendar
-    gnome-clocks
-    gnome-characters
-    gnome-calculator
-    # gnome-font-viewer previews one file at a time and is what supplies the
-    # font thumbnailer; font-manager is the browser over everything installed
-    # -- specimens by family, face comparison, licence and metadata, and the
-    # enable/disable toggles. Those toggles and its install button write to
-    # ~/.local/share/fonts, which is a real directory again now that the
-    # ONLYOFFICE workaround that owned it is gone. Anything wanted on this
-    # machine for good still belongs in ../desktop/fonts.nix; what is added
-    # through the GUI is user-local and will not survive a migration.
-    font-manager
-    gnome-font-viewer
-    snapshot
-
-    # CAD
-    freecad
-  ];
+    # CAD. Its addon and MCP server are ../../home/saeedp11/freecad.nix.
+    ++ lib.optional config.apps.freecad.enable pkgs.freecad;
 }

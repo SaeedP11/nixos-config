@@ -9,11 +9,13 @@
 {
   config,
   lib,
+  osConfig,
   pkgs,
   ...
 }:
 
-{
+# Switched per host in ../../nixos/apps.nix, together with FreeCAD itself.
+lib.mkIf osConfig.apps.freecad.enable {
   # MCP Addon workbench; start its RPC server from the "FreeCAD MCP" toolbar
   # (or tick Auto-Start Server in its menu).
   xdg.dataFile."FreeCAD/Mod/FreeCADMCP".source = pkgs.freecad-mcp-addon;

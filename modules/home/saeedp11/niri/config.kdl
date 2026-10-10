@@ -313,11 +313,6 @@ spawn-at-startup "swww-daemon"
 spawn-at-startup "nm-applet"
 spawn-at-startup "blueman-applet"
 
-// OpenWhip, the Claude Code whip; ../../../../pkgs/openwhip.nix. Like the two
-// applets above it is a tray icon and nothing else, so it belongs with them.
-// Quickshell's bar is the StatusNotifierWatcher this session has; an item
-// that starts first registers as soon as the watcher appears.
-spawn-at-startup "openwhip"
 // To run a shell command (with variables, pipes, etc.), use spawn-sh-at-startup:
 // spawn-sh-at-startup "qs -c ~/source/qs/MyAwesomeShell"
 
@@ -525,22 +520,6 @@ window-rule {
     match title=r#"^(File Upload|Save As|Enter name of file to save to…|Open With|Rename.*|Properties|Confirm.*|Replace File\?)$"#
 
     open-floating true
-}
-
-// OpenWhip's whip animation draws on a borderless, transparent, full-screen
-// Electron window, and without this rule it runs over a flat rectangle in the
-// focus ring's colour instead of over the desktop. niri draws the ring and the
-// border *around* a window only when that window agrees to omit its
-// client-side decorations, and as a *background* filling the whole surface
-// otherwise -- the sensible default, since a server-side-decorated window
-// expects the compositor to paint something behind it. Electron's
-// `frame: false` window never negotiates xdg-decoration either way, so it
-// lands in the second case, and an overlay that is transparent by design has
-// nothing of its own to hide the fill behind.
-window-rule {
-    match app-id=r#"^openwhip$"#
-
-    draw-border-with-background false
 }
 
 binds {

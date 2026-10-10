@@ -1,5 +1,5 @@
 // StatusNotifier tray. Quickshell is the session's StatusNotifierWatcher
-// now, so nm-applet, blueman-applet and openwhip register here.
+// now, so nm-applet and blueman-applet register here.
 import QtQuick
 import Quickshell
 import Quickshell.Services.SystemTray

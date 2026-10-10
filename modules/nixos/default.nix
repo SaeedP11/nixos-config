@@ -41,5 +41,8 @@
     ./services/docker.nix
 
     ./users.nix
+
+    # Per-host switches for the heavy applications; see the file.
+    ./apps.nix
   ];
 }

@@ -29,7 +29,7 @@ modules/nixos/
 modules/home/saeedp11/ Home Manager: niri, quickshell, alacritty, zellij,
                        gtk, wallust, darkman + hooks, fish + starship,
                        mimeapps, git identity, user packages
-pkgs/                  greeter-wallust, wallpaper-tools, rtk, openwhip
+pkgs/                  greeter-wallust, wallpaper-tools, rtk
 overlays/              exposes pkgs/ as ordinary pkgs.* attributes
 assets/                login screen fallback background
 ```

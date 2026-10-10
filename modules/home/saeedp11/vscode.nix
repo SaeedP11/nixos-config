@@ -36,11 +36,12 @@
 # nixpkgs copy is inert on a machine that already has a newer one and is the
 # starting point on a machine that does not. That is the intended
 # behaviour, not a conflict to resolve.
-{ pkgs, ... }:
+{ osConfig, pkgs, ... }:
 
 {
   programs.vscode = {
-    enable = true;
+    # Switched per host in ../../nixos/apps.nix.
+    enable = osConfig.apps.vscode.enable;
 
     profiles.default = {
       # Every extension below is referenced by an id in userSettings, or
