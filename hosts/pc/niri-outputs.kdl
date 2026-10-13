@@ -14,6 +14,13 @@ output "HDMI-A-1" {
 // content. Waiting for each frame to complete before queueing it fixes that
 // at a small latency cost. Lives here rather than in the shared template
 // because only this host runs on nouveau.
+//
+// That alone left flicker in place: nouveau's Kepler KMS also misbehaves when
+// a client's buffer is put straight on a plane (fullscreen windows, video)
+// and with the hardware cursor plane, so niri composites everything itself
+// instead. Costs a little GPU time, which the GT 730 has to spare at 1440p.
 debug {
     wait-for-frame-completion-before-queueing
+    disable-direct-scanout
+    disable-cursor-plane
 }
