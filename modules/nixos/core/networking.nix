@@ -8,6 +8,17 @@
   networking.networkmanager.enable = true;
   networking.wireless.enable = false;
 
+  # Reload NetworkManager on `nixos-rebuild switch` instead of restarting it.
+  #
+  # A restart drops the Wi-Fi association, and Quickshell's Networking
+  # service (0.3.1) does not reconnect when NetworkManager reappears on the
+  # bus: the bar's network chip froze on its pre-restart state until
+  # quickshell.service was restarted too. The unit's ExecReload calls
+  # NetworkManager's Reload method, which re-reads NetworkManager.conf
+  # (e.g. vpn-share.nix's unmanaged-devices). A new NetworkManager binary
+  # only takes effect after a reboot or `systemctl restart NetworkManager`.
+  systemd.services.NetworkManager.reloadIfChanged = true;
+
   # Load the firewall as one nftables ruleset instead of driving iptables a
   # rule at a time.
   #

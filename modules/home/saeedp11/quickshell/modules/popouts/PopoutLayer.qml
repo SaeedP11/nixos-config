@@ -86,6 +86,10 @@ PanelWindow {
                 align: "right",
                 comp: bluetooth
             },
+            share: {
+                align: "right",
+                comp: share
+            },
             sound: {
                 align: "right",
                 comp: sound
@@ -283,6 +287,10 @@ PanelWindow {
     Component {
         id: bluetooth
         BluetoothPanel {}
+    }
+    Component {
+        id: share
+        VpnSharePanel {}
     }
     Component {
         id: sound

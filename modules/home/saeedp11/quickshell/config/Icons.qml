@@ -88,6 +88,8 @@ Singleton {
     readonly property string grid: g(0xF0570)
     readonly property string vpn: g(0xF0582)
     readonly property string lan: g(0xF0317)
+    readonly property string accessPoint: g(0xF0003)
+    readonly property string key: g(0xF0306)
     readonly property string earth: g(0xF01E7)
     readonly property string shieldLock: g(0xF099D)
     readonly property string lockOpen: g(0xF033F)

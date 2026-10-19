@@ -133,6 +133,20 @@ PanelSurface {
                 expandable: true
                 onExpand: Panels.toggle("sound", Panels.screen)
             }
+            ToggleTile {
+                Layout.fillWidth: true
+                Layout.preferredWidth: 1
+                Layout.columnSpan: 2
+                visible: VpnShare.available
+                icon: VpnShare.hotspotOn ? Icons.accessPoint : Icons.lan
+                title: "VPN share"
+                subtitle: VpnShare.summary
+                checked: VpnShare.anyOn
+                tint: VpnShare.vpn ? Theme.tone(2) : Theme.tone(9)
+                onToggled: VpnShare.toggle()
+                expandable: true
+                onExpand: Panels.toggle("share", Panels.screen)
+            }
         }
 
         Card {

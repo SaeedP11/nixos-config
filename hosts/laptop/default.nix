@@ -39,6 +39,9 @@
   networking.hostName = hostName;
 
   services.vpn-share.interface = "enp2s0";
+  # false while the port is plugged into a router instead of the console/TV.
+  services.vpn-share.ethernet.enable = false;
+  services.vpn-share.wifi.interface = "wlp3s0";
 
   swapDevices = [
     {

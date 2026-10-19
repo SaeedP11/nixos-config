@@ -15,10 +15,15 @@
     enable = true;
     tunMode.enable = true;
 
-    # Add 172.16.0.0/12 to the tun inbound's route_exclude_address, so
-    # traffic to Docker's bridge networks (docker0 on 172.17.0.0/16, compose
-    # networks carved from the rest of the /12) stays on the main table
-    # instead of being captured by sing-box's auto_route. nekoray builds the
+    # Add the private (RFC 1918) ranges to the tun inbound's
+    # route_exclude_address, so they stay on the main table instead of being
+    # captured by sing-box's auto_route: 172.16.0.0/12 for Docker's bridge
+    # networks (docker0 on 172.17.0.0/16, compose networks carved from the
+    # rest of the /12), and 192.168.0.0/16 and 10.0.0.0/8 for the LAN. Without
+    # them sing-box accepts every TCP connection to a LAN address itself and
+    # sends it to the proxy, which cannot reach this network -- wireless adb
+    # to the phone showed "offline", and even an address with no device on
+    # it "connected". nekoray builds the
     # tun inbound in C++ and only fills route_exclude_address from the route
     # profile's direct IP rules while "tun routing" is on, so there is no
     # setting to reach it from here. The tunnel's own 172.19.0.1/24 is still
