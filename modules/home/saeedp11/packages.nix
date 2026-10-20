@@ -35,5 +35,9 @@
     # Claude Code CLI, the upstream release defined in
     # ../../../pkgs/claude-code.nix rather than nixpkgs' lagging one.
     claude-code
+
+    # GitHub Spec Kit's `specify` CLI for spec-driven development, from
+    # ../../../overlays/spec-kit.nix (25.05 has none).
+    spec-kit
   ];
 }

@@ -40,6 +40,9 @@
     # freecad-mcp needs an mcp Python package newer than 25.05 has.
     (import ../../../overlays/freecad-mcp.nix { inherit inputs; })
 
+    # spec-kit (specify CLI), which 25.05 does not carry.
+    (import ../../../overlays/spec-kit.nix { inherit inputs; })
+
     # vlc wrapped to pick a dark/light Qt style from darkman at launch.
     (import ../../../overlays/vlc.nix)
   ];
