@@ -30,6 +30,8 @@
 
     # Shares the VPN with devices on the wired port.
     ../../modules/nixos/services/vpn-share.nix
+
+    ../../modules/nixos/programs/steam.nix
   ];
 
   networking.hostName = hostName;
