@@ -68,7 +68,7 @@
       # Documents. Nothing here opened a PDF before -- application/pdf resolved
       # to nothing at all, so a PDF saved out of Firefox and clicked in Thunar
       # did nothing. Papers is the GNOME 48 successor to Evince and fits the
-      # rest of the GNOME accessories below.
+      # other GNOME apps below (Font Viewer, Snapshot).
       papers
       # Okular for the PDFs Papers only half-handles: digitally signed ones,
       # which it verifies and can sign, and interactive forms, where its widget
@@ -83,8 +83,7 @@
       pavucontrol
       networkmanagerapplet
 
-      # GNOME accessories
-      gnome-calendar
+      # Fonts and the webcam (Snapshot)
       # gnome-font-viewer previews one file at a time and is what supplies the
       # font thumbnailer; font-manager is the browser over everything installed
       # -- specimens by family, face comparison, licence and metadata, and the

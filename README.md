@@ -103,6 +103,12 @@ a read-only store symlink would break it:
 - `~/.local/state/quickshell/by-shell/<hash>/recent-chars.json` — the
   Recent row of the emoji and symbols picker (newest first, at most 24, shared
   by both tabs). A bad file is set aside the same way
+- `~/.local/state/quickshell/by-shell/<hash>/events.json` — the calendar
+  panels' events (stored by Gregorian date, so the Persian panel shows the
+  same real day) and the reminder keys already fired. A bad file is set aside
+  the same way. Nothing opens `.ics` files since gnome-calendar was removed:
+  `xdg.nix` assigns no `text/calendar` handler and the panels do not import
+  them
 
 ## Adding a machine
 

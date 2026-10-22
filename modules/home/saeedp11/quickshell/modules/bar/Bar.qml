@@ -166,7 +166,7 @@ PanelWindow {
                     fontFamily: bar.persianDate ? Theme.persianFont : Theme.font
                     tint: Theme.tone(3)
                     active: (Panels.open === "calendar" || Panels.open === "persian") && Panels.screen === bar.output
-                    onClicked: m => m.button === Qt.MiddleButton ? (bar.persianDate = !bar.persianDate) : m.button === Qt.RightButton ? bar.run("gnome-calendar") : bar.open(bar.persianDate ? "persian" : "calendar")
+                    onClicked: m => m.button === Qt.MiddleButton ? (bar.persianDate = !bar.persianDate) : m.button === Qt.RightButton ? Panels.openWith(bar.persianDate ? "persian" : "calendar", "add", bar.output) : bar.open(bar.persianDate ? "persian" : "calendar")
                     onScrolled: d => bar.persianDate = !bar.persianDate
                 }
                 // While a timer runs, counts down the soonest one; Clocks.now

@@ -494,7 +494,6 @@ window-rule {
 // which is what these want. They are single-purpose dialogs that already
 // ask for a sensible size and look absurd stretched across half a monitor.
 window-rule {
-    match app-id=r#"^org\.gnome\.Calendar$"#
     match app-id=r#"^org\.gnome\.font-viewer$"#
     match app-id=r#"^org\.gnome\.Snapshot$"#
     match app-id=r#"^(org\.pulseaudio\.)?pavucontrol$"#
