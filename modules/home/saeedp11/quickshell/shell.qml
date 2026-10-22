@@ -63,6 +63,8 @@ ShellRoot {
         function toggle(name: string): void {
             Panels.toggle(name, "");
         }
+        // `panel open emoji symbols` opens the emoji panel on its Symbols
+        // tab, or switches to it if the panel is already open.
         function open(name: string, arg: string): void {
             Panels.openWith(name, arg, "");
         }

@@ -4,8 +4,90 @@
 # Portals live in ./portals.nix, audio in ./audio.nix, and the supporting
 # desktop daemons (mounting, printing, bluetooth agent, polkit) in
 # ./services.nix.
-{ pkgs, vars, ... }:
+{
+  config,
+  pkgs,
+  vars,
+  ...
+}:
 
+let
+  # The Symbols tab's character table, one `<hex cp>\t<NAME>\t<category>`
+  # line per character, read by the shell's services/Unicode.qml.
+  #
+  # Only code points that some installed font actually has a glyph for are
+  # kept. QML cannot ask whether a glyph exists, so without this filter the
+  # grid would fill with empty boxes for scripts nothing here covers; the
+  # cmap of every font in fonts.packages is read once at build time instead.
+  # Also dropped: controls, surrogates, private use, spaces and format
+  # characters (nothing to see), combining marks (they need a base), the
+  # `<..., First>`/`<..., Last>` ranges (CJK ideographs, Hangul syllables:
+  # unnamed and huge), and the emoji the Emoji tab already lists -- only
+  # those that are emoji by default, since for text-style ones like the
+  # copyright sign or the left-right arrow the Emoji tab offers only the
+  # FE0F emoji form.
+  unicodeData =
+    pkgs.runCommand "quickshell-unicode-data.tsv"
+      {
+        nativeBuildInputs = [ (pkgs.python3.withPackages (ps: [ ps.fonttools ])) ];
+        fonts = config.fonts.packages;
+        ucd = "${pkgs.unicode-character-database}/share/unicode/UnicodeData.txt";
+        emoji = "${pkgs.unicode-emoji}/share/unicode/emoji/emoji-test.txt";
+      }
+      ''
+        python3 - > $out <<'EOF'
+        import os, re
+        from pathlib import Path
+        from fontTools.ttLib import TTCollection, TTFont
+
+        covered = set()
+        for root in os.environ["fonts"].split():
+            for f in Path(root).rglob("*"):
+                ext = f.suffix.lower()
+                try:
+                    if ext in (".ttc", ".otc"):
+                        faces = TTCollection(f, lazy=True).fonts
+                    elif ext in (".ttf", ".otf"):
+                        faces = [TTFont(f, lazy=True)]
+                    else:
+                        continue
+                    for face in faces:
+                        covered.update(face.getBestCmap() or {})
+                except Exception:
+                    pass
+
+        emoji = set()
+        for line in open(os.environ["emoji"]):
+            m = re.match(r"([0-9A-F]+)\s+; fully-qualified", line)
+            if m:
+                emoji.add(int(m[1], 16))
+
+        def category(cp, name, gc):
+            if "ARROW" in name or any(a <= cp <= b for a, b in (
+                    (0x2190, 0x21FF), (0x27F0, 0x27FF), (0x2900, 0x297F), (0x1F800, 0x1F8FF))):
+                return "arrows"
+            if 0x2500 <= cp <= 0x25FF or 0x2B00 <= cp <= 0x2BFF:
+                return "shapes"
+            if gc == "Sm":
+                return "math"
+            if gc == "Sc":
+                return "currency"
+            if gc[0] == "P":
+                return "punctuation"
+            if gc[0] == "L":
+                return "letters"
+            return "other"
+
+        for line in open(os.environ["ucd"]):
+            hexcp, name, gc = line.split(";")[:3]
+            cp = int(hexcp, 16)
+            if (gc in ("Cc", "Cs", "Co", "Cf") or gc[0] in "MZ"
+                    or name.startswith("<") or cp in emoji or cp not in covered):
+                continue
+            print(f"{hexcp}\t{name}\t{category(cp, name, gc)}")
+        EOF
+      '';
+in
 {
   # Components of the niri session itself. Configuration for these lives in
   # Home Manager (../home/).
@@ -201,6 +283,10 @@
     # The world clock's zone list, likewise from the store; the offsets
     # themselves come from `TZ=<zone> date +%z` at run time.
     environment.QS_TZ_DATA = "${pkgs.tzdata}/share/zoneinfo/zone1970.tab";
+
+    # The Symbols tab's character table: the font-covered subset of
+    # UnicodeData.txt that unicodeData above builds.
+    environment.QS_UNICODE_DATA = "${unicodeData}";
 
     serviceConfig = {
       ExecStart = "${pkgs.quickshell}/bin/qs -c shell";

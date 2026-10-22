@@ -100,6 +100,9 @@ a read-only store symlink would break it:
 - `~/.local/state/quickshell/by-shell/<hash>/clocks.json` — the clocks panel's
   timers (running ones keep their end time across restarts), stopwatch,
   alarms, world clocks and last tab. A bad file is set aside the same way
+- `~/.local/state/quickshell/by-shell/<hash>/recent-chars.json` — the
+  Recent row of the emoji and symbols picker (newest first, at most 24, shared
+  by both tabs). A bad file is set aside the same way
 
 ## Adding a machine
 
