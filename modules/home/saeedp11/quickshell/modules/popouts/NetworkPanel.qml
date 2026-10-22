@@ -2,6 +2,7 @@
 // tunnel, the local and public addresses, then Wi-Fi networks. Scans while
 // open. A known network connects with its saved settings; a new secured one
 // asks for the passphrase inline. Right click on a known network forgets it.
+// With a cable in, the Ethernet row switches between it and Wi-Fi.
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
@@ -86,15 +87,22 @@ PanelSurface {
             onClicked: Ip.copy(Ip.pub)
         }
 
+        // The cable, while one is plugged in. Click switches the uplink:
+        // connected, it drops to Wi-Fi; otherwise it takes over from Wi-Fi.
         ListRow {
+            readonly property var dev: Net.wired ?? Net.ethernet
+            readonly property bool changing: dev?.state === ConnectionState.Connecting || dev?.state === ConnectionState.Disconnecting
+
             Layout.fillWidth: true
-            visible: Net.wired !== null
+            visible: dev !== null
             icon: Icons.ethernet
             title: "Ethernet"
-            subtitle: Net.wired?.name ?? ""
-            active: true
-            mark: Icons.check
+            subtitle: (changing ? "Switching…" : Net.wired ? "Connected" : "Cable in · click to use") + " · " + (dev?.name ?? "")
+            active: Net.wired !== null
+            busy: changing
+            mark: Net.wired ? Icons.check : ""
             tint: Theme.tone(6)
+            onClicked: Net.switchLink()
         }
 
         StyledText {

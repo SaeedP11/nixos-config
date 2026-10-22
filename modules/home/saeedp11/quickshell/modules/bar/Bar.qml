@@ -238,13 +238,14 @@ PanelWindow {
                     onScrolled: d => Audio.setVolume(Audio.volume + (d > 0 ? 0.05 : -0.05))
                 }
                 // Ethernet or Wi-Fi. Click opens the network panel
-                // (addresses, VPN, Wi-Fi); right click the connection editor.
+                // (addresses, VPN, Wi-Fi); middle click switches between the
+                // cable and Wi-Fi; right click the connection editor.
                 Chip {
                     icon: Net.icon
                     text: Net.wifiNetwork && !Net.wired && !bar.narrow ? Math.round(Net.signal * 100) + "%" : ""
                     tint: Theme.tone(6)
                     active: Panels.open === "network" && Panels.screen === bar.output
-                    onClicked: m => m.button === Qt.RightButton ? bar.run("nm-connection-editor") : bar.open("network")
+                    onClicked: m => m.button === Qt.RightButton ? bar.run("nm-connection-editor") : m.button === Qt.MiddleButton ? (Net.canSwitch && Net.switchLink()) : bar.open("network")
                 }
                 // nekoray's tunnel. Lit while it is up; click raises nekoray.
                 Chip {
