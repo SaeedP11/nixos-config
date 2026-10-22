@@ -34,6 +34,10 @@ PanelWindow {
                 align: "center",
                 comp: media
             },
+            clocks: {
+                align: "center",
+                comp: clocks
+            },
             control: {
                 align: "right",
                 comp: control
@@ -226,6 +230,10 @@ PanelWindow {
     Component {
         id: media
         MediaPanel {}
+    }
+    Component {
+        id: clocks
+        ClocksPanel {}
     }
     Component {
         id: control

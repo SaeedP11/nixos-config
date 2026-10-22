@@ -19,6 +19,9 @@ Singleton {
     readonly property string upload: g(0xF0552)
     readonly property string calendar: g(0xF00ED)
     readonly property string clock: g(0xF0150)
+    readonly property string timer: g(0xF051B)
+    readonly property string alarm: g(0xF0020)
+    readonly property string flag: g(0xF023B)
 
     readonly property string volHigh: g(0xF057E)
     readonly property string volMid: g(0xF0580)

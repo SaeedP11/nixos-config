@@ -85,7 +85,6 @@
 
       # GNOME accessories
       gnome-calendar
-      gnome-clocks
       gnome-characters
       # gnome-font-viewer previews one file at a time and is what supplies the
       # font thumbnailer; font-manager is the browser over everything installed

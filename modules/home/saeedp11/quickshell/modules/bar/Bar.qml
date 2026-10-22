@@ -169,11 +169,17 @@ PanelWindow {
                     onClicked: m => m.button === Qt.MiddleButton ? (bar.persianDate = !bar.persianDate) : m.button === Qt.RightButton ? bar.run("gnome-calendar") : bar.open(bar.persianDate ? "persian" : "calendar")
                     onScrolled: d => bar.persianDate = !bar.persianDate
                 }
+                // While a timer runs, counts down the soonest one; Clocks.now
+                // ticks every second while any timer is running.
                 Chip {
-                    icon: Icons.clock
-                    text: Qt.formatDateTime(clock.date, "HH:mm")
+                    readonly property real msLeft: Math.min(...Clocks.timers.filter(t => t.state === "running").map(t => t.endsAt)) - Clocks.now
+                    readonly property int secs: Math.ceil(Math.max(0, msLeft) / 1000)
+
+                    icon: isFinite(msLeft) ? Icons.timer : Icons.clock
+                    text: isFinite(msLeft) ? (secs >= 3600 ? Math.floor(secs / 3600) + ":" : "") + String(Math.floor(secs / 60) % 60).padStart(2, "0") + ":" + String(secs % 60).padStart(2, "0") : Qt.formatDateTime(clock.date, "HH:mm")
                     tint: Theme.tone(3)
-                    onClicked: m => m.button === Qt.RightButton ? bar.run("gnome-clocks") : bar.open("calendar")
+                    active: Panels.open === "clocks" && Panels.screen === bar.output
+                    onClicked: m => m.button === Qt.RightButton ? bar.open("clocks") : bar.open("calendar")
                 }
             }
 

@@ -198,6 +198,10 @@
     # since /run/current-system/sw does not link share/unicode.
     environment.QS_EMOJI_DATA = "${pkgs.unicode-emoji}/share/unicode/emoji/emoji-test.txt";
 
+    # The world clock's zone list, likewise from the store; the offsets
+    # themselves come from `TZ=<zone> date +%z` at run time.
+    environment.QS_TZ_DATA = "${pkgs.tzdata}/share/zoneinfo/zone1970.tab";
+
     serviceConfig = {
       ExecStart = "${pkgs.quickshell}/bin/qs -c shell";
       Restart = "on-failure";

@@ -20,9 +20,13 @@ import qs.modules.lock
 import qs.modules.polkit
 
 ShellRoot {
-    // Singletons are created on first use; this one only watches, so it
-    // is touched here to start it.
-    Component.onCompleted: Warnings.checkBattery()
+    // Singletons are created on first use; these only watch, so they are
+    // touched here to start them (Clocks fires timers and alarms with no
+    // panel open).
+    Component.onCompleted: {
+        Warnings.checkBattery();
+        Clocks.now;
+    }
 
     Lock {
         id: lockScreen
@@ -51,7 +55,7 @@ ShellRoot {
     // `qs -c shell ipc call panel toggle control`. Panels: control,
     // notifications, calendar, persian, media, sysmon, power, clipboard,
     // wallpaper, launcher, overview, capture, keybinds, emoji, network,
-    // bluetooth, sound, calculator. `panel open <name> <arg>` opens a panel without
+    // bluetooth, sound, calculator, clocks. `panel open <name> <arg>` opens a panel without
     // toggling it closed and hands it `arg` (Panels.arg), e.g.
     // `panel open emoji symbols`.
     IpcHandler {

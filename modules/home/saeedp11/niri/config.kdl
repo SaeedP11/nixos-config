@@ -495,7 +495,6 @@ window-rule {
 // ask for a sensible size and look absurd stretched across half a monitor.
 window-rule {
     match app-id=r#"^org\.gnome\.Characters$"#
-    match app-id=r#"^org\.gnome\.clocks$"#
     match app-id=r#"^org\.gnome\.Calendar$"#
     match app-id=r#"^org\.gnome\.font-viewer$"#
     match app-id=r#"^org\.gnome\.Snapshot$"#
@@ -585,6 +584,7 @@ binds {
     Mod+Shift+O hotkey-overlay-title="Workspaces and Windows" { spawn "qs" "-c" "shell" "ipc" "call" "panel" "toggle" "overview"; }
     Mod+Slash hotkey-overlay-title="All Keybindings" { spawn "qs" "-c" "shell" "ipc" "call" "panel" "toggle" "keybinds"; }
     Mod+Semicolon hotkey-overlay-title="Emoji" { spawn "qs" "-c" "shell" "ipc" "call" "panel" "toggle" "emoji"; }
+    Mod+Shift+T hotkey-overlay-title="Clocks" { spawn "qs" "-c" "shell" "ipc" "call" "panel" "toggle" "clocks"; }
     // Window switcher, most recent first. niri keeps handling these while
     // the switcher holds the keyboard, so repeats step through it; letting
     // go of Alt switches.

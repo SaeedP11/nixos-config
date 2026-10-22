@@ -97,6 +97,9 @@ a read-only store symlink would break it:
   calculator panel's history, `ans` and keypad toggle. A file that does not
   parse, or has the wrong `version`, is renamed to `<file>.bad-<epoch>` and
   defaults are used until the next change rewrites it
+- `~/.local/state/quickshell/by-shell/<hash>/clocks.json` — the clocks panel's
+  timers (running ones keep their end time across restarts), stopwatch,
+  alarms, world clocks and last tab. A bad file is set aside the same way
 
 ## Adding a machine
 
