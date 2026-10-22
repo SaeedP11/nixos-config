@@ -570,8 +570,9 @@ binds {
     // app series after nekoray, telegram and kooha.
     Mod+F4 hotkey-overlay-title="Open VS Code: Editor" { spawn "raise-or-run" "code$" "code"; }
     Mod+Shift+W hotkey-overlay-title="Spawn Random Walpaper" { spawn "randomWallpaper"; }
-    // Quickshell popouts. Each bind toggles its panel on the focused output;
-    // Escape or a click outside closes it. The terminal fzf picker is still
+    // Quickshell popouts. Each bind toggles its panel on the focused output,
+    // except Symbols, which opens the emoji panel on its Symbols tab (or
+    // switches to it); Escape or a click outside closes it. The terminal fzf picker is still
     // `wallpaper-picker`, run from a shell.
     Mod+Shift+B hotkey-overlay-title="Pick Wallpaper" { spawn "qs" "-c" "shell" "ipc" "call" "panel" "toggle" "wallpaper"; }
     Mod+A hotkey-overlay-title="Quick Settings" { spawn "qs" "-c" "shell" "ipc" "call" "panel" "toggle" "control"; }
