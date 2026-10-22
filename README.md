@@ -93,6 +93,10 @@ a read-only store symlink would break it:
 - `~/.config/termusic/*.toml`, `~/.config/nekoray/` — rewritten on exit
 - `~/.config/Thunar/{accels.scm,uca.xml}`, `~/.config/xfce4/helpers.rc` —
   written by Thunar's and exo's own preference dialogs
+- `~/.local/state/quickshell/by-shell/<hash>/calculator.json` — the
+  calculator panel's history, `ans` and keypad toggle. A file that does not
+  parse, or has the wrong `version`, is renamed to `<file>.bad-<epoch>` and
+  defaults are used until the next change rewrites it
 
 ## Adding a machine
 

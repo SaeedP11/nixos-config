@@ -3,8 +3,9 @@
 // by how often they have been started from here (services/Apps.qml).
 //
 // Two extras share the field: an arithmetic expression shows its result
-// as the first row (Enter copies it), and a leading ">" runs the rest as a
-// shell command, in a terminal with Shift+Enter.
+// as the first row (Enter copies it; after a leading "=" Enter opens the
+// Calculator panel prefilled instead), and a leading ">" runs the rest as
+// a shell command, in a terminal with Shift+Enter.
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
@@ -17,18 +18,16 @@ PanelSurface {
 
     readonly property string query: search.text
     readonly property bool commandMode: query.startsWith(">")
+    readonly property bool calcMode: query.trim().startsWith("=")
+    readonly property string calcExpr: query.trim().replace(/^=/, "").trim()
+    // The calc row's result. Without "=" only digits and operators count,
+    // so app searches such as "pi" stay app searches.
     readonly property string calc: {
-        const q = query.trim().replace(/^=/, "");
-        // Digits and operators only, so nothing but arithmetic reaches the
-        // evaluator; ^ is read as a power.
-        if (!/^[-+*\/%^().,\s\d]+$/.test(q) || !/\d/.test(q) || !/[-+*\/%^]/.test(q.replace(/^\s*-/, "")))
+        const q = calcExpr;
+        if (!calcMode && (!/^[-+*\/%^().,\s\d]+$/.test(q) || !/\d/.test(q) || !/[-+*\/%^]/.test(q.replace(/^\s*-/, ""))))
             return "";
-        try {
-            const v = Function('"use strict"; return (' + q.replace(/,/g, ".").replace(/\^/g, "**") + ");")();
-            return typeof v === "number" && isFinite(v) ? String(Math.round(v * 1e10) / 1e10) : "";
-        } catch (e) {
-            return "";
-        }
+        const r = Calc.evaluate(q);
+        return r.ok ? r.text : "";
     }
     readonly property var rows: {
         if (commandMode)
@@ -38,10 +37,12 @@ PanelSurface {
                     text: query.slice(1).trim()
                 }
             ];
-        const r = calc ? [
+        const r = calc || (calcMode && calcExpr) ? [
             {
                 kind: "calc",
-                text: calc
+                text: calc,
+                expr: calcExpr,
+                open: calcMode
             }
         ] : [];
         return r.concat(Apps.search(query).slice(0, 60).map(e => ({
@@ -56,8 +57,10 @@ PanelSurface {
         Panels.close();
         if (row.kind === "app")
             Apps.run(row.entry);
+        else if (row.kind === "calc" && row.open)
+            Panels.openWith("calculator", row.expr);
         else if (row.kind === "calc")
-            Quickshell.execDetached(["wl-copy", row.text]);
+            Calc.copy(row.text);
         else if (row.text)
             Quickshell.execDetached(shift ? [Config.terminal, "-e", "sh", "-c", row.text + '; exec "$SHELL"'] : ["sh", "-c", row.text]);
     }
@@ -141,13 +144,13 @@ PanelSurface {
                         spacing: 0
                         StyledText {
                             Layout.fillWidth: true
-                            text: row.isApp ? row.modelData.entry.name : row.modelData.kind === "calc" ? "= " + row.modelData.text : (row.modelData.text || "Type a command")
+                            text: row.isApp ? row.modelData.entry.name : row.modelData.kind === "calc" ? "= " + (row.modelData.text || "…") : (row.modelData.text || "Type a command")
                             font.weight: Font.DemiBold
                             font.family: row.isApp ? Theme.font : Theme.monoFont
                         }
                         StyledText {
                             Layout.fillWidth: true
-                            readonly property string sub: row.isApp ? (row.modelData.entry.comment || row.modelData.entry.genericName || "") : row.modelData.kind === "calc" ? "Enter to copy" : "Enter to run · Shift+Enter in a terminal"
+                            readonly property string sub: row.isApp ? (row.modelData.entry.comment || row.modelData.entry.genericName || "") : row.modelData.kind === "calc" ? (row.modelData.open ? "Enter to open in Calculator" : "Enter to copy") : "Enter to run · Shift+Enter in a terminal"
                             visible: sub !== ""
                             text: sub
                             color: Theme.textDim

@@ -20,6 +20,19 @@
 {
   xdg.configFile."quickshell/shell".source = ./quickshell;
 
+  # Replaces GNOME's Calculator app: typing "Calculator" in the launcher opens the
+  # shell's calculator panel, and the launcher's usage counter ranks this
+  # entry like any other app.
+  xdg.desktopEntries.qs-calculator = {
+    name = "Calculator";
+    icon = "accessories-calculator";
+    exec = "qs -c shell ipc call panel toggle calculator";
+    categories = [
+      "Utility"
+      "Calculator"
+    ];
+  };
+
   # What the clipboard popout reads: every selection is recorded by a
   # `wl-paste --watch cliphist store` unit bound to graphical-session.target.
   services.cliphist = {

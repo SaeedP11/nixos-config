@@ -4,7 +4,7 @@
 // which the input mask leaves to the bar underneath so that clicking a
 // different module switches panels in one click instead of two. The
 // centred, modal panels (power, clipboard, wallpaper, launcher, switcher,
-// overview, capture, keybinds, emoji) take the whole
+// overview, capture, keybinds, emoji, calculator) take the whole
 // screen and dim it instead.
 import QtQuick
 import Quickshell
@@ -77,6 +77,10 @@ PanelWindow {
             emoji: {
                 align: "modal",
                 comp: emoji
+            },
+            calculator: {
+                align: "modal",
+                comp: calculator
             },
             network: {
                 align: "right",
@@ -279,6 +283,10 @@ PanelWindow {
     Component {
         id: emoji
         EmojiPanel {}
+    }
+    Component {
+        id: calculator
+        CalculatorPanel {}
     }
     Component {
         id: network

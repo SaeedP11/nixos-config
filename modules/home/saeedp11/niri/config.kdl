@@ -447,7 +447,7 @@ window-rule {
 //
 // THE PATTERNS MATCH THE WAYLAND app_id, which is not always the name of
 // the .desktop file: Alacritty capitalises it, GTK apps generally use their
-// application ID (org.gnome.Calculator), and several Qt and GTK3 apps use
+// application ID (org.gnome.Loupe), and several Qt and GTK3 apps use
 // the plain binary name instead. Where those two forms differ, or where the
 // real value could not be confirmed without launching the program, the
 // pattern accepts both rather than silently matching nothing -- a window
@@ -494,7 +494,6 @@ window-rule {
 // which is what these want. They are single-purpose dialogs that already
 // ask for a sensible size and look absurd stretched across half a monitor.
 window-rule {
-    match app-id=r#"^(org\.gnome\.Calculator|gnome-calculator)$"#
     match app-id=r#"^org\.gnome\.Characters$"#
     match app-id=r#"^org\.gnome\.clocks$"#
     match app-id=r#"^org\.gnome\.Calendar$"#

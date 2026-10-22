@@ -10,13 +10,17 @@ Singleton {
     property string open: ""
     property string screen: ""
     property bool keepAwake: false
+    // What the open panel was asked to start with ("" unless opened
+    // through openWith), e.g. the launcher's "=expr" for the calculator.
+    property string arg: ""
 
     // Panels driven from the keyboard -- a search field, or the power
     // menu's arrow keys -- take it exclusively (see PopoutLayer).
-    readonly property bool wantsKeyboard: ["clipboard", "wallpaper", "power", "launcher", "switcher", "overview", "keybinds", "emoji", "capture"].includes(open)
+    readonly property bool wantsKeyboard: ["clipboard", "wallpaper", "power", "launcher", "switcher", "overview", "keybinds", "emoji", "capture", "calculator"].includes(open)
 
     function toggle(name, screenName) {
         const target = screenName || Niri.focusedOutput || (Quickshell.screens[0]?.name ?? "");
+        arg = "";
         if (open === name && screen === target) {
             open = "";
             return;
@@ -24,7 +28,14 @@ Singleton {
         screen = target;
         open = name;
     }
+    // Opens name with arg, never closing it the way toggle() would.
+    function openWith(name, value, screenName) {
+        arg = value ?? "";
+        screen = screenName || Niri.focusedOutput || (Quickshell.screens[0]?.name ?? "");
+        open = name;
+    }
     function close() {
+        arg = "";
         open = "";
     }
 

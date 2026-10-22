@@ -51,11 +51,16 @@ ShellRoot {
     // `qs -c shell ipc call panel toggle control`. Panels: control,
     // notifications, calendar, persian, media, sysmon, power, clipboard,
     // wallpaper, launcher, overview, capture, keybinds, emoji, network,
-    // bluetooth, sound.
+    // bluetooth, sound, calculator. `panel open <name> <arg>` opens a panel without
+    // toggling it closed and hands it `arg` (Panels.arg), e.g.
+    // `panel open emoji symbols`.
     IpcHandler {
         target: "panel"
         function toggle(name: string): void {
             Panels.toggle(name, "");
+        }
+        function open(name: string, arg: string): void {
+            Panels.openWith(name, arg, "");
         }
         function close(): void {
             Panels.close();
