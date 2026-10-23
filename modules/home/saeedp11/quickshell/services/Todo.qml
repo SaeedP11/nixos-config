@@ -19,6 +19,7 @@ pragma Singleton
 // never collide.
 import QtQuick
 import Quickshell
+import Quickshell.Io
 
 Singleton {
     id: root
@@ -170,6 +171,107 @@ Singleton {
         running: true
         onTriggered: if (root.purge())
             root.save()
+    }
+
+    // Sync runs qs-todo-sync (contracts/sync-helper.md): the request on
+    // stdin, one JSON answer on stdout. The helper reads the database URL
+    // itself; the shell only knows where the helper is. Unset, the list
+    // stays local only.
+    readonly property string helper: Quickshell.env("QS_TODO_SYNC") ?? ""
+    readonly property var errors: ["unconfigured", "config", "auth", "offline", "schema", "other"]
+    // The failure category of the last run, "" after a success.
+    property string lastError: ""
+    property bool busy: false
+    // A sync asked for during a run; the run's end starts another.
+    property bool again: false
+    property bool timedOut: false
+    property string request: ""
+    // id -> hlc of every change sent, so a change made during the run stays
+    // dirty when the answer comes back.
+    property var sent: ({})
+
+    function sync() {
+        if (!helper || !device)
+            return;
+        if (busy) {
+            again = true;
+            return;
+        }
+        const changes = tasks.filter(t => t.dirty).map(t => ({
+                    id: t.id,
+                    text: t.text,
+                    done: t.done,
+                    deleted: t.deleted,
+                    createdAt: t.createdAt,
+                    hlc: t.hlc
+                }));
+        const s = {};
+        for (const c of changes)
+            s[c.id] = c.hlc;
+        sent = s;
+        request = JSON.stringify({
+            version: 1,
+            device,
+            dbId: store.data.dbId ?? null,
+            cursor: store.data.cursor ?? 0,
+            lastSyncServerTime: store.data.lastSyncServerTime ?? null,
+            changes
+        });
+        busy = true;
+        again = false;
+        timedOut = false;
+        runner.stdinEnabled = true;
+        runner.running = true;
+    }
+
+    function finish(res) {
+        busy = false;
+        lastError = res.ok ? "" : errors.includes(res.error) ? res.error : "other";
+    }
+
+    Process {
+        id: runner
+        command: [root.helper]
+        stdinEnabled: true
+        stdout: StdioCollector {
+            id: runnerOut
+        }
+        onStarted: {
+            write(root.request);
+            stdinEnabled = false;
+        }
+        // Anything but one parseable answer and exit 0 is `other`.
+        onExited: code => {
+            if (!root.busy)
+                return;
+            let res = null;
+            try {
+                res = JSON.parse(runnerOut.text);
+            } catch (e) {}
+            root.finish(root.timedOut ? {
+                ok: false,
+                error: "offline"
+            } : code === 0 && typeof res?.ok === "boolean" ? res : {
+                ok: false,
+                error: "other"
+            });
+        }
+    }
+    // A hung connection is `offline`. If the helper never started there is
+    // no exit to wait for, so the run ends here.
+    Timer {
+        interval: 20000
+        running: root.busy
+        onTriggered: {
+            root.timedOut = true;
+            if (runner.running)
+                runner.signal(9);
+            else
+                root.finish({
+                    ok: false,
+                    error: "offline"
+                });
+        }
     }
 
     function save() {

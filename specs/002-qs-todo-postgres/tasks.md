@@ -238,16 +238,26 @@ with the installed shell and the `qs -p` instance acting as two devices on one t
       - File moved aside → `{"ok":false,"error":"unconfigured"}`.
       - Each failure wrote exactly the line `qs-todo-sync: <error>` to stderr, and nothing else.
     - **Secrecy**: `strings` over every captured stdout and stderr, grepped for `postgresql`, `host=`, `user=`, `nobody`, `/run/user` and the scratch path, found nothing besides the `qs-todo-sync:` prefix. `grep -c todo` on stderr was 1 per failure, and that 1 is the prefix. The server log had no `ERROR` lines.
-- [ ] T017 [US2] Wire the helper in `modules/nixos/desktop/niri.nix`: add `environment.QS_TODO_SYNC = "${pkgs.qs-todo-sync}/bin/qs-todo-sync";` after `QS_UNICODE_DATA`, with a comment in the style of the neighbouring ones (what reads it, and that the URL is read by the helper, not passed here). Format the file.
+- [X] T017 [US2] Wire the helper in `modules/nixos/desktop/niri.nix`: add `environment.QS_TODO_SYNC = "${pkgs.qs-todo-sync}/bin/qs-todo-sync";` after `QS_UNICODE_DATA`, with a comment in the style of the neighbouring ones (what reads it, and that the URL is read by the helper, not passed here). Format the file.
+  - Done (2026-10-23): added after `QS_UNICODE_DATA` with a two-line comment, then ran `nix fmt` on the file. The `quickshell.service` unit for `pc` and `desktop` builds to the same store path. Its `Environment="QS_TODO_SYNC=/nix/store/…-qs-todo-sync/bin/qs-todo-sync"` points to an executable that exists.
 
 ### Client sync (in the shell)
 
-- [ ] T018 [US2] Add the runner to `QS/services/Todo.qml`:
+- [X] T018 [US2] Add the runner to `QS/services/Todo.qml`:
   - **Process**: one `Process` with `command: [Quickshell.env("QS_TODO_SYNC")]`, `stdinEnabled: true`, and a `StdioCollector` on stdout. If `QS_TODO_SYNC` is empty, the shell never runs it.
   - **`sync()`**: build the request from contracts/sync-helper.md (`device`, `dbId`, `cursor`, `lastSyncServerTime`, and `changes` as every dirty task without `dirty`). Remember each sent `id`→`hlc`, start the process, `write()` the JSON and close stdin.
   - **Timeout**: a 20 s `Timer` that kills the process and records `offline`.
   - **Exit**: parse stdout. Anything unparseable, or a non-zero exit, is `other`.
   - **Single flight**: one run at a time; a call during a run sets `again`.
+  - Done (2026-10-23):
+    - **Shape**: in Quickshell 0.3.1, `write()` runs in `onStarted`, and stdin is closed by setting `stdinEnabled = false`. Before each run, `sync()` sets it back to `true`. `finish(res)` sets `lastError` and is where T019 applies a success response.
+    - **Missing binary**: a helper that fails to start emits no `exited`. The 20 s timer covers this by ending the run itself, as `offline`, when the process isn't running.
+    - **Formatting**: the new code is unchanged by `qmlformat`.
+    - **Harness**: a scratch copy of the shell run with `qs -p`, with a temporary `todotest` IPC target (`sync`, `state`) and a fake helper whose behaviour is chosen by a mode file.
+    - **Request**: the fake helper received `{"version":1,"device":…,"dbId":null,"cursor":0,"lastSyncServerTime":null,"changes":[…]}`, with no `dirty` field in the change. Its `cat` returned, so stdin was closed. `sent` mapped the id to its hlc.
+    - **Outcomes**: `ok` gave `""`, `auth` gave `auth`, an unknown `error` gave `other`, garbage stdout gave `other`, and exit 1 with valid JSON gave `other`.
+    - **Hang**: `sleep 60` was killed after 20 s and recorded `offline`. A second `sync` during the run set `again` and started no second process.
+    - **Other cases**: a nonexistent `QS_TODO_SYNC` path gave `offline` after 20 s. With `QS_TODO_SYNC` unset, `sync()` did nothing. No QML warnings came from Todo.
 - [ ] T019 [US2] Apply a success response in `QS/services/Todo.qml` (data-model.md "Merge"):
   - **Database change**: if `dbId` differs from the stored one, set `cursor = 0`, mark every task dirty, store the new `dbId`, and request another run.
   - **Merge rows**: for each row, insert it or replace the local copy only when `remote.hlc > local.hlc`, then `observe(remote.hlc)`.
