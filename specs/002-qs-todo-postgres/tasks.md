@@ -298,12 +298,29 @@ with the installed shell and the `qs -p` instance acting as two devices on one t
       4. Stuck: after `auth`, an add made no run in 20 s and no retry was scheduled. An explicit `sync` still ran and cleared the error.
       5. Again: two `sync` calls during a 4 s run gave exactly one more run, started as the first ended.
       - Not measured: the 5 min timer, and a real link change. No QML warnings came from Todo. qmlformat only reports the three existing ternary indents noted in T019. The scratch state directory was removed afterwards.
-- [ ] T021 [US2] Validate sync end to end:
+- [X] T021 [US2] Validate sync end to end:
   - Point the URL file at the throwaway database, then run quickstart S3 on the installed shell after a `nixos-rebuild switch`, or with `QS_TODO_SYNC` exported for `qs -p`.
   - Run S4 with the installed shell as device A and the `qs -p` instance as device B: 50 scripted mixed changes including the three conflict cases, then compare `todo list` on both with `SELECT … WHERE NOT deleted`.
   - Run S7's URL-change case (a second database receives the full list).
   - Check that no interaction stalls while the server is stopped (SC-005).
   - Record the results.
+  - Done (2026-10-23):
+    - **Setup**: no rebuild. Both devices were scratch `qs -p` instances, A (`d1gsxk1o1p0`) and B (`dt551n5q2ym`). Each was a copy of the QS tree whose `shell.qml` only loads `Todo` and exposes the `todo` IPC target (`add`, `list`, `sync`, plus a status line with `lastError`, `busy`, pending and `failures`) and a `t` target (`find`, `edit`, `toggle`, `remove`, a timed add, `dump`). Each had its own state dir and ran with `QS_TODO_SYNC` set to the built helper. The throwaway PostgreSQL 17.6 (socket only) held databases `todo` and `todo2`, with the URL files in a scratch directory passed as `QS_TODO_DB_URL_FILE`, so the installed shell and `~/.config/qs-todo` were not touched.
+    - **S3**:
+      1. Three adds, a toggle, an edit and a delete, then `sync`: `pending=0`, and the table held both live tasks and the tombstone.
+      2. Server stopped: three adds and an edit gave `offline pending=3` with `failures=1`. Each add took 0–1 ms inside the shell.
+      3. Server back after a SIGSTOP of the postmaster, which makes the connect hang: during the run, three adds each answered over IPC in 92–96 ms (mostly `qs` start-up), and `pending` rose to 6. The run ended as `offline` at the 20 s timeout. After `SIGCONT` and `sync`: `pending=0`, 9 rows with 9 distinct ids, and every change was in the table (SC-003, SC-005).
+    - **S4** (run `r3`, with A and B synced to the same 67 tasks first):
+      - **Changes**, with the server stopped, 50 in all: the 6 conflict edits and deletes, then 44 random ones from a seeded script (11 adds, 13 edits, 10 removes, 10 toggles) that never touch the conflict tasks.
+      - **Sync**: server back, then A, B, A, B. `todo list` on A = `todo list` on B = `SELECT … FROM qs_todo.tasks WHERE NOT deleted ORDER BY done, created_at DESC` (67 lines). The ids, text and `done` also matched. The table held 91 rows with 91 distinct ids. Tombstones went from 12 to 24, which is exactly the 10 random removes plus C2b and C3, so no deleted task came back.
+      - **C1**, the same task edited on A and then on B: B's later edit won on both.
+      - **C2**, deleted on A and then edited on B before B saw the delete: B's edit has the later stamp, so the task stayed live with B's text on both.
+      - **C2b**, the reverse order (edited on B, then deleted on A): the delete won.
+      - **C3**, deleted on A and seen by B after both synced: the task was gone on B, and `edit` there returned false, since a tombstone can't be edited locally, so it stayed deleted. The quickstart's "B's edit wins" for this case can't happen through the shell. A B edit made after its sync would stamp after the delete it saw, but the only task B can still edit is a live one.
+      - **First attempts**: an earlier run (`r2`) used jq, which isn't installed, so its random phase only made adds. The run before that (`r1`) let random edits overwrite the conflict tasks. Both still converged on all three comparisons, and only `r3` is counted.
+    - **S7, URL change**: A was restarted with its URL file pointing at the empty `todo2`. Its next sync replaced the stored `dbId` (`3ed7a2fe…` → `9f1246b7…`, cursor 213 → 93) and pushed every local entry: 93 rows, 69 live. A's list equalled todo2's `SELECT`. A task added just before the switch reached only `todo2`.
+      - **Invalid first attempt**: the stop pattern matched `qs -p` while the process runs as `quickshell -p`, so two A instances shared one state file. After fixing the stop, killing both, dropping todo2's schema and resyncing A on `todo`, the run was repeated with one instance (the results above).
+    - **Logs**: neither instance's log mentions `postgresql`, `host=`, `user=` or the socket directory. Its only warnings are the portal registration warning and the FileView "dropped operation" notice. Both instances, the server, their state dirs and the database directory were removed afterwards.
 
 **Checkpoint**: US1 and US2 both work. Commit it as step 2.
 
