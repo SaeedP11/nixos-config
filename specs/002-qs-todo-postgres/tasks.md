@@ -258,13 +258,26 @@ with the installed shell and the `qs -p` instance acting as two devices on one t
     - **Outcomes**: `ok` gave `""`, `auth` gave `auth`, an unknown `error` gave `other`, garbage stdout gave `other`, and exit 1 with valid JSON gave `other`.
     - **Hang**: `sleep 60` was killed after 20 s and recorded `offline`. A second `sync` during the run set `again` and started no second process.
     - **Other cases**: a nonexistent `QS_TODO_SYNC` path gave `offline` after 20 s. With `QS_TODO_SYNC` unset, `sync()` did nothing. No QML warnings came from Todo.
-- [ ] T019 [US2] Apply a success response in `QS/services/Todo.qml` (data-model.md "Merge"):
+- [X] T019 [US2] Apply a success response in `QS/services/Todo.qml` (data-model.md "Merge"):
   - **Database change**: if `dbId` differs from the stored one, set `cursor = 0`, mark every task dirty, store the new `dbId`, and request another run.
   - **Merge rows**: for each row, insert it or replace the local copy only when `remote.hlc > local.hlc`, then `observe(remote.hlc)`.
   - **Full responses**: when `full`, also drop non-dirty local tasks that are absent from the rows.
   - **Clear dirty flags**: for each accepted id, only if its current `hlc` equals the sent one.
   - **Bookkeeping and save**: store `cursor`, `lastSyncServerTime = serverTime` and `lastSyncAt = Date.now()`, then save once.
   - **Responsiveness**: the list must not jump. Rows update in place by `id` (T006).
+  - Done (2026-10-23):
+    - **Shape**: `finish()` calls `apply(res)` on success. A success answer without a non-empty string `dbId`, an integer `cursor` and a numeric `serverTime` becomes `other` and changes nothing. Bad rows (no string `id`, or an `hlc` that doesn't match the pattern) are skipped. Accepted rows are normalised the way `onReady` does it.
+    - **Order**: database change, then merge, then the full-drop rule, then the dirty clear. Every task is marked dirty *before* the drop rule, so a full answer from a new database can't drop tasks that database hasn't seen. The stored `cursor` is the answer's, which for a full answer is already counted from 0, so a separate reset isn't needed.
+    - **Deviation**: a stored `dbId` of null (the first sync) doesn't count as a database change. Every local task is dirty then and was sent in that run, so marking them dirty again would only cost an extra full push. "Request another run" sets `again`, and T020's end-of-run re-run picks it up.
+    - **Formatting**: the nixpkgs qmlformat 6.9.3 indents objects inside a ternary one level less than the file does. It says the same about the existing `clearDone()`, so the file's style was kept.
+    - **Checked**: in a scratch copy run with `qs -p` and the T018-style fake helper (now answering from a file, with an optional 4 s delay), using a `todotest` IPC target with `sync`, `edit`, `remove` and `state`:
+      1. First full sync: alpha and beta came back clean. A new remote row was inserted clean. A row with `hlc: "nope"` was ignored. `clock` rose to the remote's future stamp. The store held `db-X`, cursor 3, `lastSyncServerTime` 1000 and a `lastSyncAt`.
+      2. Incremental: the remote alpha, with a greater stamp, replaced the local one (text and `done`). The remote beta, with an older stamp, was ignored. The local "beta local" stayed and was cleared by `accepted`. Cursor 5.
+      3. Edit during the run: the run sent "beta v2" and the answer accepted it, but "beta v3", made during the run, stayed dirty.
+      4. Full answer with no rows: the clean alpha and remote tasks were dropped. The dirty beta stayed.
+      5. `dbId` from `db-X` to `db-Y`, with gamma accepted: beta was kept and marked dirty, gamma was clean, `again` was true, and the store held `db-Y` and cursor 1.
+      6. `ok: true` with no `dbId`: `lastError` was `other`, and the tasks and store were unchanged.
+    - **Saved**: the saved `todo.json` matched memory. `apply()` makes the only `store.save()` call on the success path (checked by reading the code, not measured). No QML warnings came from Todo. The scratch state directory was removed afterwards.
 - [ ] T020 [US2] Add the triggers to `QS/services/Todo.qml` (research R7):
   - a 3 s debounce `Timer` restarted by every mutation
   - a 5 min repeating `Timer`

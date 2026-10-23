@@ -224,9 +224,79 @@ Singleton {
         runner.running = true;
     }
 
+    // An answer that claims success but lacks what apply() needs is `other`.
     function finish(res) {
         busy = false;
+        if (res.ok && !(typeof res.dbId === "string" && res.dbId && Number.isInteger(res.cursor) && Number.isFinite(res.serverTime)))
+            res = {
+                ok: false,
+                error: "other"
+            };
         lastError = res.ok ? "" : errors.includes(res.error) ? res.error : "other";
+        if (res.ok)
+            apply(res);
+    }
+
+    // Merges a success answer (data-model.md "Merge"), then saves once.
+    function apply(res) {
+        // A different database: everything is re-pushed, starting with the
+        // next run. Marked dirty first, so the full answer's drop rule below
+        // keeps tasks the new database hasn't seen. A null dbId is a first
+        // sync, which already sent every task.
+        const moved = !!store.data.dbId && res.dbId !== store.data.dbId;
+        let next = moved ? tasks.map(t => Object.assign({}, t, {
+                    dirty: true
+                })) : tasks.slice();
+        if (moved)
+            again = true;
+        const at = {}, seen = {};
+        next.forEach((t, i) => at[t.id] = i);
+        // The greater stamp wins; a remote copy is never dirty.
+        for (const r of Array.isArray(res.tasks) ? res.tasks : []) {
+            if (typeof r?.id !== "string" || typeof r.hlc !== "string" || !hlcPattern.test(r.hlc))
+                continue;
+            seen[r.id] = true;
+            observe(r.hlc);
+            const i = at[r.id];
+            if (i !== undefined && r.hlc <= next[i].hlc)
+                continue;
+            const t = {
+                id: r.id,
+                text: String(r.text ?? "").slice(0, 4000),
+                done: !!r.done,
+                createdAt: Number.isFinite(r.createdAt) ? r.createdAt : Number(r.hlc.slice(0, 13)),
+                hlc: r.hlc,
+                deleted: !!r.deleted,
+                dirty: false
+            };
+            if (i === undefined) {
+                at[r.id] = next.length;
+                next.push(t);
+            } else {
+                next[i] = t;
+            }
+        }
+        // A full answer is the whole database: a synced task missing from it
+        // is gone there.
+        if (res.full)
+            next = next.filter(t => t.dirty || seen[t.id]);
+        // Acknowledged only if unchanged since it was sent.
+        const ok = {};
+        for (const id of Array.isArray(res.accepted) ? res.accepted : [])
+            ok[id] = true;
+        next = next.map(t => t.dirty && ok[t.id] && sent[t.id] === t.hlc ? Object.assign({}, t, {
+                    dirty: false
+                }) : t);
+        tasks = next;
+        store.save(Object.assign({}, store.data, {
+            device,
+            clock,
+            tasks,
+            dbId: res.dbId,
+            cursor: res.cursor,
+            lastSyncServerTime: res.serverTime,
+            lastSyncAt: Date.now()
+        }));
     }
 
     Process {
