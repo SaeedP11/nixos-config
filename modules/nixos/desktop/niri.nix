@@ -12,8 +12,11 @@
 }:
 
 let
-  # The Symbols tab's character table, one `<hex cp>\t<NAME>\t<category>`
-  # line per character, read by the shell's services/Unicode.qml.
+  # The Symbols tab's character table, read by the shell's
+  # services/Unicode.qml: a JSON array of { cp, char, name (lowercased),
+  # category, words }, in code point order. Everything the search needs is
+  # worked out here, as building it line by line in QML took ~5 s on the
+  # UI thread, where a single JSON.parse takes ~0.1 s.
   #
   # Only code points that some installed font actually has a glyph for are
   # kept. QML cannot ask whether a glyph exists, so without this filter the
@@ -27,7 +30,7 @@ let
   # copyright sign or the left-right arrow the Emoji tab offers only the
   # FE0F emoji form.
   unicodeData =
-    pkgs.runCommand "quickshell-unicode-data.tsv"
+    pkgs.runCommand "quickshell-unicode-data.json"
       {
         nativeBuildInputs = [ (pkgs.python3.withPackages (ps: [ ps.fonttools ])) ];
         fonts = config.fonts.packages;
@@ -36,7 +39,7 @@ let
       }
       ''
         python3 - > $out <<'EOF'
-        import os, re
+        import json, os, re, sys
         from pathlib import Path
         from fontTools.ttLib import TTCollection, TTFont
 
@@ -78,13 +81,18 @@ let
                 return "letters"
             return "other"
 
+        chars = []
         for line in open(os.environ["ucd"]):
             hexcp, name, gc = line.split(";")[:3]
             cp = int(hexcp, 16)
             if (gc in ("Cc", "Cs", "Co", "Cf") or gc[0] in "MZ"
                     or name.startswith("<") or cp in emoji or cp not in covered):
                 continue
-            print(f"{hexcp}\t{name}\t{category(cp, name, gc)}")
+            lower = name.lower()
+            chars.append({"cp": cp, "char": chr(cp), "name": lower,
+                          "category": category(cp, name, gc),
+                          "words": re.split(r"[\s-]+", lower)})
+        json.dump(chars, sys.stdout, ensure_ascii=False, separators=(",", ":"))
         EOF
       '';
 in

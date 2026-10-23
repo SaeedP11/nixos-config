@@ -1,11 +1,13 @@
 pragma Singleton
 
 // The character table behind the emoji panel's Symbols tab, and the Recent
-// row both tabs share. The table is the `<hex cp>\t<NAME>\t<category>` TSV
+// row both tabs share. The table is the JSON array, in code point order,
 // that ../../../../nixos/desktop/niri.nix builds (font-covered characters
 // only) and passes in QS_UNICODE_DATA. It is read once, on first use, and
-// kept here since the panel is recreated on each open. Recent (newest
-// first, max 24, one entry per character) persists in recent-chars.json.
+// kept here since the panel is recreated on each open. There is no map by
+// character: filling one with 30k keys took ~2 s on the UI thread, so
+// find() bisects the array instead. Recent (newest first, max 24, one
+// entry per character) persists in recent-chars.json.
 import QtQuick
 import Quickshell
 import Quickshell.Io
@@ -15,13 +17,36 @@ Singleton {
 
     // { cp, char, name (lowercased), category, words }
     property var chars: []
-    property var byChar: ({})
     property bool wanted: false
+    // Read, failed to, or nothing to read: until then an empty table means
+    // "still loading".
+    property bool loaded: !Quickshell.env("QS_UNICODE_DATA")
     // [{ char, at }]
     property var recent: []
 
     function load() {
         wanted = true;
+    }
+
+    // The table's entry for a single character, or undefined (an emoji, a
+    // sequence, or anything not in it).
+    function find(ch) {
+        const s = String(ch ?? "");
+        const cp = s.codePointAt(0);
+        if (cp === undefined || s.length !== (cp > 0xFFFF ? 2 : 1))
+            return undefined;
+        let lo = 0, hi = chars.length - 1;
+        while (lo <= hi) {
+            const mid = (lo + hi) >> 1;
+            const c = chars[mid];
+            if (c.cp === cp)
+                return c;
+            if (c.cp < cp)
+                lo = mid + 1;
+            else
+                hi = mid - 1;
+        }
+        return undefined;
     }
 
     // `U+XXXX` or a bare hex query puts that code point first; the name
@@ -74,34 +99,22 @@ Singleton {
             if (cp > 0xFFFF)
                 i++;
         }
-        return { name: byChar[c]?.name ?? "", code: cps.join(" ") };
+        return { name: find(c)?.name ?? "", code: cps.join(" ") };
     }
 
     FileView {
         path: root.wanted ? Quickshell.env("QS_UNICODE_DATA") ?? "" : ""
         printErrors: false
         onLoaded: {
-            const out = [];
-            const map = {};
-            for (const line of text().split("\n")) {
-                const f = line.split("\t");
-                if (f.length < 3)
-                    continue;
-                const cp = parseInt(f[0], 16);
-                const lower = f[1].toLowerCase();
-                const c = {
-                    cp,
-                    char: String.fromCodePoint(cp),
-                    name: lower,
-                    category: f[2],
-                    words: lower.split(/[\s-]+/)
-                };
-                out.push(c);
-                map[c.char] = c;
+            try {
+                const data = JSON.parse(text());
+                root.chars = Array.isArray(data) ? data : [];
+            } catch (e) {
+                console.warn("Unicode: bad QS_UNICODE_DATA:", e);
             }
-            root.byChar = map;
-            root.chars = out;
+            root.loaded = true;
         }
+        onLoadFailed: root.loaded = true
     }
 
     StateFile {

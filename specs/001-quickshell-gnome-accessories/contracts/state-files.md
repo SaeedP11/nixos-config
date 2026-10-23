@@ -50,4 +50,4 @@ Rules (`services/StateFile.qml`):
 |---|---|---|
 | `QS_EMOJI_DATA` | existing, unchanged | — |
 | `QS_TZ_DATA` | `${pkgs.tzdata}/share/zoneinfo/zone1970.tab` | 2 |
-| `QS_UNICODE_DATA` | generated TSV `<hex cp>\t<NAME>\t<category>`, font-covered only (R11) | 3 |
+| `QS_UNICODE_DATA` | generated JSON array of `{cp, char, name, category, words}` in code point order, font-covered only (R11; TSV until T055) | 3 |

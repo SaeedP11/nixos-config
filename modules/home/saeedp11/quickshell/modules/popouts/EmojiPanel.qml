@@ -1,15 +1,14 @@
 // Emoji and symbol picker, two tabs. Emoji is Unicode's own
-// emoji-test.txt, from the unicode-emoji package; Symbols is the
-// font-covered character table services/Unicode.qml loads. The quickshell
-// unit in ../../../../../nixos/desktop/niri.nix passes both paths
+// emoji-test.txt, which services/Emoji.qml loads; Symbols is the
+// font-covered character table services/Unicode.qml loads. Both are read
+// once and kept there, not on each open. The quickshell unit in
+// ../../../../../nixos/desktop/niri.nix passes both paths
 // (QS_EMOJI_DATA, QS_UNICODE_DATA). `panel open emoji symbols` opens on
 // Symbols. Type to filter by name (Symbols also takes `U+2192` or `2192`),
 // Tab/Shift+Tab to switch tabs, arrows to move, Enter or a click copies.
 // The Recent row is shared by both tabs.
 import QtQuick
 import QtQuick.Layouts
-import Quickshell
-import Quickshell.Io
 import qs.config
 import qs.services
 import qs.widgets
@@ -17,9 +16,13 @@ import qs.widgets
 PanelSurface {
     id: root
 
-    property var emoji: []
     property string tab: "emoji"
     property string category: ""
+    // The grid fills only once the panel has drawn its first frame.
+    // Building ~100 colour-emoji cells up front held back the layer's map,
+    // and with it the keyboard, by ~0.2-0.4 s; keys typed meanwhile went to
+    // the window underneath.
+    property bool painted: false
     readonly property int columns: 12
     readonly property var categories: [
         {
@@ -55,12 +58,14 @@ PanelSurface {
         const q = search.text.trim().toLowerCase();
         if (tab === "symbols")
             return Unicode.chars.length ? Unicode.search(q, category) : [];
-        return q ? emoji.filter(e => e.name.includes(q) || e.group.includes(q)) : emoji;
+        return q ? Emoji.list.filter(e => e.name.includes(q) || e.group.includes(q)) : Emoji.list;
     }
     readonly property var current: shown[grid.currentIndex]
 
+    // The table is first asked for after the first frame too: parsing it
+    // (~0.1-0.3 s, once per shell) would otherwise hold back the first paint.
     function setTab(t) {
-        if (t === "symbols")
+        if (t === "symbols" && painted)
             Unicode.load();
         tab = t;
         grid.currentIndex = 0;
@@ -76,30 +81,16 @@ PanelSurface {
     // Symbols draw in the UI font (fontconfig falls back per glyph); emoji
     // in the colour font, as text-presentation fallbacks are monochrome.
     function fontFor(ch) {
-        return Unicode.byChar[ch] ? Theme.font : "Noto Color Emoji";
+        return Unicode.find(ch) ? Theme.font : "Noto Color Emoji";
     }
 
-    FileView {
-        path: Quickshell.env("QS_EMOJI_DATA") ?? ""
-        printErrors: false
-        onLoaded: {
-            const out = [];
-            let group = "";
-            for (const line of text().split("\n")) {
-                if (line.startsWith("# group:")) {
-                    group = line.slice(8).trim().toLowerCase();
-                    continue;
-                }
-                const m = line.match(/; fully-qualified\s+# (\S+) E\d+\.\d+ (.+)$/);
-                // Skin-tone variants would multiply the grid by six.
-                if (m && !/skin tone/.test(m[2]))
-                    out.push({
-                        char: m[1],
-                        name: m[2].toLowerCase(),
-                        group
-                    });
-            }
-            root.emoji = out;
+    Connections {
+        target: root.Window.window
+        enabled: !root.painted
+        function onFrameSwapped() {
+            root.painted = true;
+            if (root.tab === "symbols")
+                Unicode.load();
         }
     }
 
@@ -113,6 +104,7 @@ PanelSurface {
     }
 
     Component.onCompleted: {
+        Emoji.load();
         if (Panels.arg === "symbols")
             setTab("symbols");
         search.focusInput();
@@ -265,7 +257,7 @@ PanelSurface {
             cellWidth: 46
             cellHeight: 46
             clip: true
-            model: root.shown
+            model: root.painted ? root.shown : []
             boundsBehavior: Flickable.StopAtBounds
             highlightMoveDuration: 0
 
@@ -297,8 +289,8 @@ PanelSurface {
 
             StyledText {
                 anchors.centerIn: parent
-                visible: grid.count === 0
-                text: root.tab === "symbols" ? (Unicode.chars.length ? "No matches" : "No character data (QS_UNICODE_DATA)") : root.emoji.length ? "No matches" : "No emoji data (QS_EMOJI_DATA)"
+                visible: root.painted && grid.count === 0
+                text: root.tab === "symbols" ? (Unicode.chars.length ? "No matches" : Unicode.loaded ? "No character data (QS_UNICODE_DATA)" : "") : Emoji.list.length ? "No matches" : "No emoji data (QS_EMOJI_DATA)"
                 color: Theme.textDim
             }
         }
