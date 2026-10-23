@@ -235,6 +235,58 @@ Singleton {
         lastError = res.ok ? "" : errors.includes(res.error) ? res.error : "other";
         if (res.ok)
             apply(res);
+        // A queued run goes first; its own end schedules any retry.
+        if (again) {
+            retry.stop();
+            sync();
+        } else if (lastError === "offline" || lastError === "other") {
+            retry.interval = backoff[Math.min(failures, backoff.length - 1)];
+            failures++;
+            retry.restart();
+        } else {
+            failures = 0;
+            retry.stop();
+        }
+    }
+
+    // When sync runs (research R7). Changes, a network change and the first
+    // load ask through auto(), which waits out a pending retry and, after an
+    // error a retry can't fix, leaves it to the 5 min timer and sync().
+    readonly property var backoff: [15000, 30000, 60000, 120000, 300000]
+    property int failures: 0
+    readonly property bool stuck: ["unconfigured", "config", "auth", "schema"].includes(lastError)
+
+    function auto() {
+        if (!stuck && !retry.running)
+            sync();
+    }
+
+    Timer {
+        id: debounce
+        interval: 3000
+        onTriggered: root.auto()
+    }
+    Timer {
+        id: retry
+        onTriggered: root.sync()
+    }
+    Timer {
+        interval: 300000
+        repeat: true
+        running: root.helper !== ""
+        onTriggered: root.sync()
+    }
+    Timer {
+        id: netChange
+        interval: 2000
+        onTriggered: if (!root.stuck)
+            root.sync()
+    }
+    Connections {
+        target: Net
+        function onLabelChanged() {
+            netChange.restart();
+        }
     }
 
     // Merges a success answer (data-model.md "Merge"), then saves once.
@@ -350,6 +402,7 @@ Singleton {
             clock,
             tasks
         }));
+        debounce.restart();
     }
 
     StateFile {
@@ -384,6 +437,7 @@ Singleton {
                     }));
             if (root.purge() || fresh)
                 root.save();
+            debounce.restart();
         }
     }
 }

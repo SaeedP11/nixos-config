@@ -278,7 +278,7 @@ with the installed shell and the `qs -p` instance acting as two devices on one t
       5. `dbId` from `db-X` to `db-Y`, with gamma accepted: beta was kept and marked dirty, gamma was clean, `again` was true, and the store held `db-Y` and cursor 1.
       6. `ok: true` with no `dbId`: `lastError` was `other`, and the tasks and store were unchanged.
     - **Saved**: the saved `todo.json` matched memory. `apply()` makes the only `store.save()` call on the success path (checked by reading the code, not measured). No QML warnings came from Todo. The scratch state directory was removed afterwards.
-- [ ] T020 [US2] Add the triggers to `QS/services/Todo.qml` (research R7):
+- [X] T020 [US2] Add the triggers to `QS/services/Todo.qml` (research R7):
   - a 3 s debounce `Timer` restarted by every mutation
   - a 5 min repeating `Timer`
   - a run 2 s after `Net.label` changes
@@ -288,6 +288,16 @@ with the installed shell and the `qs -p` instance acting as two devices on one t
   - the `again` re-run when a run ends
 
   Keep `lastError` (the category) as internal state for now.
+  - Done (2026-10-23):
+    - **Shape**: `save()` restarts the 3 s `debounce`, and so does `onReady`, which makes the first run 3 s after load. Debounce runs go through `auto()`, which does nothing while the error is `stuck` (`unconfigured`, `config`, `auth` or `schema`) or a retry is pending. `Net.label` changes restart a 2 s timer that syncs unless `stuck`. The 5 min timer runs whenever `QS_TODO_SYNC` is set. At the end of `finish()`: if `again` is set, the next run starts at once and its own end schedules any retry. Otherwise `offline` or `other` starts `retry` at the next backoff step, and anything else resets `failures` and stops `retry`.
+    - **Choices**: a pending retry holds back debounce runs, so a run of edits while offline doesn't start a 20 s attempt each time. The edits go out with the retry. A network change still syncs during backoff, because that is when a retry is most likely to work. The daily purge also goes through `save()`, so it starts one extra sync that has nothing to send.
+    - **Checked**: in a scratch copy run with `qs -p`, a fake helper that logs each run with its mode (`ok`, `slow` with a 4 s delay, or an error category), and a `todotest` IPC target (`sync`, `state`):
+      1. Load: a run at +3.6 s from process start, then one at +4.3 s. The second is `Net.label` settling once NetworkManager's devices fill in, the only other trigger that could fire then.
+      2. Debounce: two adds 1 s apart gave one run 3.2 s after the second add, with 2 changes, both accepted.
+      3. Backoff: with `offline`, the runs came 15.0 s, 30.1 s and 60.1 s apart. An add during backoff started no debounce run and went out with the next retry. With `ok`, the 60 s retry succeeded and `failures` went back to 0. The 120 s and 300 s steps use the same index code and weren't waited for.
+      4. Stuck: after `auth`, an add made no run in 20 s and no retry was scheduled. An explicit `sync` still ran and cleared the error.
+      5. Again: two `sync` calls during a 4 s run gave exactly one more run, started as the first ended.
+      - Not measured: the 5 min timer, and a real link change. No QML warnings came from Todo. qmlformat only reports the three existing ternary indents noted in T019. The scratch state directory was removed afterwards.
 - [ ] T021 [US2] Validate sync end to end:
   - Point the URL file at the throwaway database, then run quickstart S3 on the installed shell after a `nixos-rebuild switch`, or with `QS_TODO_SYNC` exported for `qs -p`.
   - Run S4 with the installed shell as device A and the `qs -p` instance as device B: 50 scripted mixed changes including the three conflict cases, then compare `todo list` on both with `SELECT … WHERE NOT deleted`.
