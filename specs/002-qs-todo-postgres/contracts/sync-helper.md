@@ -57,7 +57,8 @@ checks in [database.md](database.md). Nothing is half-applied.
 }
 ```
 
-`full` is true, and the request cursor is ignored, when any of these holds:
+`full` is true, and the request cursor is ignored (taken as 0, also for the answered `cursor`
+when no rows come back), when any of these holds:
 
 - the request `dbId` is null or differs from the database's
 - `lastSyncServerTime` is null

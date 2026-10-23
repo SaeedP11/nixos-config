@@ -175,12 +175,28 @@ with the installed shell and the `qs -p` instance acting as two devices on one t
     - **URL file**: it is opened once, and the mode and file type are checked with `fstat` on that descriptor. A missing file answers `unconfigured`. A file readable by group or others, or one that `open` refuses with `EACCES`, answers `config`/`permissions`. A directory or other non-regular file, invalid UTF-8, or no URL line answers `config`/`url`. Checking the directory case found a traceback, because `fdopen` refuses a directory before the check ran; the check now runs on the raw fd.
     - **Validation** (beyond the database.md checks): the hlc regex uses `[0-9]` with `fullmatch`, since Python's `\d` matches non-ASCII digits. Integer fields must have `type(...) is int`, so JSON `true` is not a number. `createdAt` must fit in a bigint. NUL is refused in `id`/`text`, because PostgreSQL text can't store it. `NaN`/`Infinity` are refused. The request needs `version: 1`, a string `device`, `dbId` as a string or null, an integer `cursor` ≥ 0, `lastSyncServerTime` as an integer or null, and a `changes` list.
     - **Checked** (by hand with nixpkgs python3, since the package comes in T015): flake8 7.2 at default settings is clean. Each case gave exactly one response line, exit 0, and the matching stderr line: missing file → `unconfigured`; mode 0644 → `config`/`permissions`; comments only → `config`/`url`; a directory → `config`/`url`; no `QS_TODO_DB_URL_FILE` and an empty `XDG_CONFIG_HOME` dir → `unconfigured`; a bad hlc, `"done":1`, `NaN` and non-JSON → `other`.
-- [ ] T013 [US2] In `HELPER/qs_todo_sync.py`, part 2: the transaction from contracts/database.md.
+- [X] T013 [US2] In `HELPER/qs_todo_sync.py`, part 2: the transaction from contracts/database.md.
   - **Connect**: `psycopg.connect(url, connect_timeout=5, application_name="qs-todo", autocommit=False)`.
   - **Schema**: idempotent creation of `qs_todo.meta`, `qs_todo.seq` and `qs_todo.tasks`, plus the index. Seed `schema_version` and `db_id`, using `gen_random_uuid()` with a Python `uuid4` fallback for PostgreSQL 12.
   - **Writes**: `SET LOCAL statement_timeout = '10s'`. Take `LOCK TABLE … IN EXCLUSIVE MODE` only when `changes` is non-empty, then run the `ON CONFLICT … WHERE excluded.hlc > tasks.hlc` upsert per change.
   - **Purge and pull**: purge tombstones older than 30 days by `changed_at`. Decide `full` per contracts/sync-helper.md (`dbId` mismatch or null, or `lastSyncServerTime` null or more than 30 days before server `now()`). Select rows with `seq > cursor`, or all rows when `full`, ordered by `seq`.
   - **Respond**: the success shape, with `cursor` as the max `seq` returned (or the request cursor), `serverTime` in ms, `accepted` as every request id, and `tasks`.
+  - Done (2026-10-23):
+    - **Schema**: `CREATE SCHEMA` checks the database `CREATE` privilege before `IF NOT EXISTS`, so the objects are created only when `to_regclass` finds one missing. After the first sync the account needs only `USAGE` and DML, as database.md says. Creation runs under `pg_advisory_xact_lock(hashtext('qs_todo'))`, so two first syncs don't race on the catalog. `meta` is seeded in the same step, with `gen_random_uuid()` when `server_version >= 130000` and a `uuid4` parameter otherwise.
+    - **Commit**: the success response is printed after the `with connect(...)` block. `respond()` raises `SystemExit`, which inside the block would roll back.
+    - **Deviation from the contract**: on a `full` pull, the request cursor counts as 0, both for the `WHERE seq > …` and for the answer when no rows come back. Answering the request cursor there, as sync-helper.md says, would hand a client moving to an empty new database its old cursor (say 41), so it would skip that database's first 41 rows.
+    - **Error mapping**: not done yet; psycopg errors still raise until T014.
+    - **Checked** against a throwaway socket-only PostgreSQL 17, with nixpkgs python3, psycopg and flake8 (flake8 clean):
+      - First sync: `full: true`, `cursor 1`, and the task with `seq 1`.
+      - Rerun: the equal-`hlc` change was a no-op, leaving 1 row with seq 1 and no duplicate.
+      - Incremental with no changes: `full: false`, `tasks []`, and the request cursor.
+      - Newer edit plus new task: seq 4 and 5 were returned. The sequence has gaps because the insert default draws `nextval` before the conflict; this is harmless.
+      - Older `hlc`: lost; the row stayed `edited`, seq 4, and the winner came back.
+      - Wrong `dbId`, and `lastSyncServerTime` 31 days old: both `full`.
+      - Purge: a tombstone 31 days old was removed and one 29 days old was kept.
+      - A role without database `CREATE` (only `USAGE` and DML) synced after setup.
+      - A new empty database with request cursor 41: `full`, `cursor 0`, and `meta` seeded.
+      - The server log had no `ERROR` lines.
 - [ ] T014 [US2] In `HELPER/qs_todo_sync.py`, part 3: map failures to categories per the contracts/sync-helper.md table.
   - **Classify**: by SQLSTATE `28000`/`28P01`/`3D000`/`42501`, a conninfo parse error, a DNS failure, and any other no-SQLSTATE `OperationalError` as `offline`.
   - **Output**: `{"ok":false,"error":…,"reason"?,"sqlstate"?}`, and at most one stderr line `qs-todo-sync: <category>`.

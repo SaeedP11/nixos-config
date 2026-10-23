@@ -28,7 +28,9 @@ import os
 import re
 import stat
 import sys
+import uuid
 
+import psycopg
 # contracts/database.md: the column checks on qs_todo.tasks. `\d` would also
 # match non-ASCII digits in Python, so the classes are spelt out.
 HLC = re.compile(r"[0-9]{13}:[0-9]{4}:[0-9a-z]+")
@@ -145,9 +147,130 @@ def main():
     sync(url, request)
 
 
+def create_objects(cur, server_version):
+    # CREATE SCHEMA checks the CREATE privilege on the database before IF NOT
+    # EXISTS, so it only runs when something is missing: after the first sync
+    # the account needs just USAGE and DML. The advisory lock lets two first
+    # syncs meet without racing on the catalog.
+    cur.execute(
+        "SELECT to_regclass('qs_todo.meta') IS NULL"
+        " OR to_regclass('qs_todo.seq') IS NULL"
+        " OR to_regclass('qs_todo.tasks') IS NULL"
+    )
+    if not cur.fetchone()[0]:
+        return
+    cur.execute("SELECT pg_advisory_xact_lock(hashtext('qs_todo'))")
+    for sql in SCHEMA:
+        cur.execute(sql)
+    # gen_random_uuid() is core from PostgreSQL 13.
+    if server_version >= 130000:
+        seed, args = "gen_random_uuid()::text", ()
+    else:
+        seed, args = "%s", (str(uuid.uuid4()),)
+    cur.execute(
+        "INSERT INTO qs_todo.meta (key, value)"
+        " VALUES ('schema_version', '1'), ('db_id', " + seed + ")"
+        " ON CONFLICT (key) DO NOTHING",
+        args,
+    )
+
+
+SCHEMA = [
+    "CREATE SCHEMA IF NOT EXISTS qs_todo",
+    "CREATE TABLE IF NOT EXISTS qs_todo.meta ("
+    " key text PRIMARY KEY, value text NOT NULL)",
+    "CREATE SEQUENCE IF NOT EXISTS qs_todo.seq",
+    "CREATE TABLE IF NOT EXISTS qs_todo.tasks ("
+    " id text PRIMARY KEY CHECK (length(id) BETWEEN 3 AND 64),"
+    " text text NOT NULL CHECK (length(text) <= 4000),"
+    " done boolean NOT NULL,"
+    " deleted boolean NOT NULL,"
+    " created_at bigint NOT NULL,"
+    r" hlc text NOT NULL CHECK (hlc ~ '^\d{13}:\d{4}:[0-9a-z]+$'),"
+    " seq bigint NOT NULL DEFAULT nextval('qs_todo.seq'),"
+    " changed_at timestamptz NOT NULL DEFAULT now())",
+    "CREATE INDEX IF NOT EXISTS tasks_seq_idx ON qs_todo.tasks (seq)",
+]
+
+# A change no newer than the stored row is a no-op, yet still accepted: the
+# winning row comes back in the same response's pull.
+UPSERT = """
+INSERT INTO qs_todo.tasks (id, text, done, deleted, created_at, hlc)
+VALUES (%(id)s, %(text)s, %(done)s, %(deleted)s, %(createdAt)s, %(hlc)s)
+ON CONFLICT (id) DO UPDATE
+   SET text = excluded.text, done = excluded.done, deleted = excluded.deleted,
+       hlc = excluded.hlc, seq = nextval('qs_todo.seq'), changed_at = now()
+ WHERE excluded.hlc > qs_todo.tasks.hlc
+"""
+
+RETENTION_MS = 30 * 24 * 3600 * 1000
+
+
 def sync(url, request):
-    # The push-and-pull transaction (contracts/database.md) comes in T013.
-    fail("other")
+    # One transaction (contracts/database.md): if the connection drops before
+    # COMMIT nothing was applied, and the client retries its dirty tasks.
+    changes = request["changes"]
+    with psycopg.connect(
+        url, connect_timeout=5, application_name="qs-todo", autocommit=False
+    ) as conn:
+        with conn.cursor() as cur:
+            cur.execute("SET LOCAL statement_timeout = '10s'")
+            create_objects(cur, conn.info.server_version)
+            if changes:
+                # Serialises writers so seq values become visible in order
+                # and a puller never skips one (research R6). Plain SELECTs
+                # are not blocked.
+                cur.execute("LOCK TABLE qs_todo.tasks IN EXCLUSIVE MODE")
+                cur.executemany(UPSERT, changes)
+            cur.execute(
+                "DELETE FROM qs_todo.tasks"
+                " WHERE deleted AND changed_at < now() - interval '30 days'"
+            )
+            cur.execute(
+                "SELECT (SELECT value FROM qs_todo.meta WHERE key = 'db_id'),"
+                " (extract(epoch FROM now()) * 1000)::bigint"
+            )
+            db_id, server_time = cur.fetchone()
+            last = request["lastSyncServerTime"]
+            full = (
+                request["dbId"] is None
+                or request["dbId"] != db_id
+                or last is None
+                or last < server_time - RETENTION_MS
+            )
+            # On a full pull the request cursor belongs to another database
+            # or an expired view, so it counts as 0, also for the answer.
+            cursor = 0 if full else request["cursor"]
+            cur.execute(
+                "SELECT id, text, done, deleted, created_at, hlc, seq"
+                " FROM qs_todo.tasks WHERE seq > %s ORDER BY seq",
+                (cursor,),
+            )
+            tasks = [
+                {
+                    "id": r[0],
+                    "text": r[1],
+                    "done": r[2],
+                    "deleted": r[3],
+                    "createdAt": r[4],
+                    "hlc": r[5],
+                    "seq": r[6],
+                }
+                for r in cur.fetchall()
+            ]
+    # Answer only after the block has committed: respond() raises SystemExit,
+    # which inside it would roll back.
+    respond(
+        {
+            "ok": True,
+            "dbId": db_id,
+            "full": full,
+            "cursor": tasks[-1]["seq"] if tasks else cursor,
+            "serverTime": server_time,
+            "accepted": [c["id"] for c in changes],
+            "tasks": tasks,
+        }
+    )
 
 
 if __name__ == "__main__":
