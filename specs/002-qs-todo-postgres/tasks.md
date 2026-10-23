@@ -332,7 +332,13 @@ with the installed shell and the `qs -p` instance acting as two devices on one t
 
 **Independent Test**: quickstart S5, plus the journal check.
 
-- [ ] T022 [US3] Expose the status model in `QS/services/Todo.qml` per the data-model.md table: `status: { state, pendingCount, error, lastSyncAt }`, with `state` one of `local`, `syncing`, `synced`, `pending`, `offline` or `error`, derived from `QS_TODO_SYNC`, the run state, `lastError` and the dirty count. Update `status()` in the `todo` IpcHandler in `QS/shell.qml` to print `<state> pending=<n> tasks=<visible> open=<open> last=<ms or ->`, and add `sync(): void` there.
+- [X] T022 [US3] Expose the status model in `QS/services/Todo.qml` per the data-model.md table: `status: { state, pendingCount, error, lastSyncAt }`, with `state` one of `local`, `syncing`, `synced`, `pending`, `offline` or `error`, derived from `QS_TODO_SYNC`, the run state, `lastError` and the dirty count. Update `status()` in the `todo` IpcHandler in `QS/shell.qml` to print `<state> pending=<n> tasks=<visible> open=<open> last=<ms or ->`, and add `sync(): void` there.
+  - Done (2026-10-23): the order is local (no helper, or `unconfigured`), then syncing, offline, error (`config`/`auth`/`schema`/`other`, the category in `error`), pending, synced. Local only comes before syncing, so the 5 min check of an unconfigured helper shows no spinner. `lastSyncAt` comes from `todo.json`. Checked on a scratch `qs -p` shell that loads only `Todo` and the real `todo` handler, with a fake helper whose answer is read from a file:
+    - No `QS_TODO_SYNC`: `local pending=0 … last=-`, then `local pending=1` after an add.
+    - Helper says `unconfigured`: `local`, `error=unconfigured`.
+    - `ok` with a 3 s delay: `syncing` during the run, then `pending pending=1 last=<ms>`, since this helper accepted nothing. With the ids accepted: `synced pending=0`.
+    - `offline` gave `offline`. `auth` gave `error` with `error=auth`. An unknown category gave `error` with `error=other`.
+    - Log: only the portal registration warning. The scratch state dir was removed afterwards.
 - [ ] T023 [P] [US3] Add the status chip to the `QS/modules/popouts/TodoPanel.qml` header per contracts/ui.md: the text for each state, a spinning icon while `syncing`, and `Theme.critical` for errors. Clicking it runs `Todo.sync()`, except in `local`. Hovering shows "Synced n min ago" from `lastSyncAt`.
 - [ ] T024 [P] [US3] In `QS/modules/bar/Bar.qml`, a middle click on the todo chip runs `Todo.sync()`. Add a small `Theme.critical` dot when `Todo.status.state === "error"`.
 - [ ] T025 [US3] Validate quickstart S5 by stepping through each state: no file, wrong user, `chmod 644`, bad host, server stopped, back. Confirm that `journalctl --user -u quickshell` and the `qs -p` output contain no URL or password (SC-006). Record the results.

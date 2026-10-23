@@ -133,8 +133,9 @@ ShellRoot {
             Media.stop();
         }
     }
-    // `todo add <text>` is the panel's add field; `list` and `status`
-    // are one-line-per-task and one-line reports for scripts and tests.
+    // `todo add <text>` is the panel's add field and `sync` its status
+    // chip; `list` and `status` are one-line-per-task and one-line
+    // reports for scripts and tests.
     IpcHandler {
         target: "todo"
         function add(text: string): void {
@@ -143,11 +144,12 @@ ShellRoot {
         function list(): string {
             return Todo.visible.map(t => (t.done ? "[x] " : "[ ] ") + t.text).join("\n");
         }
-        // Nothing syncs yet, so the state is always local and there is
-        // no last sync.
+        function sync(): void {
+            Todo.sync();
+        }
         function status(): string {
-            const pending = Todo.tasks.filter(t => t.dirty).length;
-            return `local pending=${pending} tasks=${Todo.visible.length} open=${Todo.openCount} last=-`;
+            const s = Todo.status;
+            return `${s.state} pending=${s.pendingCount} tasks=${Todo.visible.length} open=${Todo.openCount} last=${s.lastSyncAt ?? "-"}`;
         }
     }
     IpcHandler {

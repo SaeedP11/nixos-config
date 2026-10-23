@@ -190,6 +190,17 @@ Singleton {
     // dirty when the answer comes back.
     property var sent: ({})
 
+    // What the panel and bar show (data-model.md "Sync Status"). Local only
+    // wins over a run in progress, so the 5 min check of an unconfigured
+    // helper doesn't flash a spinner. Never holds the URL.
+    readonly property int pendingCount: tasks.filter(t => t.dirty).length
+    readonly property var status: ({
+            state: !helper || lastError === "unconfigured" ? "local" : busy ? "syncing" : lastError === "offline" ? "offline" : lastError ? "error" : pendingCount > 0 ? "pending" : "synced",
+            pendingCount,
+            error: lastError,
+            lastSyncAt: store.data.lastSyncAt ?? null
+        })
+
     function sync() {
         if (!helper || !device)
             return;
