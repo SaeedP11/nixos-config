@@ -2,8 +2,9 @@
 # Bluetooth and sound panels, notification centre, Gregorian and Persian
 # calendars with events and reminders, media, system monitor, power,
 # clipboard, wallpapers, capture, keybindings, emoji and symbols picker,
-# calculator, clocks with timers, stopwatch, alarms and world clocks),
-# launcher, Alt+Tab switcher, workspace overview, lock screen, polkit agent,
+# calculator, clocks with timers, stopwatch, alarms and world clocks, and a
+# todo list kept locally and optionally synced to PostgreSQL), launcher,
+# Alt+Tab switcher, workspace overview, lock screen, polkit agent,
 # notification toasts, OSD, dock and desktop widgets. It replaces waybar,
 # mako, wlogout, vicinae and qylock, swayosd for everything but the lock
 # keys, and GNOME's Calculator, Clocks, Characters and Calendar.
