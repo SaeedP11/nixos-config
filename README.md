@@ -109,6 +109,15 @@ a read-only store symlink would break it:
   the same way. Nothing opens `.ics` files since gnome-calendar was removed:
   `xdg.nix` assigns no `text/calendar` handler and the panels do not import
   them
+- `~/.local/state/quickshell/by-shell/<hash>/todo.json` — the todo panel's
+  tasks, the changes still waiting to sync and the sync cursor. It is the
+  source of truth; the database is a copy. A bad file is set aside the same
+  way
+- `~/.config/qs-todo/database-url` — a secret, created by hand and never
+  tracked here. Without it the todo panel stays local only. To sync, create it
+  with `install -m600 /dev/null ~/.config/qs-todo/database-url` and put one
+  libpq connection URL in it; delete it to go back to local only. A file
+  readable by anyone else is refused
 
 ## Adding a machine
 

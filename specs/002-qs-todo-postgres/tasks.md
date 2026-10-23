@@ -363,7 +363,7 @@ with the installed shell and the `qs -p` instance acting as two devices on one t
 
 ## Phase 6: Polish & Cross-Cutting Concerns
 
-- [ ] T026 [P] Update `README.md`. In "What is and is not managed here", list `~/.local/state/quickshell/…/todo.json` (runtime state) and `~/.config/qs-todo/database-url` (a secret, created by hand). Add a short setup note: create the file with `install -m600`, put one libpq URL in it, and delete it to go back to local only.
+- [X] T026 [P] Update `README.md`. In "What is and is not managed here", list `~/.local/state/quickshell/…/todo.json` (runtime state) and `~/.config/qs-todo/database-url` (a secret, created by hand). Add a short setup note: create the file with `install -m600`, put one libpq URL in it, and delete it to go back to local only.
 - [ ] T027 [P] Update the header comment of `modules/home/saeedp11/quickshell.nix` to list the todo panel among the popouts.
 - [ ] T028 Run `nix fmt -- --check` on every changed `.nix` file, then build `nix build .#nixosConfigurations.{desktop,laptop,pc}.config.system.build.toplevel --dry-run` and `nix build .#qs-todo-sync`. Run `git grep -n -i -e 'postgres://' -e 'postgresql://'` to confirm only the contract examples and docs match, with no real URL.
 - [ ] T029 After the user runs `nixos-rebuild switch`, rerun quickstart S1, S3 and S5 on the installed shell, and stop the throwaway database (`pg_ctl … stop`). Mark the feature done in this file.
