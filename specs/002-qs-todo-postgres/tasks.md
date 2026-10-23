@@ -221,11 +221,23 @@ with the installed shell and the `qs -p` instance acting as two devices on one t
     - **Package**: `HELPER/default.nix` takes `writers` and `python3Packages`; it is listed in `pkgs/default.nix` after `freecad-mcp-addon`. No `flakeIgnore`: no line in the script is over 79 characters, and the build's flake8 found nothing.
     - **Checked**: `nix build .#qs-todo-sync` built with python3 3.12.12 and passed its flake8 check. `nix fmt -- --check` on both files is clean. The built binary, with `QS_TODO_DB_URL_FILE` pointing at a missing file, printed `{"ok":false,"error":"unconfigured"}`, the stderr line `qs-todo-sync: unconfigured`, and exited 0, so psycopg imports in the wrapped environment.
     - **Session note**: the worktree guard refuses `git …` once the rtk hook rewrites it; `/run/current-system/sw/bin/git …` as a plain command works.
-- [ ] T016 [US2] Validate the helper:
+- [X] T016 [US2] Validate the helper:
   - `nix build .#qs-todo-sync` passes flake8.
   - Start the throwaway socket-only PostgreSQL 17 from quickstart, then run S2: first sync `full: true`, rerun idempotent, and each error category (`unconfigured`, `config`/`permissions`, `auth` with a wrong user, `offline` with the server stopped).
   - Confirm with `strings` on the captured stdout and stderr that no URL text appears.
   - Record the outputs in this task's note.
+  - Done (2026-10-23):
+    - **Build**: `nix build --rebuild .#qs-todo-sync` reran the derivation, including its flake8 check, and matched the cached output.
+    - **Setup**: the quickstart throwaway database (PostgreSQL 17.6, socket only, `trust`, role `todo`), but with the URL file in a scratch directory passed as `QS_TODO_DB_URL_FILE`, so `~/.config/qs-todo` was not touched.
+    - **S2**, the quickstart request, with exit 0 and one stdout line every time:
+      - First sync: `ok`, `full: true`, `cursor 1`, `accepted` holding the id, and the task with `seq 1`. No stderr.
+      - Rerun: the same answer, still `full`, since the request's `dbId` is null. The table held 1 row for the id, with seq 1.
+      - `chmod 644` → `{"ok":false,"error":"config","reason":"permissions"}`.
+      - `user=nobody` → `{"ok":false,"error":"auth"}`.
+      - Server stopped → `{"ok":false,"error":"offline"}`.
+      - File moved aside → `{"ok":false,"error":"unconfigured"}`.
+      - Each failure wrote exactly the line `qs-todo-sync: <error>` to stderr, and nothing else.
+    - **Secrecy**: `strings` over every captured stdout and stderr, grepped for `postgresql`, `host=`, `user=`, `nobody`, `/run/user` and the scratch path, found nothing besides the `qs-todo-sync:` prefix. `grep -c todo` on stderr was 1 per failure, and that 1 is the prefix. The server log had no `ERROR` lines.
 - [ ] T017 [US2] Wire the helper in `modules/nixos/desktop/niri.nix`: add `environment.QS_TODO_SYNC = "${pkgs.qs-todo-sync}/bin/qs-todo-sync";` after `QS_UNICODE_DATA`, with a comment in the style of the neighbouring ones (what reads it, and that the URL is read by the helper, not passed here). Format the file.
 
 ### Client sync (in the shell)
