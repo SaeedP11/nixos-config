@@ -48,8 +48,10 @@ note of what was found or measured, as was done in 001.
 
 **Purpose**: Confirm the baseline and read the patterns before any change
 
-- [ ] T001 Confirm the working-tree shell starts cleanly with `qs -p modules/home/saeedp11/quickshell` (see the notes above). Record the pre-existing warnings in this task's note so new ones can be told apart. Confirm `git ls-files '*.nix'` formatting passes, apart from the known unformatted `hosts/{pc,shared}/hardware-configuration.nix`.
-- [ ] T002 Read the patterns the new code must follow, and record a short summary in this task's note:
+- [X] T001 Confirm the working-tree shell starts cleanly with `qs -p modules/home/saeedp11/quickshell` (see the notes above). Record the pre-existing warnings in this task's note so new ones can be told apart. Confirm `git ls-files '*.nix'` formatting passes, apart from the known unformatted `hosts/{pc,shared}/hardware-configuration.nix`.
+  - Baseline (2026-10-23): with the unit's `QS_EMOJI_DATA`, `QS_TZ_DATA`, `QS_UNICODE_DATA` and `TZDIR` exported, the working tree reaches "Configuration Loaded" under shell ID `49f565971ad2ee7bf7c524583d180872`. The ID differs from 001's because the worktree path differs, so this worktree's `todo.json` goes under that ID. The only warnings are the same pre-existing ones as in 001: 2× `qt.svg … Alacritty.svg … linearGradient10962` and 1× `qt.qpa.services: Failed to register with host portal`. The service was restarted afterwards and is active.
+  - Formatting: `nix fmt -- --check` over `git ls-files '*.nix'` reports only `hosts/{pc,shared}/hardware-configuration.nix` as not formatted. In this worktree session, `$(…)` inside a nix command is refused, so write the file list to a file and run the check from a small script.
+- [X] T002 Read the patterns the new code must follow, and record a short summary in this task's note:
   - persistence and singleton shape in `QS/services/Events.qml` and `QS/services/StateFile.qml`
   - the one-line text `Field` component in `QS/widgets/EventList.qml`
   - a keyboard popout with a focused field on open, in `QS/modules/popouts/CalculatorPanel.qml`
@@ -57,6 +59,15 @@ note of what was found or measured, as was done in 001.
   - `Process` + `StdioCollector` in `QS/services/Clipboard.qml`
   - the `QS_*` environment block in `modules/nixos/desktop/niri.nix`
   - the package list in `pkgs/default.nix`
+  - Summary (2026-10-23):
+    - **Singleton**: `pragma Singleton`, then the header comment, then `import QtQuick` / `Quickshell`, then `Singleton { id: root }`. State is plain `property var` arrays, replaced (never mutated in place: `concat`/`map`/`filter`) so bindings fire. Mutations call `save()` right away; unusable input returns `""` or does nothing.
+    - **StateFile** (a `FileView` with `atomicWrites`): `name`, `defaults`, `data`, and a `ready` signal fired once with the loaded or default data. A parse failure or `version !== 1` moves the file to `<file>.bad-<epoch>` and uses the defaults, writing nothing until the next save. `save(obj)` stamps `version: 1`. The owner's `save()` is `store.save(Object.assign({}, store.data, { … }))`, and `onReady` validates each field with `Array.isArray`/`typeof` filters before assigning it to `root`. Events sets the field that others depend on first, with a comment saying why.
+    - **Field** (EventList.qml): `component Field: Rectangle` (34 px high, `Theme.radiusSmall`, `Theme.surfaceHigh`, a border that turns `Theme.alpha(Theme.accent, 0.6)` on focus), with a `TextInput` inside (12 px side margins, `Theme.fg`, the selection in `Theme.alpha(Theme.accent, 0.4)`, `Theme.font`/`fontSize`, `clip`) and a placeholder `StyledText` in `Theme.textFaint`. It exposes `text` and `input` aliases; callers focus it with `field.input.forceActiveFocus()`. `onAccepted`/`Keys.onEscapePressed` call into `root`. It is file-local, so TodoPanel needs its own copy.
+    - **Keyboard popout** (CalculatorPanel.qml): a header comment listing the keys, then `PanelSurface { id: root }` around a fixed-width `ColumnLayout`. `Component.onCompleted` reads `Panels.arg` and calls `forceActiveFocus()`. Keys are handled on the `TextInput` (`Keys.onUpPressed`, `Keys.onPressed: e => { … e.accepted = true }`). PopoutLayer already closes the panel on Esc (`Keys.onEscapePressed: Panels.close()`), so a panel only has to accept Esc itself when it wants to cancel an edit first.
+    - **Bar chip** (Bar.qml): `Chip { icon; text; tint: Theme.tone(n); active: Panels.open === "<name>" && Panels.screen === bar.output; onClicked: m => m.button === Qt.RightButton ? … : m.button === Qt.MiddleButton ? … : bar.open("<name>") }`, inside a `Group`. `bar.open(name)` is `Panels.toggle(name, bar.output)`; the add shortcut is `Panels.openWith(name, "add", bar.output)`. The notification bell gives an empty `text` when the count is 0, which is the shape the todo chip should copy.
+    - **Process** (Clipboard.qml): `Process { id; command: [...]; stdout: StdioCollector { onStreamFinished: { … text … } } }`, started with `running = true`. Fire-and-forget commands use `Quickshell.execDetached([...])`, with arguments passed positionally, never spliced into shell text.
+    - **niri.nix**: the quickshell user service has one `environment.QS_* = "${pkgs.…}/…";` per line, each under a 1–2 line comment saying what reads it and why it comes from the store, ending at `QS_UNICODE_DATA` (line 297) just before `serviceConfig`. `QS_TODO_SYNC` goes after it.
+    - **pkgs/default.nix**: `{ pkgs }: rec { name = pkgs.callPackage ./name.nix { }; … }`. Directory packages (`greeter-wallust`, `wallpaper-tools`) form a second group separated by a blank line, so `qs-todo-sync = pkgs.callPackage ./qs-todo-sync { };` belongs in that group.
 
 ---
 
@@ -67,7 +78,7 @@ research R5)
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T003 Create `QS/services/Todo.qml` (`pragma Singleton`, then a header comment, then imports and `Singleton { id: root }`) with the store and clock only:
+- [X] T003 Create `QS/services/Todo.qml` (`pragma Singleton`, then a header comment, then imports and `Singleton { id: root }`) with the store and clock only:
   - **Store**: a `StateFile { name: "todo.json" }` with the defaults from contracts/state-files.md.
   - **Load-time validation**: drop tasks with no string `id` or a bad `hlc`, coerce the booleans, and clamp `text` to 4000 characters.
   - **Device id**: create `device` (`"d"` plus 10 random base36 characters) on first load and save it at once.
@@ -78,6 +89,7 @@ research R5)
 
   The header comment describes the local-first model, the HLC and the file. Don't add mutations
   or sync yet.
+  - Done (2026-10-23): `QS/services/Todo.qml`. `dbId`, `cursor` and the `lastSync*` fields stay in `store.data` (kept by `save()`) until US2 needs them. On load, `clock` is raised to the greatest of the stored `clock` and every kept task's `hlc`. A missing or non-numeric `createdAt` falls back to the `hlc` milliseconds, so sorting never sees `NaN`. If the counter would pass 9999, the stamp moves to the next millisecond. Checked in a throwaway `qs -p` shell holding only `Todo.qml` and `StateFile.qml`. First load created `device` `d` + 10 chars and wrote it; a restart kept it. Three same-ms stamps ran `:0000`→`:0002`. `observe()` raised the clock and ignored `"bad"`. Ids had the form `t-<device>-<b36>-<n>`. A seeded file lost the task with a numeric id and the one with a bad `hlc`, `0`/`1` became bools, `clock` rose to another device's greater stamp, and `visible` was open newest-first, then done, with the tombstone hidden (3 open, 1 done). New warning, only on a first load with no file: `quickshell.io.fileview: got operation finished from dropped operation` (the device save inside `onLoadFailed`); the file was still written correctly.
 - [ ] T004 Start `Todo` at load in `QS/shell.qml` by touching `Todo.tasks` in the existing `Component.onCompleted` next to `Events.events`, and extend the comment above it (it syncs and purges with no panel open). Check with `qs -p …` that `todo.json` is created with a `device`, and that a restart keeps the same `device`.
 
 **Checkpoint**: The store loads, validates and persists. User stories can start.
