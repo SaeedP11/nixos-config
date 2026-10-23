@@ -164,12 +164,17 @@ with the installed shell and the `qs -p` instance acting as two devices on one t
 
 ### Helper (server side)
 
-- [ ] T012 [P] [US2] Create `HELPER/qs_todo_sync.py`, part 1: the input side. It needs a header comment covering the protocol, why it isn't `psql` (research R3), and the secrecy rules.
+- [X] T012 [P] [US2] Create `HELPER/qs_todo_sync.py`, part 1: the input side. It needs a header comment covering the protocol, why it isn't `psql` (research R3), and the secrecy rules.
   - **URL file**: read `QS_TODO_DB_URL_FILE`, or else `${XDG_CONFIG_HOME:-~/.config}/qs-todo/database-url`. The first line that is not blank and does not start with `#` is the URL.
   - **Missing file**: answer `unconfigured`.
   - **Permissions**: if `st_mode & 0o077` is set, answer `config`/`permissions`.
   - **Request**: parse it from stdin and validate every change against contracts/database.md's checks, rejecting the whole request as `other`.
   - **Output**: write a single response helper that prints one JSON object to stdout and exits 0.
+  - Done (2026-10-23):
+    - **Shape**: `respond(obj)` prints one compact JSON line and exits 0. `fail(error, **extra)` adds the single stderr line `qs-todo-sync: <error>` and responds. `main()` reads all of stdin first, so the shell's write never hits a closed pipe, then calls `read_url()` and `parse_request()`, then `sync(url, request)`. `sync()` is a stub that answers `other` until T013 replaces it. psycopg isn't imported yet, because an unused import would fail flake8.
+    - **URL file**: it is opened once, and the mode and file type are checked with `fstat` on that descriptor. A missing file answers `unconfigured`. A file readable by group or others, or one that `open` refuses with `EACCES`, answers `config`/`permissions`. A directory or other non-regular file, invalid UTF-8, or no URL line answers `config`/`url`. Checking the directory case found a traceback, because `fdopen` refuses a directory before the check ran; the check now runs on the raw fd.
+    - **Validation** (beyond the database.md checks): the hlc regex uses `[0-9]` with `fullmatch`, since Python's `\d` matches non-ASCII digits. Integer fields must have `type(...) is int`, so JSON `true` is not a number. `createdAt` must fit in a bigint. NUL is refused in `id`/`text`, because PostgreSQL text can't store it. `NaN`/`Infinity` are refused. The request needs `version: 1`, a string `device`, `dbId` as a string or null, an integer `cursor` ≥ 0, `lastSyncServerTime` as an integer or null, and a `changes` list.
+    - **Checked** (by hand with nixpkgs python3, since the package comes in T015): flake8 7.2 at default settings is clean. Each case gave exactly one response line, exit 0, and the matching stderr line: missing file → `unconfigured`; mode 0644 → `config`/`permissions`; comments only → `config`/`url`; a directory → `config`/`url`; no `QS_TODO_DB_URL_FILE` and an empty `XDG_CONFIG_HOME` dir → `unconfigured`; a bad hlc, `"done":1`, `NaN` and non-JSON → `other`.
 - [ ] T013 [US2] In `HELPER/qs_todo_sync.py`, part 2: the transaction from contracts/database.md.
   - **Connect**: `psycopg.connect(url, connect_timeout=5, application_name="qs-todo", autocommit=False)`.
   - **Schema**: idempotent creation of `qs_todo.meta`, `qs_todo.seq` and `qs_todo.tasks`, plus the index. Seed `schema_version` and `db_id`, using `gen_random_uuid()` with a Python `uuid4` fallback for PostgreSQL 12.
