@@ -278,13 +278,26 @@ PanelWindow {
 
             Group {
                 // Open todos; right click opens the panel with the add
-                // field focused.
+                // field focused, middle click syncs. A red dot marks a
+                // sync error.
                 Chip {
                     icon: Icons.checklist
                     text: Todo.openCount > 0 ? String(Todo.openCount) : ""
                     tint: Theme.tone(11)
                     active: Panels.open === "todo" && Panels.screen === bar.output
-                    onClicked: m => m.button === Qt.RightButton ? Panels.openWith("todo", "add", bar.output) : bar.open("todo")
+                    onClicked: m => m.button === Qt.MiddleButton ? Todo.sync() : m.button === Qt.RightButton ? Panels.openWith("todo", "add", bar.output) : bar.open("todo")
+
+                    Rectangle {
+                        visible: Todo.status.state === "error"
+                        anchors.top: parent.top
+                        anchors.right: parent.right
+                        anchors.topMargin: 2
+                        anchors.rightMargin: 4
+                        width: 7
+                        height: 7
+                        radius: width / 2
+                        color: Theme.critical
+                    }
                 }
                 Chip {
                     icon: Notifs.dnd ? Icons.bellOff : Notifs.count > 0 ? Icons.bellDot : Icons.bell
