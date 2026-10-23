@@ -216,7 +216,11 @@ with the installed shell and the `qs -p` instance acting as two devices on one t
       - The owner: `ok`, `full`, cursor 1, and the rerun was idempotent.
       - With stdout closed: exit 1 and the single line `qs-todo-sync: other`.
       - No traceback in any run. A grep of all captured stdout and stderr for the passwords, the user names, the socket path and the host names found nothing.
-- [ ] T015 [P] [US2] Create `HELPER/default.nix` with `writers.writePython3Bin "qs-todo-sync" { libraries = [ python3Packages.psycopg ]; } (builtins.readFile ./qs_todo_sync.py)`. Add a header comment in the style of `pkgs/raise-or-run.nix` (what it is, why it exists, the contract link). Add `qs-todo-sync = pkgs.callPackage ./qs-todo-sync { };` to `pkgs/default.nix`. Fix flake8 findings rather than ignoring them; use `flakeIgnore` only for line length if needed, with a comment.
+- [X] T015 [P] [US2] Create `HELPER/default.nix` with `writers.writePython3Bin "qs-todo-sync" { libraries = [ python3Packages.psycopg ]; } (builtins.readFile ./qs_todo_sync.py)`. Add a header comment in the style of `pkgs/raise-or-run.nix` (what it is, why it exists, the contract link). Add `qs-todo-sync = pkgs.callPackage ./qs-todo-sync { };` to `pkgs/default.nix`. Fix flake8 findings rather than ignoring them; use `flakeIgnore` only for line length if needed, with a comment.
+  - Done (2026-10-23):
+    - **Package**: `HELPER/default.nix` takes `writers` and `python3Packages`; it is listed in `pkgs/default.nix` after `freecad-mcp-addon`. No `flakeIgnore`: no line in the script is over 79 characters, and the build's flake8 found nothing.
+    - **Checked**: `nix build .#qs-todo-sync` built with python3 3.12.12 and passed its flake8 check. `nix fmt -- --check` on both files is clean. The built binary, with `QS_TODO_DB_URL_FILE` pointing at a missing file, printed `{"ok":false,"error":"unconfigured"}`, the stderr line `qs-todo-sync: unconfigured`, and exited 0, so psycopg imports in the wrapped environment.
+    - **Session note**: the worktree guard refuses `git …` once the rtk hook rewrites it; `/run/current-system/sw/bin/git …` as a plain command works.
 - [ ] T016 [US2] Validate the helper:
   - `nix build .#qs-todo-sync` passes flake8.
   - Start the throwaway socket-only PostgreSQL 17 from quickstart, then run S2: first sync `full: true`, rerun idempotent, and each error category (`unconfigured`, `config`/`permissions`, `auth` with a wrong user, `offline` with the server stopped).

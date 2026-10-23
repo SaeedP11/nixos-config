@@ -17,6 +17,7 @@ rec {
   claude-code = pkgs.callPackage ./claude-code.nix { };
   fresh-editor = pkgs.callPackage ./fresh-editor.nix { };
   freecad-mcp-addon = pkgs.callPackage ./freecad-mcp-addon.nix { };
+  qs-todo-sync = pkgs.callPackage ./qs-todo-sync { };
 
   greeter-wallust = pkgs.callPackage ./greeter-wallust { };
   wallpaper-tools = pkgs.callPackage ./wallpaper-tools { };
