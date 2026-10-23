@@ -368,7 +368,15 @@ with the installed shell and the `qs -p` instance acting as two devices on one t
 - [X] T028 Run `nix fmt -- --check` on every changed `.nix` file, then build `nix build .#nixosConfigurations.{desktop,laptop,pc}.config.system.build.toplevel --dry-run` and `nix build .#qs-todo-sync`. Run `git grep -n -i -e 'postgres://' -e 'postgresql://'` to confirm only the contract examples and docs match, with no real URL.
     - `nix fmt -- --check` on `quickshell.nix`, `niri.nix`, `pkgs/default.nix` and `pkgs/qs-todo-sync/default.nix` exited 0. The three dry builds and `nix build .#qs-todo-sync` exited 0.
     - The grep matched only `contracts/state-files.md` (the `db.example.net` example), `quickstart.md` (the scratch `$D` socket URL), `research.md` (`/run/postgresql`) and this task line. No real URL is in the tree.
-- [ ] T029 After the user runs `nixos-rebuild switch`, rerun quickstart S1, S3 and S5 on the installed shell, and stop the throwaway database (`pg_ctl … stop`). Mark the feature done in this file.
+- [X] T029 After the user runs `nixos-rebuild switch`, rerun quickstart S1, S3 and S5 on the installed shell, and stop the throwaway database (`pg_ctl … stop`). Mark the feature done in this file.
+  - Done (2026-10-23), after the branch was fast-forwarded into `master` and switched on laptop. The running shell predated the switch (`todo` IPC: "Target not found"), so it was restarted first. Run from a script (`wtype` keys, `grim` shots, IPC) on `-c shell` with no URL file at the start.
+    - **S1**: three adds through the field, Space ticked one, F2 + text + Enter renamed one, and a restart kept the open and done tasks with status `local`. Keys typed straight after `panel open … add` lost characters (a whole add once). With 1.5 s before typing and `wtype -d 30` an add arrived intact, so that was the script's timing. Note: for the first 3 s after start, before the first sync check, the status (and chip) reads `synced` even with no URL file.
+    - **S3**: on a throwaway PostgreSQL 17 on a unix socket, `todo sync` gave `synced pending=0` and every task, tombstone included, in `qs_todo.tasks`. With the server stopped, two IPC adds and a tick gave `offline pending=2`, and `todo status` answered in 46 ms. After a restart the backoff synced on its own within about 5 s, with every change in the table and 0 duplicate ids.
+    - **S5**: panel screenshots read "Local only" (no file), "Sign-in failed" (`user=nobody`), "Check database URL" (`chmod 644`), "Offline · 1" (server stopped) and "Synced" (back). The bar chip showed its `Theme.critical` dot only in the two error states. A bad host (`db.invalid`) gave `offline`, not "Check database URL": on this network (VPN up) `getent hosts db.invalid` takes 17.9 s and fails as a temporary error, which `classify()` deliberately keeps offline. A fast NXDOMAIN maps to `config`, as T025 saw.
+    - **SC-006**: 0 matches for `postgres`, the socket dir, `db.invalid`, `host=`, `user=` or `nobody` in `journalctl --user -u quickshell` since the restart, and 0 for the URL, socket dir or user in the whole user journal.
+    - The server was stopped (`pg_ctl … stop`), and its directory, `~/.config/qs-todo/` and the test `todo.json` were removed. The shell is active and back to `local pending=0 tasks=0`.
+
+**Feature status**: Done (2026-10-23).
 
 ---
 
