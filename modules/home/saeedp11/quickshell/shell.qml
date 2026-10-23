@@ -21,12 +21,14 @@ import qs.modules.polkit
 
 ShellRoot {
     // Singletons are created on first use; these only watch, so they are
-    // touched here to start them (Clocks fires timers and alarms, and Events
-    // calendar reminders, with no panel open).
+    // touched here to start them (Clocks fires timers and alarms, Events
+    // calendar reminders, and Todo syncs and purges old deletes, with no
+    // panel open).
     Component.onCompleted: {
         Warnings.checkBattery();
         Clocks.now;
         Events.events;
+        Todo.tasks;
     }
 
     Lock {
