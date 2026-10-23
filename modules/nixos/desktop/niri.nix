@@ -296,6 +296,10 @@ in
     # UnicodeData.txt that unicodeData above builds.
     environment.QS_UNICODE_DATA = "${unicodeData}";
 
+    # The Todo panel's PostgreSQL sync helper, run by services/Todo.qml; the
+    # helper reads the database URL from its own file, so none is passed here.
+    environment.QS_TODO_SYNC = "${pkgs.qs-todo-sync}/bin/qs-todo-sync";
+
     serviceConfig = {
       ExecStart = "${pkgs.quickshell}/bin/qs -c shell";
       Restart = "on-failure";
