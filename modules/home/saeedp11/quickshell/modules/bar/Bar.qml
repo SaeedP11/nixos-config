@@ -277,6 +277,15 @@ PanelWindow {
             }
 
             Group {
+                // Open todos; right click opens the panel with the add
+                // field focused.
+                Chip {
+                    icon: Icons.checklist
+                    text: Todo.openCount > 0 ? String(Todo.openCount) : ""
+                    tint: Theme.tone(11)
+                    active: Panels.open === "todo" && Panels.screen === bar.output
+                    onClicked: m => m.button === Qt.RightButton ? Panels.openWith("todo", "add", bar.output) : bar.open("todo")
+                }
                 Chip {
                     icon: Notifs.dnd ? Icons.bellOff : Notifs.count > 0 ? Icons.bellDot : Icons.bell
                     text: Notifs.count > 0 ? String(Notifs.count) : ""

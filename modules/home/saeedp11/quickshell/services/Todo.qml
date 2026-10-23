@@ -73,6 +73,105 @@ Singleton {
         return "t-" + device + "-" + Date.now().toString(36) + "-" + seq;
     }
 
+    // Trimmed, newlines folded to spaces, clamped; "" when nothing is left.
+    function clean(text) {
+        return String(text ?? "").replace(/\s*[\r\n]+\s*/g, " ").trim().slice(0, 4000);
+    }
+
+    // Every change restamps the task and marks it dirty for the next sync.
+    // Unknown ids and tombstones are left alone: a deletion is never undone
+    // locally.
+    function change(id, fields) {
+        const i = tasks.findIndex(t => t.id === id && !t.deleted);
+        if (i < 0)
+            return false;
+        const next = tasks.slice();
+        next[i] = Object.assign({}, tasks[i], fields, {
+            hlc: stamp(),
+            dirty: true
+        });
+        tasks = next;
+        save();
+        return true;
+    }
+
+    // Returns the new id, or "" when the text is empty.
+    function add(text) {
+        const t = clean(text);
+        if (!t)
+            return "";
+        const id = newId();
+        tasks = tasks.concat([
+            {
+                id,
+                text: t,
+                done: false,
+                createdAt: Date.now(),
+                hlc: stamp(),
+                deleted: false,
+                dirty: true
+            }
+        ]);
+        save();
+        return id;
+    }
+
+    function toggle(id) {
+        const t = tasks.find(t => t.id === id);
+        return !!t && change(id, {
+            done: !t.done
+        });
+    }
+
+    // Empty text keeps the old text; unchanged text isn't a change.
+    function edit(id, text) {
+        const t = clean(text), old = tasks.find(o => o.id === id && !o.deleted);
+        if (!t || !old)
+            return false;
+        return t === old.text || change(id, {
+            text: t
+        });
+    }
+
+    function remove(id) {
+        return change(id, {
+            deleted: true,
+            text: ""
+        });
+    }
+
+    // One stamp each, one save for all.
+    function clearDone() {
+        if (doneCount === 0)
+            return;
+        tasks = tasks.map(t => t.done && !t.deleted ? Object.assign({}, t, {
+                    deleted: true,
+                    text: "",
+                    hlc: stamp(),
+                    dirty: true
+                }) : t);
+        save();
+    }
+
+    // Synced tombstones older than 30 days are dropped locally; the server
+    // purges its own copy (research R8). Returns whether anything went.
+    function purge() {
+        const cutoff = Date.now() - 30 * 86400000;
+        const kept = tasks.filter(t => !(t.deleted && !t.dirty && Number(t.hlc.slice(0, 13)) < cutoff));
+        if (kept.length === tasks.length)
+            return false;
+        tasks = kept;
+        return true;
+    }
+
+    Timer {
+        interval: 86400000
+        repeat: true
+        running: true
+        onTriggered: if (root.purge())
+            root.save()
+    }
+
     function save() {
         store.save(Object.assign({}, store.data, {
             device,
@@ -111,7 +210,7 @@ Singleton {
                         deleted: !!t.deleted,
                         dirty: !!t.dirty
                     }));
-            if (fresh)
+            if (root.purge() || fresh)
                 root.save();
         }
     }

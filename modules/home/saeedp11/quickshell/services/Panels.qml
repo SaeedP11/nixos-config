@@ -16,7 +16,7 @@ Singleton {
 
     // Panels driven from the keyboard -- a search field, or the power
     // menu's arrow keys -- take it exclusively (see PopoutLayer).
-    readonly property bool wantsKeyboard: ["clipboard", "wallpaper", "power", "launcher", "switcher", "overview", "keybinds", "emoji", "capture", "calculator"].includes(open)
+    readonly property bool wantsKeyboard: ["clipboard", "wallpaper", "power", "launcher", "switcher", "overview", "keybinds", "emoji", "capture", "calculator", "todo"].includes(open)
 
     function toggle(name, screenName) {
         const target = screenName || Niri.focusedOutput || (Quickshell.screens[0]?.name ?? "");

@@ -577,6 +577,7 @@ binds {
     Mod+Shift+B hotkey-overlay-title="Pick Wallpaper" { spawn "qs" "-c" "shell" "ipc" "call" "panel" "toggle" "wallpaper"; }
     Mod+A hotkey-overlay-title="Quick Settings" { spawn "qs" "-c" "shell" "ipc" "call" "panel" "toggle" "control"; }
     Mod+N hotkey-overlay-title="Notifications" { spawn "qs" "-c" "shell" "ipc" "call" "panel" "toggle" "notifications"; }
+    Mod+Shift+N hotkey-overlay-title="To Do" { spawn "qs" "-c" "shell" "ipc" "call" "panel" "toggle" "todo"; }
     Mod+X hotkey-overlay-title="Power Menu" { spawn "qs" "-c" "shell" "ipc" "call" "panel" "toggle" "power"; }
     Mod+Shift+V hotkey-overlay-title="Clipboard History" { spawn "qs" "-c" "shell" "ipc" "call" "panel" "toggle" "clipboard"; }
     Mod+Shift+S hotkey-overlay-title="Screenshot or Record" { spawn "qs" "-c" "shell" "ipc" "call" "panel" "toggle" "capture"; }

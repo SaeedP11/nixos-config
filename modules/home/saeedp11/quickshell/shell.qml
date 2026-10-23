@@ -58,7 +58,7 @@ ShellRoot {
     // `qs -c shell ipc call panel toggle control`. Panels: control,
     // notifications, calendar, persian, media, sysmon, power, clipboard,
     // wallpaper, launcher, overview, capture, keybinds, emoji, network,
-    // bluetooth, sound, calculator, clocks. `panel open <name> <arg>` opens a panel without
+    // bluetooth, sound, calculator, clocks, todo. `panel open <name> <arg>` opens a panel without
     // toggling it closed and hands it `arg` (Panels.arg), e.g.
     // `panel open emoji symbols`.
     IpcHandler {
@@ -131,6 +131,23 @@ ShellRoot {
         }
         function stop(): void {
             Media.stop();
+        }
+    }
+    // `todo add <text>` is the panel's add field; `list` and `status`
+    // are one-line-per-task and one-line reports for scripts and tests.
+    IpcHandler {
+        target: "todo"
+        function add(text: string): void {
+            Todo.add(text);
+        }
+        function list(): string {
+            return Todo.visible.map(t => (t.done ? "[x] " : "[ ] ") + t.text).join("\n");
+        }
+        // Nothing syncs yet, so the state is always local and there is
+        // no last sync.
+        function status(): string {
+            const pending = Todo.tasks.filter(t => t.dirty).length;
+            return `local pending=${pending} tasks=${Todo.visible.length} open=${Todo.openCount} last=-`;
         }
     }
     IpcHandler {

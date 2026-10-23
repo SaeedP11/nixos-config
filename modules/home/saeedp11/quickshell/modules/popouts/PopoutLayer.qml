@@ -46,6 +46,10 @@ PanelWindow {
                 align: "right",
                 comp: notifications
             },
+            todo: {
+                align: "right",
+                comp: todo
+            },
             power: {
                 align: "modal",
                 comp: power
@@ -244,6 +248,10 @@ PanelWindow {
         NotificationCenter {
             maxHeight: popout.modelData.height - Theme.barReserved - 40
         }
+    }
+    Component {
+        id: todo
+        TodoPanel {}
     }
     Component {
         id: power
