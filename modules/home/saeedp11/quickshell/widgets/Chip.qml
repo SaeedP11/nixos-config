@@ -11,6 +11,8 @@ Rectangle {
     property color tint: Theme.fg
     property bool active: false
     property bool interactive: true
+    // Turns the glyph, for work in progress.
+    property bool spinning: false
     property int maxTextWidth: 100000
     property string fontFamily: Theme.font
     property alias hovered: mouse.containsMouse
@@ -52,6 +54,14 @@ Rectangle {
             visible: root.icon !== ""
             text: root.icon
             color: root.tint
+            RotationAnimation on rotation {
+                running: root.spinning
+                from: 0
+                to: 360
+                duration: 900
+                loops: Animation.Infinite
+                onStopped: parent.rotation = 0
+            }
         }
         StyledText {
             anchors.verticalCenter: parent.verticalCenter

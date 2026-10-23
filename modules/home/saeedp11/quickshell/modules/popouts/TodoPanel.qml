@@ -177,6 +177,50 @@ PanelSurface {
                 text: Todo.openCount + " open"
                 color: Theme.textDim
             }
+            // Sync status (data-model.md "Sync Status"). Hovering swaps the
+            // text for the time since the last sync; `now` is taken when the
+            // hover starts, as nothing else ticks while the panel is open.
+            Chip {
+                id: statusChip
+                readonly property var s: Todo.status
+                readonly property bool showAgo: hovered && s.lastSyncAt !== null && s.state !== "local" && s.state !== "syncing"
+                property real now: Date.now()
+                readonly property string label: {
+                    switch (s.state) {
+                    case "local":
+                        return "Local only";
+                    case "syncing":
+                        return "";
+                    case "synced":
+                        return "Synced";
+                    case "pending":
+                        return s.pendingCount + " waiting";
+                    case "offline":
+                        return "Offline · " + s.pendingCount;
+                    }
+                    return ({
+                            auth: "Sign-in failed",
+                            config: "Check database URL",
+                            schema: "Can't create tables"
+                        })[s.error] ?? "Sync failed";
+                }
+
+                function ago() {
+                    const min = Math.floor((now - s.lastSyncAt) / 60000);
+                    return min < 1 ? "Synced just now" : "Synced " + min + " min ago";
+                }
+
+                onHoveredChanged: if (hovered)
+                    now = Date.now()
+
+                implicitHeight: 26
+                icon: s.state === "syncing" ? Icons.refresh : ""
+                spinning: s.state === "syncing"
+                text: showAgo ? ago() : label
+                tint: s.state === "error" ? Theme.critical : s.state === "local" ? Theme.textFaint : Theme.textDim
+                interactive: s.state !== "local"
+                onClicked: Todo.sync()
+            }
         }
 
         Field {
