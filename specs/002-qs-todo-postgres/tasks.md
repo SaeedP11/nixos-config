@@ -197,10 +197,25 @@ with the installed shell and the `qs -p` instance acting as two devices on one t
       - A role without database `CREATE` (only `USAGE` and DML) synced after setup.
       - A new empty database with request cursor 41: `full`, `cursor 0`, and `meta` seeded.
       - The server log had no `ERROR` lines.
-- [ ] T014 [US2] In `HELPER/qs_todo_sync.py`, part 3: map failures to categories per the contracts/sync-helper.md table.
+- [X] T014 [US2] In `HELPER/qs_todo_sync.py`, part 3: map failures to categories per the contracts/sync-helper.md table.
   - **Classify**: by SQLSTATE `28000`/`28P01`/`3D000`/`42501`, a conninfo parse error, a DNS failure, and any other no-SQLSTATE `OperationalError` as `offline`.
   - **Output**: `{"ok":false,"error":…,"reason"?,"sqlstate"?}`, and at most one stderr line `qs-todo-sync: <category>`.
   - **Secrecy**: never include `str(exc)`, the URL or the server message anywhere. Wrap everything so no traceback can print.
+  - Done (2026-10-23):
+    - **Structure**: `sync()` calls `transact()` and passes it a stage of `connect`, `create` or `sync`. `classify(exc, stage)` returns the category and its extras. A 42501 is `schema` only in `create`. A `ProgrammingError` with no SQLSTATE is `config`/`url` only in `connect`.
+    - **Finding**: with psycopg 3.2.8, connect-time failures have `sqlstate` None. That covers a wrong password, an unknown role and a missing database, because libpq has no API for the startup `FATAL` code. So they are matched on their text, which is never printed, and they answer without `sqlstate`. An unmatched `FATAL` is `other`, since the server answered. A DNS failure comes back as a bare `OperationalError("[Errno -N] …")` with no cause, so it is split by `gaierror` number. `EAI_NONAME` and `EAI_NODATA` give `config`/`host`, and `EAI_SERVICE` (a port that is not a number) gives `config`/`url`. `EAI_AGAIN` and the rest give `offline`, so a machine with no network backs off instead of showing "Check database URL". Both points are in the contracts/sync-helper.md mapping table.
+    - **Secrecy**: a `NullHandler` on the `psycopg` logger with `propagate = False`, because a failed rollback logs the connection repr (host, user, database). Python warnings are ignored and `sys.unraisablehook` is a no-op. `__main__` maps any other exception to `other`. If even that response can't be written, it calls `os._exit(1)`.
+    - **Checked** against a throwaway socket-only PostgreSQL 17 with `scram-sha-256` auth, using nixpkgs python3, psycopg and flake8 (flake8 clean). Each run below printed its one stderr line `qs-todo-sync: <category>` and exited 0:
+      - Wrong password: `auth`. An unknown user: `auth`.
+      - Missing database: `config`/`database`.
+      - `?bogus=1`, `not a url =`, and `host:notaport`: `config`/`url`.
+      - `no-such-host.invalid`: `config`/`host`.
+      - Connection refused on `127.0.0.1:1`, and a missing socket directory: `offline`.
+      - A role without database `CREATE`, first sync: `schema` with `sqlstate` 42501.
+      - The same role with schema `USAGE` but no table grants: `other` with 42501.
+      - The owner: `ok`, `full`, cursor 1, and the rerun was idempotent.
+      - With stdout closed: exit 1 and the single line `qs-todo-sync: other`.
+      - No traceback in any run. A grep of all captured stdout and stderr for the passwords, the user names, the socket path and the host names found nothing.
 - [ ] T015 [P] [US2] Create `HELPER/default.nix` with `writers.writePython3Bin "qs-todo-sync" { libraries = [ python3Packages.psycopg ]; } (builtins.readFile ./qs_todo_sync.py)`. Add a header comment in the style of `pkgs/raise-or-run.nix` (what it is, why it exists, the contract link). Add `qs-todo-sync = pkgs.callPackage ./qs-todo-sync { };` to `pkgs/default.nix`. Fix flake8 findings rather than ignoring them; use `flakeIgnore` only for line length if needed, with a comment.
 - [ ] T016 [US2] Validate the helper:
   - `nix build .#qs-todo-sync` passes flake8.

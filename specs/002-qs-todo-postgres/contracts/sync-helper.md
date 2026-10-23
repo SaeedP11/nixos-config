@@ -89,7 +89,13 @@ applies the request's `changes`, so the first push to a new database is not lost
 | `psycopg.conninfo` parse error, `ProgrammingError` "invalid dsn" | `config`/`url` |
 | SQLSTATE `28000`, `28P01` | `auth` |
 | SQLSTATE `3D000` (no such database) | `config`/`database` |
-| `OperationalError` with no SQLSTATE whose cause is name resolution | `config`/`host` |
-| Any other `OperationalError` with no SQLSTATE (refused, timeout, unreachable, SSL handshake) | `offline` |
+| `OperationalError` with no SQLSTATE whose cause is name resolution: `EAI_NONAME`/`EAI_NODATA` | `config`/`host` |
+| …the same with `EAI_SERVICE` (port not a number) | `config`/`url` |
+| Any other `OperationalError` with no SQLSTATE (refused, timeout, unreachable, SSL handshake, `EAI_AGAIN` with no network) | `offline` |
 | SQLSTATE `42501` during object creation | `schema` |
 | Anything else | `other` |
+
+libpq gives no SQLSTATE for a failed connection, so a server's `FATAL` at startup (wrong
+password, unknown role, missing database) is told apart by its text, which is matched but
+never printed. Those responses carry no `sqlstate`. An unrecognised `FATAL`, for example from a
+server with a non-English `lc_messages`, is `other`, not `offline`, since the server answered.

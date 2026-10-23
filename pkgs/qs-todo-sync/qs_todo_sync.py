@@ -24,13 +24,25 @@
 # stderr gets at most one line "qs-todo-sync: <category>".
 
 import json
+import logging
 import os
 import re
+import socket
 import stat
 import sys
 import uuid
+import warnings
 
 import psycopg
+
+# psycopg logs some failures (such as a failed rollback) with the connection's
+# repr, which names the host, user and database. With no handler, Python
+# would print them to stderr.
+logging.getLogger("psycopg").addHandler(logging.NullHandler())
+logging.getLogger("psycopg").propagate = False
+warnings.simplefilter("ignore")
+sys.unraisablehook = lambda unraisable: None
+
 # contracts/database.md: the column checks on qs_todo.tasks. `\d` would also
 # match non-ASCII digits in Python, so the classes are spelt out.
 HLC = re.compile(r"[0-9]{13}:[0-9]{4}:[0-9a-z]+")
@@ -147,6 +159,63 @@ def main():
     sync(url, request)
 
 
+# libpq reports a failed connection with no SQLSTATE (it has no API for the
+# server's FATAL code at startup), so those are told apart by their text,
+# which is only matched here and never printed. A server set to another
+# lc_messages falls through to "other".
+GAI_ERRNO = re.compile(r"\[Errno (-[0-9]+)\]")
+AUTH_TEXT = re.compile(
+    r"authentication failed|role \"[^\n]*\" does not exist"
+    r"|pg_hba\.conf|fe_sendauth"
+)
+NO_DATABASE_TEXT = re.compile(r"FATAL: +database \"[^\n]*\" does not exist")
+# EAI_NODATA is missing from some platforms' socket module.
+NO_SUCH_HOST = {socket.EAI_NONAME, getattr(socket, "EAI_NODATA", None)}
+
+
+def classify(exc, stage):
+    # Returns the category and extras of a psycopg error, per the table in
+    # contracts/sync-helper.md. stage is "connect", "create" or "sync".
+    code = exc.sqlstate
+    if code:
+        extra = {"sqlstate": code}
+        if code in ("28000", "28P01"):
+            return "auth", extra
+        if code == "3D000":
+            return "config", dict(extra, reason="database")
+        if code == "42501" and stage == "create":
+            return "schema", extra
+        return "other", extra
+    if stage == "connect" and isinstance(exc, psycopg.ProgrammingError):
+        # psycopg.conninfo could not parse the URL.
+        return "config", {"reason": "url"}
+    if not isinstance(exc, psycopg.OperationalError):
+        return "other", {}
+    text = str(exc)
+    gai = GAI_ERRNO.match(text)
+    if gai:
+        # psycopg resolved the host itself and raised the gaierror's text.
+        # EAI_AGAIN, what a machine with no network gets, stays offline.
+        errno = int(gai.group(1))
+        if errno in NO_SUCH_HOST:
+            return "config", {"reason": "host"}
+        if errno == socket.EAI_SERVICE:
+            return "config", {"reason": "url"}
+        return "offline", {}
+    if "could not translate host name" in text:
+        if "Temporary failure" in text:
+            return "offline", {}
+        return "config", {"reason": "host"}
+    if NO_DATABASE_TEXT.search(text):
+        return "config", {"reason": "database"}
+    if AUTH_TEXT.search(text):
+        return "auth", {}
+    if "FATAL:" in text:
+        # The server answered, so it is not offline.
+        return "other", {}
+    return "offline", {}
+
+
 def create_objects(cur, server_version):
     # CREATE SCHEMA checks the CREATE privilege on the database before IF NOT
     # EXISTS, so it only runs when something is missing: after the first sync
@@ -207,15 +276,40 @@ RETENTION_MS = 30 * 24 * 3600 * 1000
 
 
 def sync(url, request):
+    stage = ["connect"]
+    try:
+        db_id, full, cursor, server_time, tasks = transact(url, request, stage)
+    except psycopg.Error as exc:
+        error, extra = classify(exc, stage[0])
+        fail(error, **extra)
+    # Answer only after the transaction has committed: respond() raises
+    # SystemExit, which inside it would roll back.
+    respond(
+        {
+            "ok": True,
+            "dbId": db_id,
+            "full": full,
+            "cursor": tasks[-1]["seq"] if tasks else cursor,
+            "serverTime": server_time,
+            "accepted": [c["id"] for c in request["changes"]],
+            "tasks": tasks,
+        }
+    )
+
+
+def transact(url, request, stage):
     # One transaction (contracts/database.md): if the connection drops before
     # COMMIT nothing was applied, and the client retries its dirty tasks.
+    # stage[0] tells classify() how far it got.
     changes = request["changes"]
     with psycopg.connect(
         url, connect_timeout=5, application_name="qs-todo", autocommit=False
     ) as conn:
         with conn.cursor() as cur:
+            stage[0] = "create"
             cur.execute("SET LOCAL statement_timeout = '10s'")
             create_objects(cur, conn.info.server_version)
+            stage[0] = "sync"
             if changes:
                 # Serialises writers so seq values become visible in order
                 # and a puller never skips one (research R6). Plain SELECTs
@@ -258,20 +352,17 @@ def sync(url, request):
                 }
                 for r in cur.fetchall()
             ]
-    # Answer only after the block has committed: respond() raises SystemExit,
-    # which inside it would roll back.
-    respond(
-        {
-            "ok": True,
-            "dbId": db_id,
-            "full": full,
-            "cursor": tasks[-1]["seq"] if tasks else cursor,
-            "serverTime": server_time,
-            "accepted": [c["id"] for c in changes],
-            "tasks": tasks,
-        }
-    )
+    return db_id, full, cursor, server_time, tasks
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception:
+        # Anything unforeseen gets a fixed category, never a traceback. If
+        # even that cannot be written (stdout closed), exit non-zero, which
+        # the shell reads as "other".
+        try:
+            fail("other")
+        except Exception:
+            os._exit(1)
