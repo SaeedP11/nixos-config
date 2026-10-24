@@ -10,4 +10,11 @@
 
   programs.bat.enable = true;
   programs.neovim.enable = true;
+
+  # vim is $EDITOR on every host, matching git's core.editor in
+  # ../../home/saeedp11/git.nix; this replaces the NixOS nano default.
+  programs.vim = {
+    enable = true;
+    defaultEditor = true;
+  };
 }
