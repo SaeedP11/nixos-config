@@ -1,0 +1,18 @@
+# Template for ~/.config/qs-todo/database-url, the todo panel's sync secret.
+#
+# Install it (mode 600 is required; a file group or others can read is refused):
+#   mkdir -p ~/.config/qs-todo
+#   install -m600 pkgs/qs-todo-sync/database-url.example ~/.config/qs-todo/database-url
+#   $EDITOR ~/.config/qs-todo/database-url
+#
+# Blank lines and lines starting with # are ignored; the first other line is
+# used as a libpq connection URI. Uncomment exactly one line below and fill it in.
+# The account needs CREATE on the database for the first sync (the helper
+# creates its own qs_todo schema), then USAGE on that schema.
+# Delete the file to go back to local only.
+
+# Remote server over TLS:
+# postgresql://USER:PASSWORD@HOST:5432/DBNAME?sslmode=require
+
+# Local server over its unix socket, peer authentication (no password):
+# postgresql:///DBNAME?host=/run/postgresql&user=USER

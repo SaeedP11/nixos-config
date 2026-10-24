@@ -114,10 +114,10 @@ a read-only store symlink would break it:
   source of truth; the database is a copy. A bad file is set aside the same
   way
 - `~/.config/qs-todo/database-url` — a secret, created by hand and never
-  tracked here. Without it the todo panel stays local only. To sync, create it
-  with `install -m600 /dev/null ~/.config/qs-todo/database-url` and put one
-  libpq connection URL in it; delete it to go back to local only. A file
-  readable by anyone else is refused
+  tracked here. Without it the todo panel stays local only. To sync, copy the
+  template with `install -m600 pkgs/qs-todo-sync/database-url.example
+  ~/.config/qs-todo/database-url` and uncomment one libpq connection URL in it;
+  delete it to go back to local only. A file readable by anyone else is refused
 
 ## Adding a machine
 
