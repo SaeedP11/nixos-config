@@ -39,5 +39,9 @@
     # GitHub Spec Kit's `specify` CLI for spec-driven development, from
     # ../../../overlays/spec-kit.nix (25.05 has none).
     spec-kit
+
+    # Google's Antigravity CLI (`agy`), from
+    # ../../../overlays/antigravity-cli.nix (25.05 has none).
+    antigravity-cli
   ];
 }
