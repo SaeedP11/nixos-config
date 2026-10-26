@@ -17,6 +17,11 @@ pragma Singleton
 // lastSyncAt } (contracts/state-files.md). `device` is random, created on
 // first load and saved at once, so ids and stamps from different machines
 // never collide.
+//
+// Each task belongs to a `day`, the local date "YYYY-MM-DD" it is planned
+// for: new tasks go to the day the panel shows, and moveToToday() brings one
+// (or a day's open ones) forward. A task from before days existed, or from
+// the database without one, falls on the day it was created.
 import QtQuick
 import Quickshell
 import Quickshell.Io
@@ -24,7 +29,7 @@ import Quickshell.Io
 Singleton {
     id: root
 
-    // [{ id, text, done, createdAt, hlc, deleted, dirty }], tombstones included.
+    // [{ id, text, day, done, createdAt, hlc, deleted, dirty }], tombstones included.
     property var tasks: []
     property string device: ""
     property string clock: ""
@@ -35,6 +40,27 @@ Singleton {
     readonly property int doneCount: visible.length - openCount
 
     readonly property var hlcPattern: /^\d{13}:\d{4}:[0-9a-z]+$/
+    readonly property var dayPattern: /^\d{4}-\d{2}-\d{2}$/
+
+    SystemClock {
+        id: clock
+        precision: SystemClock.Minutes
+    }
+    readonly property string today: iso(clock.date)
+
+    function iso(date) {
+        const p = n => String(n).padStart(2, "0");
+        return date.getFullYear() + "-" + p(date.getMonth() + 1) + "-" + p(date.getDate());
+    }
+    // The day `n` days after `day`.
+    function shift(day, n) {
+        const [y, m, d] = day.split("-").map(Number);
+        return iso(new Date(y, m - 1, d + n));
+    }
+    // A stored day, else the day of `createdAt`.
+    function dayOf(day, createdAt) {
+        return typeof day === "string" && dayPattern.test(day) ? day : iso(new Date(createdAt));
+    }
 
     function newDevice() {
         let d = "d";
@@ -97,7 +123,8 @@ Singleton {
     }
 
     // Returns the new id, or "" when the text is empty.
-    function add(text) {
+    // `day` defaults to today.
+    function add(text, day) {
         const t = clean(text);
         if (!t)
             return "";
@@ -106,6 +133,7 @@ Singleton {
             {
                 id,
                 text: t,
+                day: typeof day === "string" && dayPattern.test(day) ? day : today,
                 done: false,
                 createdAt: Date.now(),
                 hlc: stamp(),
@@ -141,11 +169,32 @@ Singleton {
         });
     }
 
-    // One stamp each, one save for all.
-    function clearDone() {
-        if (doneCount === 0)
+    function moveToToday(id) {
+        const t = tasks.find(t => t.id === id && !t.deleted);
+        return !!t && (t.day === today || change(id, {
+                day: today
+            }));
+    }
+
+    // Every open task of `day`; one stamp each, one save for all.
+    function moveOpenToToday(day) {
+        if (day === today || !tasks.some(t => t.day === day && !t.done && !t.deleted))
             return;
-        tasks = tasks.map(t => t.done && !t.deleted ? Object.assign({}, t, {
+        tasks = tasks.map(t => t.day === day && !t.done && !t.deleted ? Object.assign({}, t, {
+                    day: today,
+                    hlc: stamp(),
+                    dirty: true
+                }) : t);
+        save();
+    }
+
+    // The done tasks of `day`, or of every day when it is omitted. One stamp
+    // each, one save for all.
+    function clearDone(day) {
+        const hit = t => t.done && !t.deleted && (day === undefined || t.day === day);
+        if (!tasks.some(hit))
+            return;
+        tasks = tasks.map(t => hit(t) ? Object.assign({}, t, {
                     deleted: true,
                     text: "",
                     hlc: stamp(),
@@ -211,6 +260,7 @@ Singleton {
         const changes = tasks.filter(t => t.dirty).map(t => ({
                     id: t.id,
                     text: t.text,
+                    day: t.day,
                     done: t.done,
                     deleted: t.deleted,
                     createdAt: t.createdAt,
@@ -323,11 +373,13 @@ Singleton {
             const i = at[r.id];
             if (i !== undefined && r.hlc <= next[i].hlc)
                 continue;
+            const createdAt = Number.isFinite(r.createdAt) ? r.createdAt : Number(r.hlc.slice(0, 13));
             const t = {
                 id: r.id,
                 text: String(r.text ?? "").slice(0, 4000),
+                day: dayOf(r.day, createdAt),
                 done: !!r.done,
-                createdAt: Number.isFinite(r.createdAt) ? r.createdAt : Number(r.hlc.slice(0, 13)),
+                createdAt,
                 hlc: r.hlc,
                 deleted: !!r.deleted,
                 dirty: false
@@ -437,15 +489,19 @@ Singleton {
             const tasks = Array.isArray(data.tasks) ? data.tasks.filter(t => typeof t?.id === "string" && typeof t.hlc === "string" && root.hlcPattern.test(t.hlc)) : [];
             for (const t of tasks)
                 root.observe(t.hlc);
-            root.tasks = tasks.map(t => ({
-                        id: t.id,
-                        text: String(t.text ?? "").slice(0, 4000),
-                        done: !!t.done,
-                        createdAt: Number.isFinite(t.createdAt) ? t.createdAt : Number(t.hlc.slice(0, 13)),
-                        hlc: t.hlc,
-                        deleted: !!t.deleted,
-                        dirty: !!t.dirty
-                    }));
+            root.tasks = tasks.map(t => {
+                const createdAt = Number.isFinite(t.createdAt) ? t.createdAt : Number(t.hlc.slice(0, 13));
+                return {
+                    id: t.id,
+                    text: String(t.text ?? "").slice(0, 4000),
+                    day: root.dayOf(t.day, createdAt),
+                    done: !!t.done,
+                    createdAt,
+                    hlc: t.hlc,
+                    deleted: !!t.deleted,
+                    dirty: !!t.dirty
+                };
+            });
             if (root.purge() || fresh)
                 root.save();
             debounce.restart();

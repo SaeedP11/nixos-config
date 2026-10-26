@@ -46,6 +46,7 @@ sys.unraisablehook = lambda unraisable: None
 # contracts/database.md: the column checks on qs_todo.tasks. `\d` would also
 # match non-ASCII digits in Python, so the classes are spelt out.
 HLC = re.compile(r"[0-9]{13}:[0-9]{4}:[0-9a-z]+")
+DAY = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}")
 MAX_TEXT = 4000
 
 
@@ -118,6 +119,12 @@ def valid_change(c):
         and -(2**63) <= c["createdAt"] < 2**63
         and isinstance(c.get("hlc"), str)
         and HLC.fullmatch(c["hlc"]) is not None
+        # Optional: a shell from before days sends none.
+        and (
+            c.get("day") is None
+            or isinstance(c["day"], str)
+            and DAY.fullmatch(c["day"]) is not None
+        )
     )
 
 
@@ -221,10 +228,14 @@ def create_objects(cur, server_version):
     # EXISTS, so it only runs when something is missing: after the first sync
     # the account needs just USAGE and DML. The advisory lock lets two first
     # syncs meet without racing on the catalog.
+    # A database from before days lacks only the day column, which the
+    # ALTER in SCHEMA adds (this needs the account that owns the table).
     cur.execute(
         "SELECT to_regclass('qs_todo.meta') IS NULL"
         " OR to_regclass('qs_todo.seq') IS NULL"
-        " OR to_regclass('qs_todo.tasks') IS NULL"
+        " OR NOT EXISTS (SELECT 1 FROM pg_attribute"
+        " WHERE attrelid = to_regclass('qs_todo.tasks')"
+        " AND attname = 'day' AND NOT attisdropped)"
     )
     if not cur.fetchone()[0]:
         return
@@ -259,16 +270,21 @@ SCHEMA = [
     " seq bigint NOT NULL DEFAULT nextval('qs_todo.seq'),"
     " changed_at timestamptz NOT NULL DEFAULT now())",
     "CREATE INDEX IF NOT EXISTS tasks_seq_idx ON qs_todo.tasks (seq)",
+    # NULL is a row from before days: the shell uses its created_at day.
+    "ALTER TABLE qs_todo.tasks ADD COLUMN IF NOT EXISTS"
+    r" day text CHECK (day ~ '^\d{4}-\d{2}-\d{2}$')",
 ]
 
 # A change no newer than the stored row is a no-op, yet still accepted: the
 # winning row comes back in the same response's pull.
 UPSERT = """
-INSERT INTO qs_todo.tasks (id, text, done, deleted, created_at, hlc)
-VALUES (%(id)s, %(text)s, %(done)s, %(deleted)s, %(createdAt)s, %(hlc)s)
+INSERT INTO qs_todo.tasks (id, text, day, done, deleted, created_at, hlc)
+VALUES (%(id)s, %(text)s, %(day)s, %(done)s, %(deleted)s, %(createdAt)s,
+        %(hlc)s)
 ON CONFLICT (id) DO UPDATE
-   SET text = excluded.text, done = excluded.done, deleted = excluded.deleted,
-       hlc = excluded.hlc, seq = nextval('qs_todo.seq'), changed_at = now()
+   SET text = excluded.text, day = excluded.day, done = excluded.done,
+       deleted = excluded.deleted, hlc = excluded.hlc,
+       seq = nextval('qs_todo.seq'), changed_at = now()
  WHERE excluded.hlc > qs_todo.tasks.hlc
 """
 
@@ -315,7 +331,9 @@ def transact(url, request, stage):
                 # and a puller never skips one (research R6). Plain SELECTs
                 # are not blocked.
                 cur.execute("LOCK TABLE qs_todo.tasks IN EXCLUSIVE MODE")
-                cur.executemany(UPSERT, changes)
+                cur.executemany(
+                    UPSERT, [dict(c, day=c.get("day")) for c in changes]
+                )
             cur.execute(
                 "DELETE FROM qs_todo.tasks"
                 " WHERE deleted AND changed_at < now() - interval '30 days'"
@@ -336,7 +354,7 @@ def transact(url, request, stage):
             # or an expired view, so it counts as 0, also for the answer.
             cursor = 0 if full else request["cursor"]
             cur.execute(
-                "SELECT id, text, done, deleted, created_at, hlc, seq"
+                "SELECT id, text, done, deleted, created_at, hlc, seq, day"
                 " FROM qs_todo.tasks WHERE seq > %s ORDER BY seq",
                 (cursor,),
             )
@@ -349,6 +367,7 @@ def transact(url, request, stage):
                     "createdAt": r[4],
                     "hlc": r[5],
                     "seq": r[6],
+                    "day": r[7],
                 }
                 for r in cur.fetchall()
             ]

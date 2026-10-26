@@ -7,6 +7,11 @@
 // the old one), Delete removes it. Esc cancels an open edit, else closes the
 // panel (PopoutLayer). Opened with Panels.arg "add", the field is focused
 // and cleared, also while already open.
+//
+// The panel shows one day, today when it opens. ‹ › (or Alt+←/→, PageUp/
+// PageDown) step through the days and clicking the day name goes back to
+// today. On another day, a row's calendar button (or T) moves that task to
+// today, and "Move to today" moves all the day's open tasks.
 import QtQuick
 import QtQuick.Layouts
 import qs.config
@@ -23,11 +28,34 @@ PanelSurface {
     // Off until the first fill, so opening the panel doesn't fade every row in.
     property bool ready: false
 
-    // Todo.visible is replaced on every change. Copying it into a ListModel
-    // by id, instead of using it as the model, keeps the delegates, the
+    // Days from today, so the view follows midnight.
+    property int offset: 0
+    readonly property string day: Todo.shift(Todo.today, offset)
+    readonly property string dayLabel: offset === 0 ? "Today" : offset === -1 ? "Yesterday" : offset === 1 ? "Tomorrow" : Qt.formatDate(new Date(day + "T00:00"), new Date().getFullYear() === Number(day.slice(0, 4)) ? "ddd, d MMM" : "ddd, d MMM yyyy")
+    readonly property var shown: Todo.visible.filter(t => t.day === day)
+    readonly property int openCount: shown.filter(t => !t.done).length
+    readonly property int doneCount: shown.length - openCount
+
+    onShownChanged: sync()
+
+    // Alt+←/→ and PageUp/PageDown step a day, from the field or the list.
+    function dayKey(e) {
+        const alt = e.modifiers & Qt.AltModifier;
+        if (e.key === Qt.Key_PageUp || alt && e.key === Qt.Key_Left)
+            offset--;
+        else if (e.key === Qt.Key_PageDown || alt && e.key === Qt.Key_Right)
+            offset++;
+        else
+            return false;
+        e.accepted = true;
+        return true;
+    }
+
+    // `shown` is replaced on every change. Copying it into a ListModel by
+    // id, instead of using it as the model, keeps the delegates, the
     // current row and an open edit, and lets inserts and removes animate.
     function sync() {
-        const want = Todo.visible;
+        const want = shown;
         const ids = new Set(want.map(t => t.id));
         for (let i = rows.count - 1; i >= 0; i--)
             if (!ids.has(rows.get(i).key))
@@ -62,7 +90,7 @@ PanelSurface {
     }
 
     function addTask() {
-        if (Todo.add(field.text))
+        if (Todo.add(field.text, day))
             field.text = "";
     }
     function startEdit(key, text) {
@@ -91,12 +119,6 @@ PanelSurface {
         field.input.forceActiveFocus();
     }
 
-    Connections {
-        target: Todo
-        function onVisibleChanged() {
-            root.sync();
-        }
-    }
     Connections {
         target: Panels
         function onArgChanged() {
@@ -141,6 +163,7 @@ PanelSurface {
             font.pointSize: Theme.fontSize
             clip: true
             onAccepted: root.addTask()
+            Keys.onPressed: e => root.dayKey(e)
             Keys.onDownPressed: {
                 if (rows.count === 0)
                     return;
@@ -174,7 +197,7 @@ PanelSurface {
                 font.weight: Font.Bold
             }
             StyledText {
-                text: Todo.openCount + " open"
+                text: root.openCount + " open"
                 color: Theme.textDim
             }
             // Sync status (data-model.md "Sync Status"). Hovering swaps the
@@ -223,10 +246,62 @@ PanelSurface {
             }
         }
 
+        // Day switcher; clicking the name goes back to today.
+        RowLayout {
+            Layout.fillWidth: true
+            spacing: 2
+
+            IconButton {
+                icon: Icons.chevronLeft
+                size: 28
+                tint: Theme.textDim
+                onClicked: root.offset--
+            }
+            StyledText {
+                Layout.preferredWidth: 110
+                horizontalAlignment: Text.AlignHCenter
+                text: root.dayLabel
+                color: root.offset === 0 ? Theme.fg : dayMouse.containsMouse ? Theme.accent : Theme.textDim
+                font.weight: Font.DemiBold
+
+                MouseArea {
+                    id: dayMouse
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    enabled: root.offset !== 0
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: root.offset = 0
+                }
+            }
+            IconButton {
+                icon: Icons.chevronRight
+                size: 28
+                tint: Theme.textDim
+                onClicked: root.offset++
+            }
+            Item {
+                Layout.fillWidth: true
+            }
+            StyledText {
+                visible: root.offset !== 0 && root.openCount > 0
+                text: "Move to today"
+                color: moveMouse.containsMouse ? Theme.accent : Theme.textDim
+                font.pointSize: Theme.fontSize - 1
+
+                MouseArea {
+                    id: moveMouse
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: Todo.moveOpenToToday(root.day)
+                }
+            }
+        }
+
         Field {
             id: field
             Layout.fillWidth: true
-            placeholder: "+ Add a task…"
+            placeholder: root.offset === 0 ? "+ Add a task…" : "+ Add a task for " + root.dayLabel + "…"
         }
 
         StyledText {
@@ -252,7 +327,7 @@ PanelSurface {
             onCurrentIndexChanged: positionViewAtIndex(currentIndex, ListView.Contain)
 
             Keys.onPressed: e => {
-                if (root.editId)
+                if (root.editId || root.dayKey(e))
                     return;
                 const row = currentIndex >= 0 && currentIndex < rows.count ? rows.get(currentIndex) : null;
                 if (e.key === Qt.Key_Up) {
@@ -268,6 +343,8 @@ PanelSurface {
                     root.startEdit(row.key, row.text);
                 } else if (row && e.key === Qt.Key_Delete) {
                     Todo.remove(row.key);
+                } else if (row && e.key === Qt.Key_T && root.offset !== 0) {
+                    Todo.moveToToday(row.key);
                 } else {
                     return;
                 }
@@ -295,7 +372,7 @@ PanelSurface {
 
                     StyledText {
                         Layout.fillWidth: true
-                        text: "Done · " + Todo.doneCount
+                        text: "Done · " + root.doneCount
                         color: Theme.textDim
                         font.pointSize: Theme.fontSize - 1
                         font.weight: Font.DemiBold
@@ -310,7 +387,7 @@ PanelSurface {
                             anchors.fill: parent
                             hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
-                            onClicked: Todo.clearDone()
+                            onClicked: Todo.clearDone(root.day)
                         }
                     }
                 }
@@ -466,6 +543,24 @@ PanelSurface {
                             // leaving the focus where the click put it.
                             onActiveFocusChanged: if (!activeFocus && row.editing)
                                 root.editId = ""
+                        }
+                    }
+                    // Move to today, on any other day.
+                    IconButton {
+                        Layout.alignment: Qt.AlignTop
+                        visible: root.offset !== 0
+                        icon: Icons.calendar
+                        size: 28
+                        iconScale: 0.8
+                        tint: Theme.accent
+                        opacity: hover.hovered || row.current ? 1 : 0
+                        enabled: opacity > 0
+                        onClicked: Todo.moveToToday(row.key)
+
+                        Behavior on opacity {
+                            NumberAnimation {
+                                duration: Theme.durState
+                            }
                         }
                     }
                     IconButton {

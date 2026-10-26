@@ -11,6 +11,7 @@ Entities from [spec.md](spec.md) §Key Entities. Storage formats are in
 | `id` | string | `t-<device>-<ms base36>-<n>`. Set once at creation and never changes. Unique across machines (R5). |
 | `text` | string | Trimmed, 1–4000 characters, newlines folded to spaces. `""` only when `deleted`. |
 | `done` | bool | |
+| `day` | string `YYYY-MM-DD` | The local day the task is planned for; the panel shows one day at a time. Defaults to the day the panel shows when added; `moveToToday` changes it. Missing or `null` (older tasks and rows) means the day of `createdAt`. |
 | `createdAt` | int (ms since epoch) | Local wall clock at creation. Used only for display order. |
 | `hlc` | string | `<13-digit ms>:<4-digit counter>:<device>`, a fixed-width string ordered by plain comparison. Restamped on every change (R5). |
 | `deleted` | bool | A tombstone. Hidden from the list and kept so the deletion syncs (FR-012). |
@@ -58,7 +59,7 @@ the next run.
 
 ## Remote Task Store
 
-Table `qs_todo.tasks`: the same `id`, `text`, `done`, `created_at`, `hlc`, `deleted`, plus the
+Table `qs_todo.tasks`: the same `id`, `text`, `day` (nullable), `done`, `created_at`, `hlc`, `deleted`, plus the
 server-side columns `seq` (pull cursor, R6) and `changed_at` (server time, used for tombstone
 purge, R8). The server applies the same merge rule: a row is written only if the incoming `hlc` is
 greater.

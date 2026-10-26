@@ -32,6 +32,8 @@ CREATE TABLE IF NOT EXISTS qs_todo.tasks (
     changed_at  timestamptz NOT NULL DEFAULT now()   -- server clock, tombstone purge
 );
 CREATE INDEX IF NOT EXISTS tasks_seq_idx ON qs_todo.tasks (seq);
+-- added later; existing databases get it on the next sync (needs the table owner)
+ALTER TABLE qs_todo.tasks ADD COLUMN IF NOT EXISTS day text CHECK (day ~ '^\d{4}-\d{2}-\d{2}$');
 ```
 
 ## Write (one per pushed change, inside the sync transaction)

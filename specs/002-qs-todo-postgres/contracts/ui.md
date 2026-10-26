@@ -56,6 +56,9 @@ follows `EventList.qml`'s `Field`.
 | ↓ from the add field / ↑ from the first row | Move focus between the field and the list. ↑/↓ move between rows. |
 | Esc | Cancel the inline edit if one is open, else close the panel (`Panels.close()`). |
 | `Panels.arg === "add"` (on open or while open) | Focus and clear the add field. |
+| ‹ › , Alt+←/→ or PageUp/PageDown | Show the previous / next day (the panel opens on today). Clicking the day name goes back to today. New tasks go to the day shown. |
+| Calendar button or T on a row (not on today) | `Todo.moveToToday(id)` |
+| Move to today (not on today) | `Todo.moveOpenToToday(day)`: every open task of the day shown. |
 
 Row height animates on insert and remove with `Theme.durState` and `Theme.easeStandard`, and
 nothing else moves. While a run is in progress, rows that arrive from a sync replace their data in
