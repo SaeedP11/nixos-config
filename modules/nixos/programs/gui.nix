@@ -119,5 +119,9 @@
     ++ lib.optional config.apps.libreoffice.enable pkgs.libreoffice
 
     # CAD. Its addon and MCP server are ../../home/saeedp11/freecad.nix.
-    ++ lib.optional config.apps.freecad.enable pkgs.freecad;
+    ++ lib.optional config.apps.freecad.enable pkgs.freecad
+
+    # Game engine. The standard GDScript build; godot-mono is the one to swap
+    # in if a project needs C#.
+    ++ lib.optional config.apps.godot.enable pkgs.godot;
 }

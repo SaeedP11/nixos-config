@@ -28,6 +28,7 @@ in
   options.apps = {
     freecad = app "FreeCAD, with its MCP addon and the freecad-mcp server for Claude Code.";
     libreoffice = app "LibreOffice.";
+    godot = app "The Godot game engine.";
     chrome = app "Google Chrome, the second browser beside Firefox.";
     insomnia = app "Insomnia, the API client.";
     escrcpy = app "Escrcpy, the Electron front end for scrcpy (scrcpy and adb stay regardless).";
