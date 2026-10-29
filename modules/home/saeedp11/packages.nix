@@ -43,5 +43,9 @@
     # Google's Antigravity CLI (`agy`), from
     # ../../../overlays/antigravity-cli.nix (25.05 has none).
     antigravity-cli
+
+    # OpenClaw AI assistant/agent, from ../../../overlays/openclaw.nix
+    # (25.05 has none; unstable flags it insecure, allowed there only).
+    openclaw
   ];
 }
