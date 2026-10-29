@@ -3,6 +3,7 @@ pragma Singleton
 // Which popout is open and on which output. One at a time, like menus.
 import QtQuick
 import Quickshell
+import Quickshell.Io
 
 Singleton {
     id: root
@@ -10,6 +11,15 @@ Singleton {
     property string open: ""
     property string screen: ""
     property bool keepAwake: false
+
+    // The bars' IdleInhibitor only holds off swayidle while a bar surface is
+    // visible; it does nothing against `systemctl suspend` from swayidle's
+    // late timer or logind's lid switch (lid closed on an external display,
+    // on battery). A systemd inhibitor covers both for as long as it runs.
+    Process {
+        running: root.keepAwake
+        command: ["systemd-inhibit", "--what=idle:sleep:handle-lid-switch", "--who=Quickshell", "--why=Keep awake", "--mode=block", "sleep", "infinity"]
+    }
     // What the open panel was asked to start with ("" unless opened
     // through openWith), e.g. the launcher's "=expr" for the calculator.
     property string arg: ""
