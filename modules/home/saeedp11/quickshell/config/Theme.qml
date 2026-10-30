@@ -57,8 +57,30 @@ Singleton {
 
     // The per-module accents waybar used: colorN mixed 45% toward the
     // foreground, because wallust's contrast check never looks at colorN.
+    // The softlight palette hands out pastels that stay near 2:1 on a light
+    // background even so, so the result is then pushed toward black (white
+    // on dark) until it reads at 5:1 against the background; 5 rather than
+    // 4.5 leaves room for the chip's own tint wash. Hue survives, since the
+    // push is only as far as needed.
     function tone(i) {
-        return mix(colors[i], fg, 0.45);
+        const base = mix(colors[i], fg, 0.45);
+        const anchor = dark ? "#ffffff" : "#000000";
+        for (let t = 0; t <= 1.001; t += 0.05) {
+            const c = mix(base, anchor, t);
+            if (contrast(c, bg) >= 5)
+                return c;
+        }
+        return anchor;
+    }
+
+    function contrast(a, b) {
+        const x = relLum(a), y = relLum(b);
+        return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05);
+    }
+    function relLum(c) {
+        const q = Qt.color(c);
+        const f = v => v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+        return 0.2126 * f(q.r) + 0.7152 * f(q.g) + 0.0722 * f(q.b);
     }
 
     function alpha(c, a) {
