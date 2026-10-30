@@ -65,6 +65,10 @@ Rectangle {
 
         Icon {
             anchors.verticalCenter: parent.verticalCenter
+            // A fixed box, so glyphs of different advance and line height
+            // all centre alike in the chip.
+            width: 18
+            height: 18
             visible: root.icon !== ""
             text: root.icon
             color: root.tint
