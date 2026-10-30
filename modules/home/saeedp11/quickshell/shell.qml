@@ -58,7 +58,7 @@ ShellRoot {
     // `qs -c shell ipc call panel toggle control`. Panels: control,
     // notifications, calendar, persian, media, sysmon, power, clipboard,
     // wallpaper, launcher, overview, capture, keybinds, emoji, network,
-    // bluetooth, sound, calculator, clocks, todo. `panel open <name> <arg>` opens a panel without
+    // bluetooth, sound, calculator, clocks, todo, battery. `panel open <name> <arg>` opens a panel without
     // toggling it closed and hands it `arg` (Panels.arg), e.g.
     // `panel open emoji symbols`.
     IpcHandler {

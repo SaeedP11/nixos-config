@@ -6,7 +6,6 @@
 import QtQuick
 import Quickshell
 import Quickshell.Wayland
-import Quickshell.Services.UPower
 import Quickshell.Bluetooth
 import Quickshell.Services.SystemTray
 import qs.config
@@ -155,10 +154,6 @@ PanelWindow {
         enabled: Panels.keepAwake
     }
 
-    readonly property var battery: UPower.displayDevice
-    readonly property bool hasBattery: UPower.devices.values.some(d => d.isLaptopBattery)
-    readonly property real batteryPct: battery.percentage > 1 ? battery.percentage : battery.percentage * 100
-    readonly property bool charging: battery.state === UPowerDeviceState.Charging || battery.state === UPowerDeviceState.FullyCharged || battery.state === UPowerDeviceState.PendingCharge
     readonly property var btAdapter: Bluetooth.defaultAdapter
     readonly property bool btConnected: Bluetooth.devices.values.some(d => d.connected)
 
@@ -390,11 +385,12 @@ PanelWindow {
                     onClicked: m => m.button === Qt.RightButton ? bar.run("blueman-manager") : bar.open("control")
                 }
                 Chip {
-                    visible: bar.hasBattery
-                    icon: bar.charging ? Icons.batteryCharging : Icons.battery[Math.min(9, Math.floor(bar.batteryPct / 10))]
-                    text: Math.round(bar.batteryPct) + "%"
-                    tint: !bar.charging && bar.batteryPct <= 15 ? Theme.critical : Theme.tone(8)
-                    onClicked: bar.open("control")
+                    visible: Battery.has
+                    icon: Battery.charging ? Icons.batteryCharging : Icons.battery[Math.min(9, Math.floor(Battery.pct / 10))]
+                    text: Math.round(Battery.pct) + "%"
+                    tint: Battery.low ? Theme.critical : Theme.tone(8)
+                    active: Panels.open === "battery" && Panels.screen === bar.output
+                    onClicked: bar.open("battery")
                 }
             }
 

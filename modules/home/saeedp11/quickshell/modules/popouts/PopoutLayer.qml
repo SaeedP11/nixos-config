@@ -106,6 +106,10 @@ PanelWindow {
                 align: "right",
                 comp: sound
             },
+            battery: {
+                align: "right",
+                comp: battery
+            },
             tray: {
                 align: "tray",
                 comp: tray
@@ -464,6 +468,10 @@ PanelWindow {
     Component {
         id: sound
         SoundPanel {}
+    }
+    Component {
+        id: battery
+        BatteryPanel {}
     }
     Component {
         id: tray
