@@ -26,6 +26,7 @@ ShellRoot {
     // panel open).
     Component.onCompleted: {
         Warnings.checkBattery();
+        Power.auto;
         Clocks.now;
         Events.events;
         Todo.tasks;

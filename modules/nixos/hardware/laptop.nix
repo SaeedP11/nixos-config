@@ -1,4 +1,4 @@
-# Laptop-only power management: lid handling and CPU governor switching.
+# Laptop-only power management: lid handling and power profiles.
 #
 # Imported by the laptop host only. Previously this was global, which meant
 # the desktop also ran auto-cpufreq -- with battery/charger governor profiles
@@ -22,18 +22,8 @@
     lidSwitchDocked = "ignore";
   };
 
-  services.auto-cpufreq = {
-    enable = true;
-
-    settings = {
-      battery = {
-        governor = "powersave";
-        turbo = "never";
-      };
-      charger = {
-        governor = "performance";
-        turbo = "auto";
-      };
-    };
-  };
+  # Power modes (saver, balanced, performance) for the Quickshell battery panel,
+  # which also switches them with the power source (services/Power.qml). This
+  # replaced auto-cpufreq, which sets the governor itself and conflicts with it.
+  services.power-profiles-daemon.enable = true;
 }

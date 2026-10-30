@@ -103,6 +103,10 @@ Singleton {
     readonly property string speaker: g(0xF04C3)
     readonly property string headphones: g(0xF02CB)
     readonly property string plus: g(0xF0415)
+    readonly property string minus: g(0xF0374)
+    readonly property string leaf: g(0xF032A)
+    readonly property string balance: g(0xF05D1)
+    readonly property string speed: g(0xF04C5)
     readonly property string link: g(0xF0337)
     readonly property var wifiStrength: [g(0xF092F), g(0xF091F), g(0xF0922), g(0xF0925), g(0xF0928)]
 

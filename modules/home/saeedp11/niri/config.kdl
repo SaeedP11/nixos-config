@@ -293,14 +293,11 @@ layout {
 // process tree. Must come before other spawn-at-startup entries.
 spawn-at-startup "dbus-update-activation-environment" "--systemd" "WAYLAND_DISPLAY" "DISPLAY" "NIRI_SOCKET" "XDG_CURRENT_DESKTOP"
 
-// Screen off after 5 min idle, lock + suspend after 30 min idle.
-// Runs regardless of AC/battery. `-w` makes swayidle wait for
-// before-sleep to finish (i.e. actually lock) before letting the system
-// suspend.
+// The idle timers (screen off, suspend, shutdown) are Quickshell's, set from
+// the battery panel (services/Power.qml). swayidle only locks: `-w` makes it
+// wait for before-sleep to finish (i.e. actually lock) before letting the
+// system suspend.
 spawn-at-startup "swayidle" "-w" \
-    "timeout" "300" "niri msg action power-off-monitors" \
-    "resume" "niri msg action power-on-monitors" \
-    "timeout" "1800" "systemctl suspend" \
     "before-sleep" "shell-lock" \
     "lock" "shell-lock" \
     "after-resume" "niri msg action power-on-monitors"
