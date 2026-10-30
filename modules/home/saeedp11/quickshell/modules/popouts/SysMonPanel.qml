@@ -60,14 +60,14 @@ PanelSurface {
                     icon: Icons.cpu
                     label: "CPU"
                     value: Math.round(SysStats.cpu * 100) + "%" + (SysStats.temp > 0 ? "  ·  " + Math.round(SysStats.temp) + "°C" : "")
-                    tint: Theme.tone(0)
+                    tint: Theme.tone(12)
                 }
                 Graph {
                     Layout.fillWidth: true
                     Layout.preferredHeight: 56
                     values: SysStats.cpuHistory
                     capacity: SysStats.historyLength
-                    tint: Theme.tone(0)
+                    tint: Theme.tone(12)
                 }
             }
         }
@@ -183,7 +183,7 @@ PanelSurface {
                             Layout.preferredWidth: 60
                             horizontalAlignment: Text.AlignRight
                             text: modelData.cpu.toFixed(1) + "%"
-                            color: Theme.tone(0)
+                            color: Theme.tone(12)
                             font.family: Theme.monoFont
                             font.pointSize: Theme.fontSize - 1
                         }

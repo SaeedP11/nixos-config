@@ -11,6 +11,9 @@ Singleton {
     property string open: ""
     property string screen: ""
     property bool keepAwake: false
+    // The output whose bar holds the keyboard for chip-by-chip navigation
+    // ("" when none); see modules/bar/Bar.qml.
+    property string navScreen: ""
 
     // The bars' IdleInhibitor only holds off swayidle while a bar surface is
     // visible; it does nothing against `systemctl suspend` from swayidle's
@@ -23,10 +26,6 @@ Singleton {
     // What the open panel was asked to start with ("" unless opened
     // through openWith), e.g. the launcher's "=expr" for the calculator.
     property string arg: ""
-
-    // Panels driven from the keyboard -- a search field, or the power
-    // menu's arrow keys -- take it exclusively (see PopoutLayer).
-    readonly property bool wantsKeyboard: ["clipboard", "wallpaper", "power", "launcher", "switcher", "overview", "keybinds", "emoji", "capture", "calculator", "todo"].includes(open)
 
     function toggle(name, screenName) {
         const target = screenName || Niri.focusedOutput || (Quickshell.screens[0]?.name ?? "");
@@ -43,6 +42,9 @@ Singleton {
         arg = value ?? "";
         screen = screenName || Niri.focusedOutput || (Quickshell.screens[0]?.name ?? "");
         open = name;
+    }
+    function navToggle() {
+        navScreen = navScreen !== "" ? "" : (Niri.focusedOutput || (Quickshell.screens[0]?.name ?? ""));
     }
     function close() {
         arg = "";

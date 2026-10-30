@@ -30,12 +30,122 @@ PanelWindow {
     color: "transparent"
     WlrLayershell.namespace: "quickshell-bar"
     WlrLayershell.layer: WlrLayer.Top
+    // Not while a popout is open: it holds the keyboard then, and asking
+    // again when it closes is what takes it back.
+    WlrLayershell.keyboardFocus: navOn && Panels.open === "" ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
 
     function open(name) {
         Panels.toggle(name, bar.output);
     }
     function run(...cmd) {
         Quickshell.execDetached(cmd);
+    }
+
+    // Keyboard navigation (Mod+Space, `ipc call bar nav`): Left/Right or
+    // h/l (Tab) pick a chip, Return clicks it, r or Shift+Return right
+    // clicks, m middle clicks, Up/Down or k/j scroll, Escape closes the open
+    // panel and then leaves.
+    readonly property bool navOn: Panels.navScreen === output
+    property var navTarget: null
+
+    function navItems() {
+        const out = [];
+        const walk = it => {
+            for (const c of it.children) {
+                if (!c.visible)
+                    continue;
+                if (typeof c.trigger === "function")
+                    out.push(c);
+                else
+                    walk(c);
+            }
+        };
+        walk(body);
+        return out.sort((a, b) => a.mapToItem(body, 0, 0).x - b.mapToItem(body, 0, 0).x);
+    }
+    function navSet(it) {
+        if (navTarget)
+            navTarget.navFocused = false;
+        navTarget = it;
+        if (it)
+            it.navFocused = true;
+    }
+    function navStep(step) {
+        const items = navItems();
+        if (items.length === 0)
+            return;
+        const i = items.indexOf(navTarget);
+        navSet(items[i < 0 ? (step > 0 ? 0 : items.length - 1) : (i + step + items.length) % items.length]);
+    }
+    onNavOnChanged: {
+        if (navOn) {
+            keys.forceActiveFocus();
+            navSet(null);
+            navStep(1);
+        } else
+            navSet(null);
+    }
+
+    Item {
+        id: keys
+        focus: bar.navOn
+        Keys.onPressed: e => {
+            const shift = e.modifiers & Qt.ShiftModifier;
+            e.accepted = true;
+            switch (e.key) {
+            case Qt.Key_Left:
+            case Qt.Key_H:
+            case Qt.Key_Backtab:
+                bar.navStep(-1);
+                break;
+            case Qt.Key_Right:
+            case Qt.Key_L:
+            case Qt.Key_Tab:
+                bar.navStep(1);
+                break;
+            case Qt.Key_Home:
+                bar.navSet(null);
+                bar.navStep(1);
+                break;
+            case Qt.Key_End:
+                bar.navSet(null);
+                bar.navStep(-1);
+                break;
+            case Qt.Key_Return:
+            case Qt.Key_Enter:
+                bar.navTarget?.trigger(shift ? Qt.RightButton : Qt.LeftButton);
+                break;
+            case Qt.Key_Space:
+                bar.navTarget?.trigger(Qt.LeftButton);
+                break;
+            case Qt.Key_R:
+            case Qt.Key_Menu:
+                bar.navTarget?.trigger(Qt.RightButton);
+                break;
+            case Qt.Key_M:
+                bar.navTarget?.trigger(Qt.MiddleButton);
+                break;
+            case Qt.Key_Up:
+            case Qt.Key_K:
+                bar.navTarget?.wheel(120);
+                break;
+            case Qt.Key_Down:
+            case Qt.Key_J:
+                bar.navTarget?.wheel(-120);
+                break;
+            case Qt.Key_Escape:
+                if (Panels.open !== "")
+                    Panels.close();
+                else
+                    Panels.navScreen = "";
+                break;
+            case Qt.Key_Q:
+                Panels.navScreen = "";
+                break;
+            default:
+                e.accepted = false;
+            }
+        }
     }
 
     // Replaces waybar's idle_inhibitor: niri honours idle-inhibit when
@@ -122,7 +232,7 @@ PanelWindow {
                     id: cpuChip
                     icon: Icons.cpu
                     text: String(Math.round(SysStats.cpu * 100)).padStart(2, "0") + "%"
-                    tint: Theme.tone(0)
+                    tint: Theme.tone(12)
                     active: Panels.open === "sysmon" && Panels.screen === bar.output
                     onClicked: m => m.button === Qt.RightButton ? bar.run(Config.terminal, "-e", "btm") : bar.open("sysmon")
                 }

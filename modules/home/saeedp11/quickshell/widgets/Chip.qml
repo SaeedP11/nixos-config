@@ -16,6 +16,18 @@ Rectangle {
     property int maxTextWidth: 100000
     property string fontFamily: Theme.font
     property alias hovered: mouse.containsMouse
+    // Set by the bar's keyboard navigation (Mod+Space).
+    property bool navFocused: false
+
+    // What the bar's keyboard navigation calls instead of a mouse event.
+    function trigger(button) {
+        clicked({
+            button: button
+        });
+    }
+    function wheel(delta) {
+        scrolled(delta);
+    }
 
     signal clicked(var mouse)
     signal scrolled(int delta)
@@ -24,6 +36,8 @@ Rectangle {
     implicitWidth: row.implicitWidth + (text !== "" ? 22 : 16)
     radius: height / 2
     color: Theme.alpha(tint, active ? 0.32 : mouse.containsMouse ? 0.24 : 0.14)
+    border.width: navFocused ? 2 : 0
+    border.color: tint
     scale: mouse.pressed ? 0.94 : 1
 
     Behavior on color {

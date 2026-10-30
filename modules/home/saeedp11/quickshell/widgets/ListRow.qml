@@ -36,7 +36,7 @@ Rectangle {
         hoverEnabled: true
         acceptedButtons: Qt.LeftButton | Qt.RightButton
         cursorShape: Qt.PointingHandCursor
-        onClicked: m => m.button === Qt.RightButton ? root.secondary() : root.clicked()
+        onClicked: m => m?.button === Qt.RightButton ? root.secondary() : root.clicked()
     }
 
     RowLayout {

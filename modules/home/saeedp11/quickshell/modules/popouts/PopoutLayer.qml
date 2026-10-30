@@ -125,9 +125,9 @@ PanelWindow {
     exclusionMode: ExclusionMode.Ignore
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.namespace: "quickshell-popout"
-    // Only the panels driven from the keyboard take it; the rest leave it
-    // with the focused window, and get it on demand if clicked.
-    WlrLayershell.keyboardFocus: !visible ? WlrKeyboardFocus.None : Panels.wantsKeyboard ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.OnDemand
+    // Every panel takes the keyboard, so Esc and the navigation keys below
+    // work without a click first.
+    WlrLayershell.keyboardFocus: visible ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
 
     mask: Region {
         item: backdrop
@@ -180,9 +180,150 @@ PanelWindow {
 
         Keys.onEscapePressed: Panels.close()
 
+        // Keyboard navigation for the panels that have no keys of their own
+        // (the modal ones do). It sees only the keys the panel leaves
+        // unhandled, and walks the panel's clickable areas in reading order.
+        property var navAreas: []
+        property int navIndex: -1
+        property rect navBox: Qt.rect(0, 0, 0, 0)
+        readonly property var navCur: navAreas[navIndex] ?? null
+
+        // Re-collects the areas, since panels change under the keys, and
+        // moves by step from the one that was current (or to index `to`).
+        function navMove(step, to) {
+            const cur = navCur;
+            const out = [];
+            const walk = it => {
+                if (!it.visible || it.opacity === 0)
+                    return;
+                if (it.acceptedButtons !== undefined && it.enabled && it !== swallow && it.width > 0 && it.height > 0) {
+                    const p = it.mapToItem(host, 0, 0);
+                    out.push({
+                        area: it,
+                        x: p.x,
+                        y: p.y
+                    });
+                }
+                for (const c of it.children)
+                    walk(c);
+            };
+            if (loader.item)
+                walk(loader.item);
+            out.sort((a, b) => Math.abs(a.y - b.y) > 10 ? a.y - b.y : a.x - b.x);
+            navAreas = out.map(o => o.area);
+            if (navAreas.length === 0) {
+                navIndex = -1;
+                return;
+            }
+            const at = navAreas.indexOf(cur);
+            const i = to !== undefined ? to : at < 0 ? (step < 0 ? navAreas.length - 1 : 0) : at + step;
+            navIndex = (i + navAreas.length) % navAreas.length;
+            const a = navAreas[navIndex];
+            // Scroll the list it sits in far enough to show it.
+            for (let p = a.parent; p && p !== host; p = p.parent) {
+                if (p.contentItem !== undefined && p.contentY !== undefined) {
+                    const y = a.mapToItem(p.contentItem, 0, 0).y;
+                    if (y < p.contentY)
+                        p.contentY = y;
+                    else if (y + a.height > p.contentY + p.height)
+                        p.contentY = y + a.height - p.height;
+                    break;
+                }
+            }
+            const q = a.mapToItem(host, 0, 0);
+            navBox = Qt.rect(q.x, q.y, a.width, a.height);
+        }
+        // A slider's mouse area sits inside the Item that owns `value`.
+        function navSlider() {
+            const p = navCur?.parent;
+            return p && p.moved !== undefined && p.value !== undefined ? p : null;
+        }
+        function navActivate(secondary) {
+            const a = navCur;
+            if (!a)
+                return;
+            if (secondary) {
+                // ListRow, ToggleTile and NotificationCard have one.
+                for (let p = a.parent; p && p !== host; p = p.parent) {
+                    if (p.secondary !== undefined) {
+                        p.secondary();
+                        break;
+                    }
+                }
+            } else {
+                // A plain object cannot stand in for the event; the
+                // handlers that read it are null-safe.
+                a.clicked(null);
+            }
+            Qt.callLater(() => navMove(0));
+        }
+        Keys.onPressed: e => {
+            if (popout.modal)
+                return;
+            const s = navSlider();
+            switch (e.key) {
+            case Qt.Key_Tab:
+            case Qt.Key_Down:
+            case Qt.Key_J:
+                navMove(1);
+                break;
+            case Qt.Key_Backtab:
+            case Qt.Key_Up:
+            case Qt.Key_K:
+                navMove(-1);
+                break;
+            case Qt.Key_Right:
+            case Qt.Key_L:
+                if (s)
+                    s.moved(Math.min(1, s.value + 0.05));
+                else
+                    navMove(1);
+                break;
+            case Qt.Key_Left:
+            case Qt.Key_H:
+                if (s)
+                    s.moved(Math.max(0, s.value - 0.05));
+                else
+                    navMove(-1);
+                break;
+            case Qt.Key_Home:
+                navMove(0, 0);
+                break;
+            case Qt.Key_End:
+                navMove(0, navAreas.length - 1);
+                break;
+            case Qt.Key_Return:
+            case Qt.Key_Enter:
+            case Qt.Key_Space:
+                navActivate(false);
+                break;
+            case Qt.Key_R:
+            case Qt.Key_Menu:
+                navActivate(true);
+                break;
+            default:
+                return;
+            }
+            e.accepted = true;
+        }
+
+        Rectangle {
+            z: 100
+            visible: host.navIndex >= 0
+            x: host.navBox.x - 3
+            y: host.navBox.y - 3
+            width: host.navBox.width + 6
+            height: host.navBox.height + 6
+            radius: 10
+            color: "transparent"
+            border.width: 2
+            border.color: Theme.accent
+        }
+
         // Swallow clicks on the panel itself so they never reach the
         // backdrop behind it.
         MouseArea {
+            id: swallow
             anchors.fill: parent
             acceptedButtons: Qt.AllButtons
         }
@@ -192,7 +333,11 @@ PanelWindow {
             focus: true
             active: popout.visible
             sourceComponent: popout.spec?.comp ?? null
-            onLoaded: enter.restart()
+            onLoaded: {
+                host.navAreas = [];
+                host.navIndex = -1;
+                enter.restart();
+            }
         }
 
         transform: Translate {

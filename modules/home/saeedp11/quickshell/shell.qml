@@ -86,6 +86,13 @@ ShellRoot {
             return lockScreen.secure;
         }
     }
+    // `bar nav` starts or ends keyboard navigation of the top bar.
+    IpcHandler {
+        target: "bar"
+        function nav(): void {
+            Panels.navToggle();
+        }
+    }
     // Alt+Tab and Alt+Shift+Tab.
     IpcHandler {
         target: "switcher"

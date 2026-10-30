@@ -14,6 +14,11 @@ Rectangle {
     required property var notif
     property bool popup: false
 
+    // What the popout layer's keyboard navigation calls for a right click.
+    function secondary() {
+        notif.dismiss();
+    }
+
     readonly property bool critical: notif.urgency === NotificationUrgency.Critical
     readonly property string iconSource: {
         const img = notif.image;
@@ -50,7 +55,8 @@ Rectangle {
         acceptedButtons: Qt.LeftButton | Qt.MiddleButton | Qt.RightButton
         cursorShape: Qt.PointingHandCursor
         onClicked: m => {
-            if (m.button === Qt.LeftButton)
+            // m is null when the popout layer's keyboard navigation clicks.
+            if (!m || m.button === Qt.LeftButton)
                 Notifs.activate(root.notif);
             else if (root.popup && m.button === Qt.RightButton)
                 Notifs.hidePopup(root.notif);
