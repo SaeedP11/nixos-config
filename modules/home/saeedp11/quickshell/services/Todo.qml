@@ -43,10 +43,10 @@ Singleton {
     readonly property var dayPattern: /^\d{4}-\d{2}-\d{2}$/
 
     SystemClock {
-        id: clock
+        id: sysClock
         precision: SystemClock.Minutes
     }
-    readonly property string today: iso(clock.date)
+    readonly property string today: iso(sysClock.date)
 
     function iso(date) {
         const p = n => String(n).padStart(2, "0");
