@@ -33,6 +33,8 @@ Rectangle {
 
     Icon {
         anchors.centerIn: parent
+        width: root.size * 0.7
+        height: width
         text: root.icon
         color: root.filled ? Theme.bg : root.tint
         font.pointSize: Theme.iconSize * root.iconScale

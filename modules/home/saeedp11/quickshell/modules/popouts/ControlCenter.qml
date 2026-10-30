@@ -263,6 +263,8 @@ PanelSurface {
 
                     Icon {
                         anchors.centerIn: parent
+                        width: 24
+                        height: 24
                         text: tool.modelData.icon
                         color: tool.tint
                         font.pointSize: Theme.iconSize + 2

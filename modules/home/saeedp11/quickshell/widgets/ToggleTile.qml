@@ -55,6 +55,8 @@ Rectangle {
             }
             Icon {
                 anchors.centerIn: parent
+                width: 24
+                height: 24
                 text: root.icon
                 color: root.checked ? Theme.bg : Theme.fg
             }
