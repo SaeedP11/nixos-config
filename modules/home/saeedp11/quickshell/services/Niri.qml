@@ -19,6 +19,18 @@ Singleton {
     // Window ids, most recently focused first, for the Alt+Tab switcher.
     property var recent: []
 
+    property var layoutNames: []
+    property int layoutIdx: 0
+    // Two letters for the bar: "English (US)" -> EN, "Persian" -> FA.
+    readonly property string layoutShort: {
+        const n = layoutNames[layoutIdx] ?? "";
+        const known = {
+            "English": "EN",
+            "Persian": "FA"
+        };
+        return known[n.split(" ")[0]] ?? n.slice(0, 2).toUpperCase();
+    }
+
     readonly property var focusedWindow: focusedWindowId !== null ? (windows[focusedWindowId] ?? null) : null
     readonly property string focusedOutput: {
         const w = workspaces.find(w => w.is_focused);
@@ -154,6 +166,13 @@ Singleton {
         case "WindowFocusChanged":
             focusedWindowId = d.id;
             touch(d.id);
+            break;
+        case "KeyboardLayoutsChanged":
+            layoutNames = d.keyboard_layouts.names;
+            layoutIdx = d.keyboard_layouts.current_idx;
+            break;
+        case "KeyboardLayoutSwitched":
+            layoutIdx = d.idx;
             break;
         case "OverviewOpenedOrClosed":
             overviewOpen = d.is_open;

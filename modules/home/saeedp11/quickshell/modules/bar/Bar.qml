@@ -344,6 +344,18 @@ PanelWindow {
                 }
             }
 
+            // Active keyboard layout; click or scroll switches.
+            Group {
+                visible: Niri.layoutNames.length > 1
+                Chip {
+                    icon: Icons.keyboard
+                    text: Niri.layoutShort
+                    tint: Theme.tone(0)
+                    onClicked: Niri.action("switch-layout", "next")
+                    onScrolled: d => Niri.action("switch-layout", d > 0 ? "prev" : "next")
+                }
+            }
+
             Group {
                 Chip {
                     icon: Audio.icon
