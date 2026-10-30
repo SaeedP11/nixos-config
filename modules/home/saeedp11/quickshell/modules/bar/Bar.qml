@@ -41,7 +41,7 @@ PanelWindow {
         Quickshell.execDetached(cmd);
     }
 
-    // Keyboard navigation (Mod+Space, `ipc call bar nav`): Left/Right or
+    // Keyboard navigation (Mod+Alt+Space, `ipc call bar nav`): Left/Right or
     // h/l (Tab) pick a chip, Return clicks it, r or Shift+Return right
     // clicks, m middle clicks, Up/Down or k/j scroll, Escape closes the open
     // panel and then leaves.

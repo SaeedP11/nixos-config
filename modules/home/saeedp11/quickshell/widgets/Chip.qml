@@ -16,7 +16,7 @@ Rectangle {
     property int maxTextWidth: 100000
     property string fontFamily: Theme.font
     property alias hovered: mouse.containsMouse
-    // Set by the bar's keyboard navigation (Mod+Space).
+    // Set by the bar's keyboard navigation (Mod+Alt+Space).
     property bool navFocused: false
 
     // What the bar's keyboard navigation calls instead of a mouse event.

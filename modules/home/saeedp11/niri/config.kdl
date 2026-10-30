@@ -588,7 +588,7 @@ binds {
     // Drives the top bar from the keyboard: arrows or h/l pick a chip,
     // Return clicks it, r right clicks, m middle clicks, Up/Down scroll,
     // Escape leaves.
-    Mod+Space hotkey-overlay-title="Navigate the Top Bar" { spawn "qs" "-c" "shell" "ipc" "call" "bar" "nav"; }
+    Mod+Alt+Space hotkey-overlay-title="Navigate the Top Bar" { spawn "qs" "-c" "shell" "ipc" "call" "bar" "nav"; }
     Mod+Shift+T hotkey-overlay-title="Clocks" { spawn "qs" "-c" "shell" "ipc" "call" "panel" "toggle" "clocks"; }
     // Window switcher, most recent first. niri keeps handling these while
     // the switcher holds the keyboard, so repeats step through it; letting
