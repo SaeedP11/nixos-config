@@ -46,6 +46,9 @@
     # antigravity-cli (agy), which 25.05 does not carry.
     (import ../../../overlays/antigravity-cli.nix { inherit inputs; })
 
+    # nodejs_26, which 25.05 does not carry.
+    (import ../../../overlays/nodejs-26.nix { inherit inputs; })
+
     # vlc wrapped to pick a dark/light Qt style from darkman at launch.
     (import ../../../overlays/vlc.nix)
   ];

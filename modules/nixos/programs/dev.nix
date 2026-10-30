@@ -19,7 +19,7 @@
       pkg-config
       openssl
 
-      nodejs_22
+      nodejs_26
       pnpm
 
       # For pip-only CLI tools that have no nixpkgs derivation.
