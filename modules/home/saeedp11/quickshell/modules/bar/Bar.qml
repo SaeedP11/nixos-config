@@ -352,12 +352,19 @@ PanelWindow {
             }
 
             Group {
+                // All the quick settings in one panel.
+                Chip {
+                    icon: Icons.settings
+                    tint: Theme.tone(3)
+                    active: Panels.open === "control" && Panels.screen === bar.output
+                    onClicked: bar.open("control")
+                }
                 Chip {
                     icon: Audio.icon
                     text: Audio.muted || bar.narrow ? "" : Math.round(Audio.volume * 100) + "%"
                     tint: Theme.tone(5)
-                    active: Panels.open === "control" && Panels.screen === bar.output
-                    onClicked: m => m.button === Qt.RightButton ? bar.run("pavucontrol") : m.button === Qt.MiddleButton ? Audio.toggleMute() : bar.open("control")
+                    active: Panels.open === "sound" && Panels.screen === bar.output
+                    onClicked: m => m.button === Qt.RightButton ? bar.run("pavucontrol") : m.button === Qt.MiddleButton ? Audio.toggleMute() : bar.open("sound")
                     onScrolled: d => Audio.setVolume(Audio.volume + (d > 0 ? 0.05 : -0.05))
                 }
                 // Ethernet or Wi-Fi. Click opens the network panel
@@ -382,7 +389,8 @@ PanelWindow {
                     visible: bar.btAdapter !== null
                     icon: !bar.btAdapter?.enabled ? Icons.bluetoothOff : bar.btConnected ? Icons.bluetoothOn : Icons.bluetooth
                     tint: Theme.tone(7)
-                    onClicked: m => m.button === Qt.RightButton ? bar.run("blueman-manager") : bar.open("control")
+                    active: Panels.open === "bluetooth" && Panels.screen === bar.output
+                    onClicked: m => m.button === Qt.RightButton ? bar.run("blueman-manager") : bar.open("bluetooth")
                 }
                 Chip {
                     visible: Battery.has
