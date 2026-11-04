@@ -1,5 +1,6 @@
 // Quick settings: connectivity and mode toggles, the three sliders, and
-// what is playing. Right click on a tile opens the full settings app.
+// what is playing. The gear in the header opens the full settings app
+// (modules/settings).
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
@@ -45,6 +46,10 @@ PanelSurface {
                     color: Theme.textDim
                     font.pointSize: Theme.fontSize - 1
                 }
+            }
+            IconButton {
+                icon: Icons.settings
+                onClicked: Panels.openSettings("")
             }
             IconButton {
                 icon: Icons.lock

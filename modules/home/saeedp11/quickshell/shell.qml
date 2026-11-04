@@ -1,5 +1,4 @@
 //@ pragma UseQApplication
-//@ pragma IconTheme Adwaita
 
 // Quickshell desktop shell for niri. Installed by ../quickshell.nix as the
 // named config "shell" (~/.config/quickshell/shell), started by the
@@ -18,6 +17,7 @@ import qs.modules.dock
 import qs.modules.desktop
 import qs.modules.lock
 import qs.modules.polkit
+import qs.modules.settings
 
 ShellRoot {
     // Singletons are created on first use; these only watch, so they are
@@ -36,6 +36,7 @@ ShellRoot {
         id: lockScreen
     }
     PolkitDialog {}
+    SettingsWindow {}
 
     Variants {
         model: Quickshell.screens
@@ -85,6 +86,22 @@ ShellRoot {
         }
         function isLocked(): bool {
             return lockScreen.secure;
+        }
+    }
+    // `settings open [page]` opens the settings window, on a page when one
+    // is named (appearance, display, sound, network, bluetooth, power,
+    // notifications, input, desktop, datetime, system); `settings toggle`
+    // and `settings close` do what they say.
+    IpcHandler {
+        target: "settings"
+        function open(page: string): void {
+            Panels.openSettings(page);
+        }
+        function toggle(): void {
+            Panels.toggleSettings();
+        }
+        function close(): void {
+            Panels.settingsOpen = false;
         }
     }
     // `bar nav` starts or ends keyboard navigation of the top bar.

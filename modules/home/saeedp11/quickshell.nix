@@ -36,6 +36,20 @@
     ];
   };
 
+  # The settings app: a window of the shell (./quickshell/modules/settings),
+  # reachable from the launcher, the bar's settings chip (right click) and
+  # the control centre's gear.
+  xdg.desktopEntries.qs-settings = {
+    name = "Settings";
+    comment = "Display, sound, network, power and desktop settings";
+    icon = "preferences-system";
+    exec = "qs -c shell ipc call settings open";
+    categories = [
+      "Settings"
+      "DesktopSettings"
+    ];
+  };
+
   # What the clipboard popout reads: every selection is recorded by a
   # `wl-paste --watch cliphist store` unit bound to graphical-session.target.
   services.cliphist = {

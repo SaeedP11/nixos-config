@@ -56,6 +56,24 @@ Singleton {
         open = "";
     }
 
+    // The settings window (modules/settings) is a window of its own, not a
+    // popout, so it has its own state: whether it is open and which page.
+    property bool settingsOpen: false
+    property string settingsPage: "appearance"
+
+    function openSettings(page) {
+        if (page)
+            settingsPage = page;
+        close();
+        settingsOpen = true;
+    }
+    function toggleSettings() {
+        if (settingsOpen)
+            settingsOpen = false;
+        else
+            openSettings("");
+    }
+
     // The tray item menu the "tray" popout shows, and the x it drops from.
     property QsMenuHandle trayMenu: null
     property real trayX: 0
