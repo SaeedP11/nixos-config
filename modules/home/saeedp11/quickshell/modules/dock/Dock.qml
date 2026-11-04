@@ -4,6 +4,10 @@
 //
 // Click focuses the app's window, cycling through them if it has several,
 // or launches it; middle click always launches a new one.
+//
+// Keyboard (`ipc call dock nav`): Left/Right or h/l (Tab) pick an app,
+// Return or Space focuses or launches it, m launches a new one, Escape or q
+// leaves.
 import QtQuick
 import Quickshell
 import Quickshell.Wayland
@@ -19,7 +23,9 @@ PanelWindow {
     readonly property var ws: Niri.activeWorkspaceOn(modelData.name)
     readonly property bool wsEmpty: !ws || ws.active_window_id === null
     property bool hovered: false
-    readonly property bool revealed: hovered || wsEmpty
+    readonly property bool navOn: Panels.dockScreen === modelData.name
+    readonly property bool revealed: hovered || wsEmpty || navOn
+    property int navIndex: 0
 
     readonly property var groups: {
         const map = {}, order = [];
@@ -57,8 +63,75 @@ PanelWindow {
     exclusionMode: ExclusionMode.Ignore
     WlrLayershell.layer: WlrLayer.Top
     WlrLayershell.namespace: "quickshell-dock"
+    WlrLayershell.keyboardFocus: navOn ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
     implicitWidth: body.implicitWidth + 40
     implicitHeight: 112
+
+    // Click or Return on an app: focus its next window, or launch it when it
+    // has none (or `fresh`).
+    function activate(group, fresh) {
+        const wins = group.windows;
+        if (fresh || wins.length === 0) {
+            Apps.launch(group.launch);
+            return;
+        }
+        const i = wins.findIndex(w => w.id === Niri.focusedWindowId);
+        Niri.focusWindow(wins[(i + 1) % wins.length].id);
+    }
+    function navStep(step) {
+        const n = groups.length;
+        if (n > 0)
+            navIndex = (Math.min(navIndex, n - 1) + step + n) % n;
+    }
+    onNavOnChanged: {
+        if (navOn) {
+            navIndex = 0;
+            keys.forceActiveFocus();
+        }
+    }
+
+    Item {
+        id: keys
+        focus: dock.navOn
+        Keys.onPressed: e => {
+            e.accepted = true;
+            const g = dock.groups[Math.min(dock.navIndex, dock.groups.length - 1)];
+            switch (e.key) {
+            case Qt.Key_Left:
+            case Qt.Key_H:
+            case Qt.Key_Backtab:
+                dock.navStep(-1);
+                break;
+            case Qt.Key_Right:
+            case Qt.Key_L:
+            case Qt.Key_Tab:
+                dock.navStep(1);
+                break;
+            case Qt.Key_Home:
+                dock.navIndex = 0;
+                break;
+            case Qt.Key_End:
+                dock.navIndex = Math.max(0, dock.groups.length - 1);
+                break;
+            case Qt.Key_Return:
+            case Qt.Key_Enter:
+            case Qt.Key_Space:
+            case Qt.Key_M:
+                // Leave first: a window cannot take the keyboard while the
+                // dock holds it.
+                Panels.dockScreen = "";
+                if (g)
+                    dock.activate(g, e.key === Qt.Key_M);
+                break;
+            case Qt.Key_Escape:
+            case Qt.Key_Q:
+                Panels.dockScreen = "";
+                break;
+            default:
+                e.accepted = false;
+            }
+        }
+    }
 
     // Input reaches only a thin strip along the bottom edge while hidden,
     // and the dock plus the gap below it while shown. The gap matters: the
@@ -121,6 +194,8 @@ PanelWindow {
                 Item {
                     id: app
                     required property var modelData
+                    required property int index
+                    readonly property bool navFocused: dock.navOn && index === Math.min(dock.navIndex, dock.groups.length - 1)
                     readonly property var entry: Apps.entry(modelData.launch)
                     readonly property bool focused: modelData.windows.some(w => w.id === Niri.focusedWindowId)
 
@@ -130,6 +205,8 @@ PanelWindow {
                     Rectangle {
                         anchors.fill: parent
                         radius: 16
+                        border.width: app.navFocused ? 2 : 0
+                        border.color: Theme.accent
                         color: app.focused ? Theme.alpha(Theme.accent, 0.25) : mouse.containsMouse ? Theme.alpha(Theme.fg, 0.1) : "transparent"
                         Behavior on color {
                             ColorAnimation {
@@ -171,7 +248,7 @@ PanelWindow {
                         anchors.horizontalCenter: parent.horizontalCenter
                         anchors.bottom: parent.top
                         anchors.bottomMargin: 14
-                        visible: mouse.containsMouse
+                        visible: mouse.containsMouse || app.navFocused
                         width: label.implicitWidth + 20
                         height: 26
                         radius: 13
@@ -192,15 +269,7 @@ PanelWindow {
                         hoverEnabled: true
                         acceptedButtons: Qt.LeftButton | Qt.MiddleButton
                         cursorShape: Qt.PointingHandCursor
-                        onClicked: m => {
-                            const wins = app.modelData.windows;
-                            if (m.button === Qt.MiddleButton || wins.length === 0) {
-                                Apps.launch(app.modelData.launch);
-                                return;
-                            }
-                            const i = wins.findIndex(w => w.id === Niri.focusedWindowId);
-                            Niri.focusWindow(wins[(i + 1) % wins.length].id);
-                        }
+                        onClicked: m => dock.activate(app.modelData, m.button === Qt.MiddleButton)
                     }
                 }
             }

@@ -94,6 +94,13 @@ ShellRoot {
             Panels.navToggle();
         }
     }
+    // `dock nav` starts or ends keyboard navigation of the dock.
+    IpcHandler {
+        target: "dock"
+        function nav(): void {
+            Panels.dockToggle();
+        }
+    }
     // Alt+Tab and Alt+Shift+Tab.
     IpcHandler {
         target: "switcher"

@@ -23,11 +23,22 @@ Row {
             readonly property bool active: modelData.is_active
             readonly property bool empty: modelData.active_window_id === null
             readonly property color tint: modelData.is_urgent ? Theme.critical : Theme.accent
+            // Set by the bar's keyboard navigation (Mod+Alt+Space).
+            property bool navFocused: false
+
+            function trigger(button) {
+                Niri.focusWorkspace(modelData);
+            }
+            function wheel(delta) {
+                Niri.action(delta > 0 ? "focus-workspace-up" : "focus-workspace-down");
+            }
 
             anchors.verticalCenter: parent.verticalCenter
             implicitHeight: Theme.barHeight - 8
             implicitWidth: active ? 44 : 30
             radius: height / 2
+            border.width: navFocused ? 2 : 0
+            border.color: tint
             color: active ? Theme.alpha(tint, 0.28) : mouse.containsMouse ? Theme.alpha(Theme.fg, 0.1) : "transparent"
 
             Behavior on implicitWidth {

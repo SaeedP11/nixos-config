@@ -14,6 +14,8 @@ Singleton {
     // The output whose bar holds the keyboard for chip-by-chip navigation
     // ("" when none); see modules/bar/Bar.qml.
     property string navScreen: ""
+    // Likewise for the dock (see modules/dock/Dock.qml).
+    property string dockScreen: ""
 
     // The bars' IdleInhibitor only holds off swayidle while a bar surface is
     // visible; it does nothing against `systemctl suspend` from swayidle's
@@ -45,6 +47,9 @@ Singleton {
     }
     function navToggle() {
         navScreen = navScreen !== "" ? "" : (Niri.focusedOutput || (Quickshell.screens[0]?.name ?? ""));
+    }
+    function dockToggle() {
+        dockScreen = dockScreen !== "" ? "" : (Niri.focusedOutput || (Quickshell.screens[0]?.name ?? ""));
     }
     function close() {
         arg = "";
