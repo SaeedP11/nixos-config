@@ -26,7 +26,7 @@
 
 {
   imports = [
-    ../shared/hardware-configuration.nix
+    ../shared/hardware.nix
 
     ../../modules/nixos/hardware/cpu/intel.nix
     ../../modules/nixos/hardware/gpu/intel.nix

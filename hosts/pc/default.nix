@@ -20,11 +20,17 @@
 # VT-x is disabled in the firmware ("kvm_intel: VMX not enabled (by BIOS)"),
 # so the kvm-intel module from ../../modules/nixos/hardware/cpu/intel.nix
 # fails to load until it is turned on there.
-{ vars, hostName, ... }:
+{
+  vars,
+  hostName,
+  install,
+  ...
+}:
 
 {
   imports = [
-    ./hardware-configuration.nix
+    # Its own scan, or the one the installer generated; see ../shared/hardware.nix.
+    (if install == null then ./hardware-configuration.nix else install.hardwareConfiguration)
 
     ../../modules/nixos/hardware/cpu/intel.nix
 

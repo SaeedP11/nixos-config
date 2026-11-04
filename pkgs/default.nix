@@ -22,4 +22,5 @@ rec {
   greeter-wallust = pkgs.callPackage ./greeter-wallust { };
   wallpaper-tools = pkgs.callPackage ./wallpaper-tools { };
   xboxdownload = pkgs.callPackage ./xboxdownload.nix { };
+  installer-backend = pkgs.callPackage ../modules/nixos/installer/backend { };
 }

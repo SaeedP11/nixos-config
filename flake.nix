@@ -23,7 +23,7 @@
   };
 
   outputs =
-    inputs@{ nixpkgs, ... }:
+    inputs@{ self, nixpkgs, ... }:
     let
       inherit (import ./lib { inherit inputs; }) mkHost;
 
@@ -34,6 +34,14 @@
           name: type: type == "directory" && builtins.pathExists (./hosts + "/${name}/default.nix")
         ) (builtins.readDir ./hosts)
       );
+
+      # Written by the installer (modules/nixos/installer), absent on the
+      # repository's own machines. See lib/default.nix, mkHost.
+      installed =
+        if builtins.pathExists ./install/install.json then
+          builtins.fromJSON (builtins.readFile ./install/install.json)
+        else
+          null;
 
       forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" ];
       # Same unfree policy as the hosts (modules/nixos/core/nix.nix), so the
@@ -47,11 +55,66 @@
         };
     in
     {
-      nixosConfigurations = nixpkgs.lib.genAttrs hostNames (hostName: mkHost { inherit hostName; });
+      nixosConfigurations =
+        nixpkgs.lib.genAttrs hostNames (hostName: mkHost { inherit hostName; })
+        # The machine the installer put this copy of the repository on, if
+        # any: install/install.json and install/hardware-configuration.nix
+        # exist only there (and must be `git add`ed, like every flake file).
+        // nixpkgs.lib.optionalAttrs (installed != null) {
+          ${installed.hostName} = mkHost {
+            inherit (installed) hostName;
+            profile = installed.profile;
+            install = installed // {
+              hardwareConfiguration = ./install/hardware-configuration.nix;
+            };
+          };
+        }
+        # The live installer (modules/nixos/installer); not a host, so it is
+        # not in hostNames and the installed machines never carry it.
+        // {
+          installer = nixpkgs.lib.nixosSystem {
+            specialArgs = { inherit inputs self; };
+            modules = [
+              { nixpkgs.hostPlatform = "x86_64-linux"; }
+              ./modules/nixos/installer
+            ];
+          };
+        };
 
       # Packages defined by this repo, buildable directly:
       #   nix build .#wallpaper-tools
-      packages = forAllSystems (system: import ./pkgs { pkgs = pkgsFor system; });
+      packages = forAllSystems (
+        system:
+        import ./pkgs { pkgs = pkgsFor system; }
+        // {
+          # The live installer ISO: nix build .#installer-iso
+          installer-iso = self.nixosConfigurations.installer.config.system.build.isoImage;
+        }
+      );
+
+      checks = forAllSystems (
+        system:
+        let
+          pkgs = pkgsFor system;
+          catalog = import ./modules/nixos/installer/catalog.nix {
+            inherit (pkgs) lib;
+            inherit pkgs;
+            inherit (self) nixosConfigurations;
+          };
+        in
+        {
+          # modules/nixos/installer/app-sizes.json is kept by hand; it must
+          # name exactly the options declared in modules/nixos/apps.nix.
+          catalog-drift =
+            assert
+              catalog.drift == {
+                extraSizes = [ ];
+                missingSizes = [ ];
+              }
+              || throw "app-sizes.json and apps.nix disagree: ${builtins.toJSON catalog.drift}";
+            pkgs.runCommand "catalog-drift" { } "touch $out";
+        }
+      );
 
       overlays.default = import ./overlays;
 

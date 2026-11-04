@@ -1,0 +1,38 @@
+{
+  "blockdevices": [
+    {
+      "name": "sda", "path": "/dev/sda", "type": "disk", "size": 256060514304,
+      "model": "Fixture SATA SSD", "serial": "FIXSATA0003", "rm": false, "ro": false,
+      "pttype": "gpt", "fstype": null, "label": null, "uuid": null, "mountpoints": [null],
+      "pkname": null,
+      "children": [
+        {
+          "name": "sda1", "path": "/dev/sda1", "type": "part", "size": 1073741824,
+          "start": 2048, "partn": 1, "fstype": "vfat", "label": "NIXBOOT",
+          "uuid": "1111-2222", "parttype": "c12a7328-f81f-11d2-ba4b-00a0c93ec93b",
+          "pttype": "gpt", "mountpoints": [null], "pkname": "sda", "rm": false, "ro": false
+        },
+        {
+          "name": "sda2", "path": "/dev/sda2", "type": "part", "size": 254985000000,
+          "start": 2099200, "partn": 2, "fstype": "ext4", "label": "NIXROOT",
+          "uuid": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", "parttype": "0fc63daf-8483-4772-8e79-3d69d8477de4",
+          "pttype": "gpt", "mountpoints": [null], "pkname": "sda", "rm": false, "ro": false
+        }
+      ]
+    },
+    {
+      "name": "sdb", "path": "/dev/sdb", "type": "disk", "size": 15518924800,
+      "model": "Fixture Live USB", "serial": "FIXUSB0004", "rm": true, "ro": false,
+      "pttype": "dos", "fstype": null, "label": null, "uuid": null, "mountpoints": [null],
+      "pkname": null,
+      "children": [
+        {
+          "name": "sdb1", "path": "/dev/sdb1", "type": "part", "size": 2147483648,
+          "start": 2048, "partn": 1, "fstype": "iso9660", "label": "NIXOS_ISO",
+          "uuid": "2026-11-05-00-00-00-00", "parttype": "0x83", "pttype": "dos",
+          "mountpoints": ["/iso"], "pkname": "sdb", "rm": true, "ro": true
+        }
+      ]
+    }
+  ]
+}

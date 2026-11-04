@@ -1,0 +1,36 @@
+{
+  "blockdevices": [
+    {
+      "name": "nvme0n1", "path": "/dev/nvme0n1", "type": "disk", "size": 512110190592,
+      "model": "Fixture NVMe 512G", "serial": "FIXNVME0002", "rm": false, "ro": false,
+      "pttype": "gpt", "fstype": null, "label": null, "uuid": null, "mountpoints": [null],
+      "pkname": null,
+      "children": [
+        {
+          "name": "nvme0n1p1", "path": "/dev/nvme0n1p1", "type": "part", "size": 272629760,
+          "start": 2048, "partn": 1, "fstype": "vfat", "label": "SYSTEM",
+          "uuid": "A1B2-C3D4", "parttype": "c12a7328-f81f-11d2-ba4b-00a0c93ec93b",
+          "pttype": "gpt", "mountpoints": [null], "pkname": "nvme0n1", "rm": false, "ro": false
+        },
+        {
+          "name": "nvme0n1p2", "path": "/dev/nvme0n1p2", "type": "part", "size": 16777216,
+          "start": 534528, "partn": 2, "fstype": null, "label": null, "uuid": null,
+          "parttype": "e3c9e316-0b5c-4db8-817d-f92df00215ae",
+          "pttype": "gpt", "mountpoints": [null], "pkname": "nvme0n1", "rm": false, "ro": false
+        },
+        {
+          "name": "nvme0n1p3", "path": "/dev/nvme0n1p3", "type": "part", "size": 510000000000,
+          "start": 567296, "partn": 3, "fstype": "ntfs", "label": "Windows",
+          "uuid": "0123456789ABCDEF", "parttype": "ebd0a0a2-b9e5-4433-87c0-68b6b72699c7",
+          "pttype": "gpt", "mountpoints": [null], "pkname": "nvme0n1", "rm": false, "ro": false
+        },
+        {
+          "name": "nvme0n1p4", "path": "/dev/nvme0n1p4", "type": "part", "size": 1048576000,
+          "start": 996000000, "partn": 4, "fstype": "ntfs", "label": "Recovery",
+          "uuid": "FEDCBA9876543210", "parttype": "de94bba4-06d1-4d40-a16a-bfd50179d6ac",
+          "pttype": "gpt", "mountpoints": [null], "pkname": "nvme0n1", "rm": false, "ro": false
+        }
+      ]
+    }
+  ]
+}
