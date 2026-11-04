@@ -40,6 +40,20 @@
       # GTK/Qt theme, icon and cursor assets the live switch selects between.
       gnome-themes-extra
       adwaita-icon-theme
+
+      # Icon packs `icon-theme set <name>` can switch to (see
+      # ../../home/saeedp11/icons.nix). The popular, broadly complete ones:
+      # Papirus covers the most apps, Tela/Colloid/Qogir/Fluent/WhiteSur are
+      # the well-kept modern sets, Numix/Kora/Zafiro the classic flat ones.
+      papirus-icon-theme
+      tela-icon-theme
+      colloid-icon-theme
+      qogir-icon-theme
+      fluent-icon-theme
+      whitesur-icon-theme
+      numix-icon-theme
+      kora-icon-theme
+      zafiro-icons
       adwaita-qt
       phinger-cursors
     ]

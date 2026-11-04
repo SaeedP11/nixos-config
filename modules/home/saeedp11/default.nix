@@ -52,6 +52,7 @@
     ./darkman.nix
     ./wallust.nix
     ./gtk.nix
+    ./icons.nix
     ./packages.nix
     ./freecad.nix
   ];

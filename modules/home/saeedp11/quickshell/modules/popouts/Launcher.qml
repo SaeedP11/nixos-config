@@ -5,7 +5,8 @@
 // Two extras share the field: an arithmetic expression shows its result
 // as the first row (Enter copies it; after a leading "=" Enter opens the
 // Calculator panel prefilled instead), and a leading ">" runs the rest as
-// a shell command, in a terminal with Shift+Enter.
+// a shell command, in a terminal with Shift+Enter. Ctrl+I on an app changes
+// its icon (see services/Apps.qml).
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
@@ -29,7 +30,18 @@ PanelSurface {
         const r = Calc.evaluate(q);
         return r.ok ? r.text : "";
     }
+    // The app whose icon is being changed (Ctrl+I): the field then takes an
+    // icon name or an image path, and the one row previews it.
+    property var iconTarget: null
     readonly property var rows: {
+        if (iconTarget)
+            return [
+                {
+                    kind: "icon",
+                    entry: iconTarget,
+                    text: query.trim()
+                }
+            ];
         if (commandMode)
             return [
                 {
@@ -54,6 +66,12 @@ PanelSurface {
     function activate(row, shift) {
         if (!row)
             return;
+        if (row.kind === "icon") {
+            Apps.setIcon(row.entry.id, row.text);
+            iconTarget = null;
+            search.text = "";
+            return;
+        }
         Panels.close();
         if (row.kind === "app")
             Apps.run(row.entry);
@@ -74,13 +92,21 @@ PanelSurface {
         SearchField {
             id: search
             Layout.fillWidth: true
-            placeholder: "Search apps, = calculate, > run a command"
+            placeholder: root.iconTarget ? "Icon name or image path, empty to reset" : "Search apps, = calculate, > run a command"
             onTextChanged: list.currentIndex = 0
             onAccepted: root.activate(root.rows[list.currentIndex], false)
             onUp: list.decrementCurrentIndex()
             onDown: list.incrementCurrentIndex()
             Keys.onPressed: e => {
-                if ((e.key === Qt.Key_Return || e.key === Qt.Key_Enter) && (e.modifiers & Qt.ShiftModifier)) {
+                if (e.key === Qt.Key_Escape && root.iconTarget) {
+                    root.iconTarget = null;
+                    search.text = "";
+                    e.accepted = true;
+                } else if (e.key === Qt.Key_I && (e.modifiers & Qt.ControlModifier) && root.rows[list.currentIndex]?.kind === "app") {
+                    root.iconTarget = root.rows[list.currentIndex].entry;
+                    search.text = Apps.overrides[root.iconTarget.id] ?? "";
+                    e.accepted = true;
+                } else if ((e.key === Qt.Key_Return || e.key === Qt.Key_Enter) && (e.modifiers & Qt.ShiftModifier)) {
                     root.activate(root.rows[list.currentIndex], true);
                     e.accepted = true;
                 } else if (e.key === Qt.Key_Tab) {
@@ -109,6 +135,7 @@ PanelSurface {
                 required property int index
                 readonly property bool selected: ListView.isCurrentItem
                 readonly property bool isApp: modelData.kind === "app"
+                readonly property bool isIcon: modelData.kind === "icon"
 
                 width: list.width
                 height: 54
@@ -126,14 +153,14 @@ PanelSurface {
                         Layout.preferredHeight: 34
                         Image {
                             anchors.fill: parent
-                            visible: row.isApp
-                            source: row.isApp ? Apps.icon(row.modelData.entry.id) : ""
+                            visible: row.isApp || row.isIcon
+                            source: row.isApp ? Apps.icon(row.modelData.entry.id) : row.isIcon ? (Apps.resolve(row.modelData.text) || Apps.icon(row.modelData.entry.id)) : ""
                             sourceSize: Qt.size(64, 64)
                             asynchronous: true
                         }
                         Icon {
                             anchors.centerIn: parent
-                            visible: !row.isApp
+                            visible: !row.isApp && !row.isIcon
                             text: row.modelData.kind === "calc" ? Icons.calculator : Icons.terminal
                             color: Theme.accent
                             font.pointSize: 20
@@ -144,13 +171,13 @@ PanelSurface {
                         spacing: 0
                         StyledText {
                             Layout.fillWidth: true
-                            text: row.isApp ? row.modelData.entry.name : row.modelData.kind === "calc" ? "= " + (row.modelData.text || "…") : (row.modelData.text || "Type a command")
+                            text: row.isApp ? row.modelData.entry.name : row.isIcon ? "Icon for " + row.modelData.entry.name : row.modelData.kind === "calc" ? "= " + (row.modelData.text || "…") : (row.modelData.text || "Type a command")
                             font.weight: Font.DemiBold
-                            font.family: row.isApp ? Theme.font : Theme.monoFont
+                            font.family: row.isApp || row.isIcon ? Theme.font : Theme.monoFont
                         }
                         StyledText {
                             Layout.fillWidth: true
-                            readonly property string sub: row.isApp ? (row.modelData.entry.comment || row.modelData.entry.genericName || "") : row.modelData.kind === "calc" ? (row.modelData.open ? "Enter to open in Calculator" : "Enter to copy") : "Enter to run · Shift+Enter in a terminal"
+                            readonly property string sub: row.isApp ? (row.modelData.entry.comment || row.modelData.entry.genericName || "") : row.isIcon ? "Enter to save · Esc to cancel" : row.modelData.kind === "calc" ? (row.modelData.open ? "Enter to open in Calculator" : "Enter to copy") : "Enter to run · Shift+Enter in a terminal"
                             visible: sub !== ""
                             text: sub
                             color: Theme.textDim
