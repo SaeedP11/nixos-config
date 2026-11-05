@@ -25,4 +25,30 @@
       '';
     });
   };
+
+  # Casting from the container to a TV on the LAN (Google Cast).
+  #
+  # waydroid-net.sh puts the container on its own NATed subnet,
+  # 192.168.240.0/24 behind waydroid0. The TV announces _googlecast._tcp over
+  # mDNS, and mDNS is link-local (224.0.0.251), so the TV's announcements
+  # never cross the NAT and the Cast button finds no devices. Avahi's
+  # reflector repeats mDNS queries and answers between waydroid0 and the
+  # Wi-Fi/Ethernet link. After discovery, the sender's TCP connection to the
+  # TV (port 8009) goes out through the NAT like any other connection.
+  # waydroid0 only exists while a session runs; avahi picks it up when it
+  # appears. The VPN tun is left out so mDNS doesn't go into the tunnel.
+  # (Cast also needs Google Play services in the image, i.e. a GAPPS system
+  # image; VANILLA has no Cast stack.)
+  services.avahi = {
+    enable = true;
+    reflector = true;
+    denyInterfaces = [ "nekoray-tun" ];
+  };
+
+  # While nekoray's VPN is up, sing-box marks forwarded packets and the
+  # rpfilter drops the container's traffic, the same as for docker0 in
+  # ../core/networking.nix. Check the source against the main table instead.
+  networking.firewall.extraReversePathFilterRules = ''
+    iifname "waydroid0" fib saddr . iif oif exists accept comment "waydroid bridge, ignoring sing-box's mark"
+  '';
 }
