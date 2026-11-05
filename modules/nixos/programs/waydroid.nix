@@ -74,6 +74,19 @@
       ${pkgs.gnused}/bin/sed -i '/^persist\.waydroid\.multi_windows=/d' "$prop"
       echo 'persist.waydroid.multi_windows=true' >> "$prop"
     fi
+
+    # Keep niri's Mod (Super) key out of Android. niri forwards bare Super
+    # press/release to the focused window, and waydroid feeds host keys into
+    # Android as evdev codes that /system/usr/keylayout/Generic.kl maps;
+    # 125/126 become META_LEFT/META_RIGHT, so every Mod bind used over a
+    # waydroid window also fired Android's Meta shortcuts (all apps, home,
+    # recents). The vendored copy has those two lines commented out, so
+    # Android drops Super. mount_overlays layers /var/lib/waydroid/overlay
+    # over the rootfs; it must be a real copy, since /nix/store isn't
+    # visible inside the container. Android reads keylayouts when the input
+    # device appears, so this applies from the next session start.
+    ${pkgs.coreutils}/bin/install -Dm644 ${./waydroid-Generic.kl} \
+      /var/lib/waydroid/overlay/system/usr/keylayout/Generic.kl
   '';
 
   # Casting from the container to a TV on the LAN (Google Cast).
