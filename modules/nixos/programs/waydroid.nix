@@ -37,9 +37,44 @@
           --replace-fail 'LXC_DHCP_CONFILE=""' 'LXC_DHCP_CONFILE="${pkgs.writeText "waydroid-dnsmasq.conf" ''
             server=172.19.0.2
           ''}"'
+
+        # Show Android's system apps (Settings, Files, Contacts, ...) in the
+        # host launcher too. When the Android user unlocks, waydroid writes a
+        # waydroid.<pkg>.desktop for every launchable app into
+        # ~/.local/share/applications, but it marks a hardcoded list of
+        # system apps NoDisplay=true, and the Quickshell launcher hides those.
+        # This clears NoDisplay instead of setting it, which also unhides the
+        # files written before this change on the next unlock.
+        # (remove_key raises on a missing key, hence the suppress.)
+        substituteInPlace tools/services/user_manager.py \
+          --replace-fail 'if packageName in system_apps and not glib_key_file_has_value(desktop_file, "Desktop Entry", "NoDisplay"):' \
+                         'with suppress(GLib.GError):' \
+          --replace-fail 'desktop_file.set_boolean("Desktop Entry", "NoDisplay", True)' \
+                         'desktop_file.remove_key("Desktop Entry", "NoDisplay")'
       '';
     });
   };
+
+  # Multi-window mode: every Android app opens in its own host window, so
+  # niri tiles it next to host apps and the launcher's entries open
+  # just that app, not the full Android desktop.
+  #
+  # The switch is the persist.waydroid.multi_windows prop. `waydroid prop set`
+  # only works while a session is running, and the [properties] section of
+  # waydroid.cfg is merged into waydroid_base.prop only by `waydroid init` and
+  # `waydroid upgrade`, not at container start. So set it in both files
+  # before each container start. Both files only exist after `waydroid init`.
+  systemd.services.waydroid-container.preStart = ''
+    cfg=/var/lib/waydroid/waydroid.cfg
+    prop=/var/lib/waydroid/waydroid_base.prop
+    if [ -f "$cfg" ]; then
+      ${pkgs.crudini}/bin/crudini --set "$cfg" properties persist.waydroid.multi_windows true
+    fi
+    if [ -f "$prop" ]; then
+      ${pkgs.gnused}/bin/sed -i '/^persist\.waydroid\.multi_windows=/d' "$prop"
+      echo 'persist.waydroid.multi_windows=true' >> "$prop"
+    fi
+  '';
 
   # Casting from the container to a TV on the LAN (Google Cast).
   #

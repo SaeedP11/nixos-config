@@ -134,6 +134,13 @@
       "application/x-xz" = "org.gnome.FileRoller.desktop";
       "application/x-bzip2" = "org.gnome.FileRoller.desktop";
       "application/x-bzip2-compressed-tar" = "org.gnome.FileRoller.desktop";
+
+      # Android (../../nixos/programs/waydroid.nix). Opening an .apk installs
+      # it into Waydroid (an .apk is a zip, so File Roller would claim it
+      # otherwise), and market:// links from host apps open Play Store in
+      # the container. Both handlers ship with the waydroid package.
+      "application/vnd.android.package-archive" = "waydroid.app.install.desktop";
+      "x-scheme-handler/market" = "waydroid.market.desktop";
     };
 
     associations.added = {
