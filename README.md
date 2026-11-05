@@ -51,9 +51,23 @@ Other useful entry points:
 
 ```bash
 nix build .#wallpaper-tools    # build a repo package on its own
+nix build .#installer-iso      # build bootable Quickshell live installer ISO
+nix run .#installer-vm         # run rehearsal VM in QEMU with blank disk
 nix fmt                        # nixfmt-rfc-style
 nix develop                    # nixfmt + nil
 ```
+
+## Graphical OS Installer
+
+This repository includes a graphical installer ISO based on Quickshell and a minimal `niri` Wayland session:
+- **Build live ISO**: `nix build .#installer-iso`
+- **Rehearse in QEMU**: `nix run .#installer-vm`
+- **Backend checks**: `nix flake check` runs the catalog drift checks and VM test suite.
+
+Note on installation and reproduction:
+- **Online install required**: The installer fetches nixpkgs closures over the network.
+- **Secrets isolation**: Passwords are saved as sha-512 hashes in `/var/lib/installer-secrets/` on the target machine and are never tracked in the git repository.
+- **Host interfaces**: Network interface names in host configurations are copied as-is and may need adjusting if differing hardware is installed.
 
 ## What is and is not managed here
 

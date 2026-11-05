@@ -85,10 +85,17 @@
       #   nix build .#wallpaper-tools
       packages = forAllSystems (
         system:
-        import ./pkgs { pkgs = pkgsFor system; }
+        let
+          pkgs = pkgsFor system;
+        in
+        import ./pkgs { inherit pkgs; }
         // {
           # The live installer ISO: nix build .#installer-iso
           installer-iso = self.nixosConfigurations.installer.config.system.build.isoImage;
+          installer-vm = import ./modules/nixos/installer/vm.nix {
+            inherit pkgs;
+            iso = self.packages.${system}.installer-iso;
+          };
         }
       );
 
@@ -113,6 +120,9 @@
               }
               || throw "app-sizes.json and apps.nix disagree: ${builtins.toJSON catalog.drift}";
             pkgs.runCommand "catalog-drift" { } "touch $out";
+        }
+        // pkgs.lib.optionalAttrs (system == "x86_64-linux") {
+          installer-vm = import ./modules/nixos/installer/nixos-test.nix { inherit pkgs self; };
         }
       );
 

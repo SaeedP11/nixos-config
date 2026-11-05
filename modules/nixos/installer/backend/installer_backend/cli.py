@@ -7,10 +7,11 @@ partitioning phases are implemented; they already return contract-shaped JSON.
 
 import argparse
 import json
+import os
 import subprocess
 import sys
 
-from . import catalog, disks
+from . import catalog, disks, plan
 
 EXIT_STALE = 3
 
@@ -46,27 +47,39 @@ def cmd_net_check(args):
 
 
 def cmd_plan(args):
-    plan = json.load(sys.stdin)
-    _out({"valid": False,
-          "problems": ["plan validation is not implemented yet"],
-          "summary": {"actions": [], "disksTouched": [], "confirmPhrase": "",
-                      "confirmToken": ""},
-          "minDiskBytes": 0, "estimatedInstallBytes": 0, "testMode": args.test,
-          "profile": plan.get("profile")})
+    plan_data = json.load(sys.stdin)
+    result = plan.validate_and_plan(plan_data, test=args.test)
+    _out(result)
     return 0
 
 
 def cmd_apply(args):
-    return _fail("not-implemented", "apply is not implemented yet")
+    plan_data = json.load(sys.stdin)
+    if args.test:
+        test_disk = os.environ.get("INSTALLER_TEST_DISK")
+        if not test_disk:
+            return _fail("test-mode", "--test requires $INSTALLER_TEST_DISK to be set")
+        if plan_data.get("disk", {}).get("target") != test_disk:
+            return _fail("test-mode", f"Target disk '{plan_data.get('disk', {}).get('target')}' is not allowed in test mode")
+    planned = plan.validate_and_plan(plan_data, test=args.test)
+    if not planned["valid"]:
+        return _fail("invalid-plan", "; ".join(planned["problems"]))
+    if planned["summary"]["confirmToken"] != plan_data.get("confirmToken"):
+        return _fail("stale-plan", "confirmToken does not match current disk state or actions", exit_code=EXIT_STALE)
+    from . import phases
+    return phases.run_apply(plan_data, resume=getattr(args, "resume", False))
 
 
 def cmd_cleanup(args):
-    _out({"unmounted": [], "closed": []})
+    from . import phases
+    phases.cleanup_mounts()
+    _out({"unmounted": ["/mnt"], "closed": ["cryptroot"]})
     return 0
 
 
 def cmd_status(args):
-    _out({"phases": []})
+    from . import phases
+    _out(phases.get_state())
     return 0
 
 

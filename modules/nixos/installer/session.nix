@@ -82,7 +82,10 @@ let
   '';
 
   installerSession = pkgs.writeShellScriptBin "installer-session" ''
-    exec ${pkgs.niri}/bin/niri -c ${niriConfig}
+    mkdir -p "$HOME/.config/niri"
+    cp ${niriConfig} "$HOME/.config/niri/config.kdl"
+    chmod u+w "$HOME/.config/niri/config.kdl"
+    exec ${pkgs.niri}/bin/niri -c "$HOME/.config/niri/config.kdl"
   '';
 in
 {
