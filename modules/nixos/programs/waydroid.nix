@@ -69,10 +69,36 @@
     prop=/var/lib/waydroid/waydroid_base.prop
     if [ -f "$cfg" ]; then
       ${pkgs.crudini}/bin/crudini --set "$cfg" properties persist.waydroid.multi_windows true
+      ${pkgs.crudini}/bin/crudini --set "$cfg" properties debug.stagefright.ccodec 1
+      ${pkgs.crudini}/bin/crudini --set "$cfg" properties persist.adb.tcp.port 5555
     fi
     if [ -f "$prop" ]; then
       ${pkgs.gnused}/bin/sed -i '/^persist\.waydroid\.multi_windows=/d' "$prop"
       echo 'persist.waydroid.multi_windows=true' >> "$prop"
+
+      # Enable modern Codec2 framework (Android 14+ / LineageOS 24 deprecated OMX)
+      ${pkgs.gnused}/bin/sed -i '/^debug\.stagefright\.ccodec=/d' "$prop"
+      echo 'debug.stagefright.ccodec=1' >> "$prop"
+
+      # Enable persistent ADB over TCP port 5555
+      ${pkgs.gnused}/bin/sed -i '/^persist\.adb\.tcp\.port=/d' "$prop"
+      echo 'persist.adb.tcp.port=5555' >> "$prop"
+    fi
+
+    # Disable buggy AV1 decoders via vendor overlay so video players (YouTube,
+    # Instagram, etc.) fall back to reliable H.264 / AVC streams instead of
+    # requesting AV1 streams that fail minigbm native window buffer locks.
+    vendor_etc=/var/lib/waydroid/rootfs/vendor/etc
+    overlay_vendor_etc=/var/lib/waydroid/overlay/vendor/etc
+    if [ -f "$vendor_etc/media_codecs_ffmpeg_c2.xml" ]; then
+      ${pkgs.coreutils}/bin/mkdir -p "$overlay_vendor_etc"
+      ${pkgs.gnused}/bin/sed '/<MediaCodec name="c2\.ffmpeg\.av1\.decoder"/,/<\/MediaCodec>/d' \
+        "$vendor_etc/media_codecs_ffmpeg_c2.xml" > "$overlay_vendor_etc/media_codecs_ffmpeg_c2.xml"
+    fi
+    if [ -f "$vendor_etc/media_codecs_google_c2_video.xml" ]; then
+      ${pkgs.coreutils}/bin/mkdir -p "$overlay_vendor_etc"
+      ${pkgs.gnused}/bin/sed '/<MediaCodec name="c2\.android\.av1\.decoder"/,/<\/MediaCodec>/d' \
+        "$vendor_etc/media_codecs_google_c2_video.xml" > "$overlay_vendor_etc/media_codecs_google_c2_video.xml"
     fi
 
     # Keep niri's Mod (Super) key out of Android. niri forwards bare Super
