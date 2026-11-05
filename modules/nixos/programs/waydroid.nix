@@ -3,9 +3,14 @@
 #
 # No firewall rule needed: the NixOS module already adds the waydroid0 bridge
 # to networking.firewall.trustedInterfaces.
-{ pkgs, ... }:
+{ config, lib, pkgs, ... }:
 
 {
+  # The waydroid overlay brings 1.6.x, which dropped the `-w` flag that the
+  # 25.05 module still passes; match nixos-unstable's ExecStart.
+  systemd.services.waydroid-container.serviceConfig.ExecStart =
+    lib.mkForce "${config.virtualisation.waydroid.package}/bin/waydroid container start";
+
   virtualisation.waydroid = {
     enable = true;
     # waydroid-net.sh defaults to iptables-legacy, but linuxPackages_latest
