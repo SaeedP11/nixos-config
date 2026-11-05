@@ -40,8 +40,8 @@
     # ../../../overlays/spec-kit.nix (25.05 has none).
     spec-kit
 
-    # Google's Antigravity CLI (`agy`), from
-    # ../../../overlays/antigravity-cli.nix (25.05 has none).
+    # Google's Antigravity CLI (`agy`), upstream release defined in
+    # ../../../pkgs/antigravity-cli.nix rather than nixpkgs' lagging one.
     antigravity-cli
   ];
 }

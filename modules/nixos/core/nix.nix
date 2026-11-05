@@ -43,9 +43,6 @@
     # spec-kit (specify CLI), which 25.05 does not carry.
     (import ../../../overlays/spec-kit.nix { inherit inputs; })
 
-    # antigravity-cli (agy), which 25.05 does not carry.
-    (import ../../../overlays/antigravity-cli.nix { inherit inputs; })
-
     # nodejs_26, which 25.05 does not carry.
     (import ../../../overlays/nodejs-26.nix { inherit inputs; })
 

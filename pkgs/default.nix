@@ -15,6 +15,8 @@ rec {
   escrcpy = pkgs.callPackage ./escrcpy.nix { };
   # Shadows nixpkgs' claude-code, which lags upstream; see the file.
   claude-code = pkgs.callPackage ./claude-code.nix { };
+  # Shadows nixpkgs' antigravity-cli, which lags upstream (1.1.24 vs 1.5.1+).
+  antigravity-cli = pkgs.callPackage ./antigravity-cli.nix { };
   fresh-editor = pkgs.callPackage ./fresh-editor.nix { };
   freecad-mcp-addon = pkgs.callPackage ./freecad-mcp-addon.nix { };
   qs-todo-sync = pkgs.callPackage ./qs-todo-sync { };
