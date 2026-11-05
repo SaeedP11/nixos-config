@@ -17,11 +17,26 @@
     # (6.18) ships without CONFIG_NETFILTER_XTABLES_LEGACY, so ip_tables can't
     # load and the session fails at "Failed to setup waydroid-net". Switch the
     # script to its nftables backend (the host firewall is nftables already).
+    #
+    # It also hands waydroid's dnsmasq a config naming sing-box's resolver,
+    # so Android's lookups go through nekoray's tunnel while it is up.
+    # Android's resolver is that dnsmasq on 192.168.240.1, which otherwise
+    # forwards to the host's resolv.conf -- the Wi-Fi's own resolver
+    # (10.236.248.28 here). That address is private, so sing-box leaves it
+    # out of the tunnel, and it answers 10.10.34.36 for blocked names;
+    # that address is private too, so Android's connection went direct and
+    # failed. 172.19.0.2, the tunnel's far end, is answered by sing-box
+    # itself, the same as the Docker DNS in ../services/docker.nix.
+    # --strict-order (set by the script) tries it first; with nekoray off
+    # it times out and dnsmasq moves on to resolv.conf.
     package = pkgs.waydroid.overrideAttrs (old: {
       postPatch = (old.postPatch or "") + ''
         substituteInPlace data/scripts/waydroid-net.sh \
           --replace-fail 'LXC_USE_NFT="false"' 'LXC_USE_NFT="true"
-        PATH="${pkgs.nftables}/bin:$PATH"'
+        PATH="${pkgs.nftables}/bin:$PATH"' \
+          --replace-fail 'LXC_DHCP_CONFILE=""' 'LXC_DHCP_CONFILE="${pkgs.writeText "waydroid-dnsmasq.conf" ''
+            server=172.19.0.2
+          ''}"'
       '';
     });
   };
