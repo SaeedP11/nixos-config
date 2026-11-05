@@ -3,7 +3,7 @@
 #
 # No firewall rule needed: the NixOS module already adds the waydroid0 bridge
 # to networking.firewall.trustedInterfaces.
-{ config, lib, pkgs, ... }:
+{ config, lib, pkgs, vars, ... }:
 
 {
   # The waydroid overlay brings 1.6.x, which dropped the `-w` flag that the
@@ -88,6 +88,55 @@
     ${pkgs.coreutils}/bin/install -Dm644 ${./waydroid-Generic.kl} \
       /var/lib/waydroid/overlay/system/usr/keylayout/Generic.kl
   '';
+
+  # Host ~/Downloads inside Android, as the "Host" folder of internal storage
+  # (/sdcard/Host; the Files app and every file picker see it).
+  #
+  # Android's internal storage is ~/.local/share/waydroid/data/media/0 on the
+  # host, and the session rbinds ~/.local/share/waydroid/data as /data when it
+  # starts, so a mount already sitting under media/0 shows up in Android. A
+  # plain bind mount would leave the files owned by the host user, and
+  # Android's MediaProvider (media_rw, 1023) couldn't write them. bindfs shows
+  # the user's files as media_rw's, and anything Android creates lands on the
+  # host owned by the user again. Android's chown calls are ignored so they
+  # can't change ownership on the host.
+  #
+  # Ordered before waydroid-container, so the mount is there for the next
+  # session start; media/0 only exists after Android's first boot, so until
+  # then this is skipped (restart waydroid-container once after `waydroid init`
+  # and the first session). Only ~/Downloads is shared, not the whole home.
+  systemd.services.waydroid-host-share =
+    let
+      user = config.users.users.${vars.username};
+      # By name: the uid isn't pinned in ../users.nix. media_rw has no host
+      # entry, so it stays numeric.
+      uid = user.name;
+      gid = user.group;
+      media = "${user.home}/.local/share/waydroid/data/media/0";
+      share = "${media}/Host";
+    in
+    {
+      description = "Share ~/Downloads into Waydroid's internal storage";
+      wantedBy = [ "waydroid-container.service" ];
+      before = [ "waydroid-container.service" ];
+      unitConfig.ConditionPathIsDirectory = media;
+      serviceConfig = {
+        Type = "forking";
+        ExecStartPre = [
+          # A stale mount from a killed bindfs would make install fail.
+          "-${pkgs.util-linux}/bin/umount -l ${share}"
+          "${pkgs.coreutils}/bin/install -d -o 1023 -g 1023 -m 0770 ${share}"
+        ];
+        ExecStart = lib.concatStringsSep " " [
+          "${pkgs.bindfs}/bin/bindfs"
+          "--map=${uid}/1023:@${gid}/@1023"
+          "--create-for-user=${uid} --create-for-group=${gid}"
+          "--chown-ignore --chgrp-ignore --perms=ug+rwX"
+          "${user.home}/Downloads ${share}"
+        ];
+        ExecStop = "${pkgs.util-linux}/bin/umount ${share}";
+      };
+    };
 
   # Casting from the container to a TV on the LAN (Google Cast).
   #
