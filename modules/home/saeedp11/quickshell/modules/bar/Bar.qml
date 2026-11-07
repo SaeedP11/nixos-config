@@ -357,7 +357,7 @@ PanelWindow {
                     icon: Icons.settings
                     tint: Theme.tone(3)
                     active: Panels.open === "control" && Panels.screen === bar.output
-                    onClicked: bar.open("control")
+                    onClicked: m => m.button === Qt.RightButton ? Panels.openSettings("") : bar.open("control")
                 }
                 Chip {
                     icon: Audio.icon

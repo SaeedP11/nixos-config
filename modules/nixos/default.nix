@@ -37,6 +37,7 @@
     ./programs/dev.nix
     ./programs/misc.nix
     ./programs/android.nix
+    ./programs/waydroid.nix
 
     ./services/docker.nix
 

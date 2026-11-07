@@ -25,11 +25,40 @@ Singleton {
         const e = entry(appId);
         return e ? e.id : (appId ?? "");
     }
+    // Icons the user picked per app, by key(): an icon name from the current
+    // icon pack, or an absolute path to an image. Persisted in
+    // app-icons.json next to launcher-usage.json; set from the launcher with
+    // Ctrl+I.
+    property var overrides: ({})
+
+    // An icon name or an image path as something an Image can load, "" when
+    // the name is in no installed pack.
+    function resolve(value) {
+        if (!value)
+            return "";
+        if (value.startsWith("file://"))
+            return value;
+        return value.startsWith("/") ? "file://" + value : Quickshell.iconPath(value, true);
+    }
     function icon(appId, fallback) {
         const e = entry(appId);
+        const own = resolve(overrides[key(appId)] ?? "");
+        if (own)
+            return own;
         const name = e?.icon || appId || "";
         const p = name ? Quickshell.iconPath(name, true) : "";
         return p || Quickshell.iconPath(fallback ?? "application-x-executable", true);
+    }
+    // An empty value goes back to the pack's own icon.
+    function setIcon(appId, value) {
+        const o = Object.assign({}, overrides);
+        const v = (value ?? "").trim();
+        if (v)
+            o[key(appId)] = v;
+        else
+            delete o[key(appId)];
+        overrides = o;
+        iconStore.setText(JSON.stringify(o, null, 2));
     }
     function launch(id) {
         const e = entry(id);
@@ -93,6 +122,18 @@ Singleton {
                     e,
                     s: score(e, q)
                 })).filter(x => x.s >= 0).sort((a, b) => b.s - a.s || uses(b.e) - uses(a.e) || a.e.name.localeCompare(b.e.name)).map(x => x.e);
+    }
+
+    FileView {
+        id: iconStore
+        path: Quickshell.statePath("app-icons.json")
+        printErrors: false
+        atomicWrites: true
+        onLoaded: {
+            try {
+                root.overrides = JSON.parse(text());
+            } catch (e) {}
+        }
     }
 
     FileView {

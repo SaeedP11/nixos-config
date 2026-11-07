@@ -301,7 +301,13 @@ in
     environment.QS_TODO_SYNC = "${pkgs.qs-todo-sync}/bin/qs-todo-sync";
 
     serviceConfig = {
-      ExecStart = "${pkgs.quickshell}/bin/qs -c shell";
+      # The icon pack `icon-theme set` chose (../../home/saeedp11/icons.nix),
+      # Adwaita until one has been.
+      ExecStart = "${pkgs.writeShellScript "quickshell-start" ''
+        QS_ICON_THEME=$(cat "$HOME/.local/state/icon-theme" 2>/dev/null || true)
+        export QS_ICON_THEME=''${QS_ICON_THEME:-Adwaita}
+        exec ${pkgs.quickshell}/bin/qs -c shell
+      ''}";
       Restart = "on-failure";
       RestartSec = 2;
     };

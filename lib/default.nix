@@ -22,13 +22,34 @@ in
 {
   inherit vars;
 
+  # `profile` is the hosts/<profile>/ directory to build from and `hostName`
+  # the machine's name; they are the same for the repository's own machines
+  # and differ for one the installer put somewhere else
+  # (specs/003-quickshell-os-installer).
+  #
+  # `install` is null for those, and for an installed machine the attribute
+  # set read from its install/install.json by ../flake.nix, plus
+  # `hardwareConfiguration`, the path of the generated scan. It replaces the
+  # username in `vars` -- which is how one change renames the account in
+  # every module and in Home Manager's users.<name> -- and adds
+  # ../modules/nixos/installer/generated-config.nix, which carries the rest
+  # of the installer's choices. hosts/shared/hardware.nix reads it too, to
+  # pick the generated hardware scan over the shared one.
   mkHost =
     {
-      hostName,
+      hostName ? profile,
+      profile ? hostName,
+      install ? null,
       system ? "x86_64-linux",
     }:
+    let
+      hostVars = if install == null then vars else vars // { username = install.user.name; };
+    in
     nixpkgs.lib.nixosSystem {
-      specialArgs = { inherit inputs vars hostName; };
+      specialArgs = {
+        inherit inputs hostName install;
+        vars = hostVars;
+      };
 
       modules = [
         { nixpkgs.hostPlatform = system; }
@@ -37,8 +58,10 @@ in
         ../modules/nixos
 
         # Anything machine-specific, including the hardware scan.
-        (../hosts + "/${hostName}")
-
+        (../hosts + "/${profile}")
+      ]
+      ++ nixpkgs.lib.optional (install != null) ../modules/nixos/installer/generated-config.nix
+      ++ [
         # nix-index with a prebuilt database, replacing the channel-based
         # command-not-found handler.
         inputs.nix-index-database.nixosModules.nix-index
@@ -53,8 +76,11 @@ in
             # Without this, the first activation aborts rather than taking
             # them over.
             backupFileExtension = "hm-bak";
-            extraSpecialArgs = { inherit inputs vars hostName; };
-            users.${vars.username} = import ../modules/home/saeedp11;
+            extraSpecialArgs = {
+              inherit inputs hostName install;
+              vars = hostVars;
+            };
+            users.${hostVars.username} = import ../modules/home/saeedp11;
           };
         }
       ];

@@ -96,12 +96,12 @@ Singleton {
         return 0.2126 * q.r + 0.7152 * q.g + 0.0722 * q.b;
     }
 
-    readonly property string font: "Ubuntu"
+    readonly property string font: Config.uiFont
     readonly property string iconFont: "FiraCode Nerd Font"
-    readonly property string monoFont: "JetBrains Mono"
+    readonly property string monoFont: Config.monoFont
     // Persian text: Ubuntu has no Arabic-script glyphs. fonts.nix installs it.
-    readonly property string persianFont: "Vazirmatn"
-    readonly property int fontSize: 11
+    readonly property string persianFont: Config.persianFont
+    readonly property int fontSize: Config.fontSize
     readonly property int iconSize: 14
 
     readonly property int barHeight: 34

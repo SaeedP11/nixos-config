@@ -1,0 +1,24 @@
+{
+  "blockdevices": [
+    {
+      "name": "nvme0n1", "path": "/dev/nvme0n1", "type": "disk", "size": 512110190592,
+      "model": "Fixture NVMe 512G", "serial": "FIXNVME0001", "rm": false, "ro": false,
+      "pttype": null, "fstype": null, "label": null, "uuid": null, "mountpoints": [null],
+      "pkname": null
+    },
+    {
+      "name": "sda", "path": "/dev/sda", "type": "disk", "size": 31914983424,
+      "model": "Fixture Live USB", "serial": "FIXUSB0001", "rm": true, "ro": false,
+      "pttype": "dos", "fstype": null, "label": null, "uuid": null, "mountpoints": [null],
+      "pkname": null,
+      "children": [
+        {
+          "name": "sda1", "path": "/dev/sda1", "type": "part", "size": 1073741824,
+          "start": 2048, "partn": 1, "fstype": "iso9660", "label": "NIXOS_ISO",
+          "uuid": "2026-11-05-00-00-00-00", "parttype": "0x83", "pttype": "dos",
+          "mountpoints": ["/iso"], "pkname": "sda", "rm": true, "ro": true
+        }
+      ]
+    }
+  ]
+}

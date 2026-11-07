@@ -3,7 +3,7 @@
 
 {
   imports = [
-    ../shared/hardware-configuration.nix
+    ../shared/hardware.nix
 
     # No GPU module: amdgpu is in-kernel and needs nothing beyond
     # hardware.graphics.enable, which modules/nixos/desktop/niri.nix sets.

@@ -14,6 +14,8 @@ Singleton {
     // The output whose bar holds the keyboard for chip-by-chip navigation
     // ("" when none); see modules/bar/Bar.qml.
     property string navScreen: ""
+    // Likewise for the dock (see modules/dock/Dock.qml).
+    property string dockScreen: ""
 
     // The bars' IdleInhibitor only holds off swayidle while a bar surface is
     // visible; it does nothing against `systemctl suspend` from swayidle's
@@ -46,9 +48,30 @@ Singleton {
     function navToggle() {
         navScreen = navScreen !== "" ? "" : (Niri.focusedOutput || (Quickshell.screens[0]?.name ?? ""));
     }
+    function dockToggle() {
+        dockScreen = dockScreen !== "" ? "" : (Niri.focusedOutput || (Quickshell.screens[0]?.name ?? ""));
+    }
     function close() {
         arg = "";
         open = "";
+    }
+
+    // The settings window (modules/settings) is a window of its own, not a
+    // popout, so it has its own state: whether it is open and which page.
+    property bool settingsOpen: false
+    property string settingsPage: "appearance"
+
+    function openSettings(page) {
+        if (page)
+            settingsPage = page;
+        close();
+        settingsOpen = true;
+    }
+    function toggleSettings() {
+        if (settingsOpen)
+            settingsOpen = false;
+        else
+            openSettings("");
     }
 
     // The tray item menu the "tray" popout shows, and the x it drops from.

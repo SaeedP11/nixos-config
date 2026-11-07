@@ -22,6 +22,8 @@
       nodejs_26
       pnpm
 
+      python313
+
       # For pip-only CLI tools that have no nixpkgs derivation.
       pipx
 

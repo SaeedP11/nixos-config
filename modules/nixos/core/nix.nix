@@ -43,11 +43,11 @@
     # spec-kit (specify CLI), which 25.05 does not carry.
     (import ../../../overlays/spec-kit.nix { inherit inputs; })
 
-    # antigravity-cli (agy), which 25.05 does not carry.
-    (import ../../../overlays/antigravity-cli.nix { inherit inputs; })
-
     # nodejs_26, which 25.05 does not carry.
     (import ../../../overlays/nodejs-26.nix { inherit inputs; })
+
+    # waydroid 1.6.x, for Android 17 images that 25.05's 1.5.4 can't boot.
+    (import ../../../overlays/waydroid.nix { inherit inputs; })
 
     # vlc wrapped to pick a dark/light Qt style from darkman at launch.
     (import ../../../overlays/vlc.nix)

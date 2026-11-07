@@ -586,6 +586,9 @@ binds {
     // Return clicks it, r right clicks, m middle clicks, Up/Down scroll,
     // Escape leaves.
     Mod+Alt+Space hotkey-overlay-title="Navigate the Top Bar" { spawn "qs" "-c" "shell" "ipc" "call" "bar" "nav"; }
+    // The same for the dock: arrows or h/l pick an app, Return focuses or
+    // launches it, m launches a new one, Escape leaves.
+    Mod+Alt+Shift+Space hotkey-overlay-title="Navigate the Dock" { spawn "qs" "-c" "shell" "ipc" "call" "dock" "nav"; }
     Mod+Shift+T hotkey-overlay-title="Clocks" { spawn "qs" "-c" "shell" "ipc" "call" "panel" "toggle" "clocks"; }
     // Window switcher, most recent first. niri keeps handling these while
     // the switcher holds the keyboard, so repeats step through it; letting

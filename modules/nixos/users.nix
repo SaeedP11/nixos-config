@@ -57,6 +57,8 @@
     #
     # and place that file by hand before the first boot, or bring in
     # sops-nix/agenix.
+    # Note: On systems installed via the installer (specs/003), generated-config.nix
+    # overrides initialHashedPassword with hashedPasswordFile and locks root ("!").
     initialHashedPassword = "$6$oS0sU89fKMFC0Pum$EgAUACT2d7JpHw49h5NyMRXrc7ftfapc3vPW/01dvbTP/2RnvaoBS5ieQF3NNPE3MxoT2Ab0C4PPdJWRrC801.";
   };
 
