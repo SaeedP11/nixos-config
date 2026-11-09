@@ -43,6 +43,9 @@
     # spec-kit (specify CLI), which 25.05 does not carry.
     (import ../../../overlays/spec-kit.nix { inherit inputs; })
 
+    # codex CLI, modern Rust release from nixos-unstable.
+    (import ../../../overlays/codex.nix { inherit inputs; })
+
     # nodejs_26, which 25.05 does not carry.
     (import ../../../overlays/nodejs-26.nix { inherit inputs; })
 
