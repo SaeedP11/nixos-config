@@ -19,6 +19,23 @@
   # only takes effect after a reboot or `systemctl restart NetworkManager`.
   systemd.services.NetworkManager.reloadIfChanged = true;
 
+  # Point the host resolver at sing-box's DNS on the tunnel far-end (172.19.0.2)
+  # while nekoray's VPN is up, matching docker.nix and waydroid.nix.
+  #
+  # Without this, NetworkManager leaves /etc/resolv.conf pointed at the Wi-Fi's
+  # DHCP resolver (e.g. 10.236.248.28), which is in an RFC 1918 range excluded
+  # from the tunnel by misc.nix's route_exclude_address. Lookups for censored
+  # domains then leak to the local ISP, which injects poisoned addresses
+  # (10.10.34.36), and connection attempts fail.
+  #
+  # Queries to 172.19.0.2 are answered directly by sing-box/nekoray and resolved
+  # over remote DNS (tls://8.8.8.8) through the proxy. 1.1.1.1 is kept as a
+  # fallback when nekoray is stopped.
+  networking.networkmanager.insertNameservers = [
+    "172.19.0.2"
+    "1.1.1.1"
+  ];
+
   # Load the firewall as one nftables ruleset instead of driving iptables a
   # rule at a time.
   #
