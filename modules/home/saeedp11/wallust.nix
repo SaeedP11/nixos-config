@@ -95,7 +95,10 @@
     # no per-mode branching.
     "wallust/templates/colors-niri.sed".text = ''
       s|@wallust-accent@|{{color4 | blend(foreground)}}|g
+      s|@wallust-accent-secondary@|{{color5 | blend(foreground)}}|g
       s|@wallust-inactive@|{{background | blend(foreground)}}|g
+      s|@wallust-bg@|{{background}}|g
+      s|@wallust-fg@|{{foreground}}|g
     '';
   };
 }

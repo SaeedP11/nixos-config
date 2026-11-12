@@ -1,0 +1,30 @@
+// Style: brutalist-sharp
+// Description: Raw Swiss industrial terminal aesthetic with sharp 0px corners, bold 3px border, and hard isometric shadow.
+
+// SECTION: layout
+gaps 6
+
+focus-ring {
+    off
+}
+
+border {
+    width 3
+    active-color "@wallust-accent@"
+    inactive-color "@wallust-inactive@"
+}
+
+shadow {
+    on
+    softness 0
+    spread 2
+    offset x=4 y=4
+    color "#000000dd"
+}
+
+// SECTION: rules
+window-rule {
+    geometry-corner-radius 0
+    clip-to-geometry true
+    opacity 1.0
+}

@@ -1,0 +1,30 @@
+// Style: classic
+// Description: The repository's original classic balance: 8px corners, 2px focus ring, and soft 10px gaps.
+
+// SECTION: layout
+gaps 10
+
+focus-ring {
+    width 2
+    active-color "@wallust-accent@"
+    inactive-color "@wallust-inactive@"
+}
+
+border {
+    off
+}
+
+shadow {
+    on
+    softness 30
+    spread 5
+    offset x=0 y=5
+    color "#0007"
+}
+
+// SECTION: rules
+window-rule {
+    geometry-corner-radius 8
+    clip-to-geometry true
+    opacity 1.0
+}

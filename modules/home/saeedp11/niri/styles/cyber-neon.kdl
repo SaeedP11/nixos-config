@@ -1,0 +1,42 @@
+// Style: cyber-neon
+// Description: Futuristic dark-tech aesthetic with vivid dual-accent gradient focus ring, colored glow, and 6px tactile corners.
+
+// SECTION: layout
+gaps 8
+
+focus-ring {
+    width 2
+    active-gradient from="@wallust-accent@" to="@wallust-accent-secondary@" angle=135 relative-to="workspace-view"
+    inactive-color "@wallust-inactive@"
+}
+
+border {
+    off
+}
+
+shadow {
+    on
+    softness 30
+    spread 6
+    offset x=0 y=4
+    color "#000000aa"
+}
+
+// SECTION: rules
+window-rule {
+    geometry-corner-radius 6
+    clip-to-geometry true
+    opacity 0.94
+}
+
+window-rule {
+    match is-focused=false
+    opacity 0.88
+}
+
+window-rule {
+    match app-id=r#"^mpv$"#
+    match app-id=r#"^org\.gnome\.Papers$"#
+    match app-id=r#"^org\.kde\.okular$"#
+    opacity 1.0
+}

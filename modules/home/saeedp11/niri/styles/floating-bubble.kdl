@@ -1,0 +1,42 @@
+// Style: floating-bubble
+// Description: Soft fluid curves and generous volumetric elevation inspired by visionOS and modern liquid design.
+
+// SECTION: layout
+gaps 18
+
+focus-ring {
+    width 2
+    active-color "@wallust-accent@"
+    inactive-color "@wallust-inactive@"
+}
+
+border {
+    off
+}
+
+shadow {
+    on
+    softness 55
+    spread 8
+    offset x=0 y=10
+    color "#0000005a"
+}
+
+// SECTION: rules
+window-rule {
+    geometry-corner-radius 22
+    clip-to-geometry true
+    opacity 0.92
+}
+
+window-rule {
+    match is-focused=false
+    opacity 0.82
+}
+
+window-rule {
+    match app-id=r#"^mpv$"#
+    match app-id=r#"^org\.gnome\.Papers$"#
+    match app-id=r#"^org\.kde\.okular$"#
+    opacity 1.0
+}

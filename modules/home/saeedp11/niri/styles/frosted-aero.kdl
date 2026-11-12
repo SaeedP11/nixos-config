@@ -1,0 +1,42 @@
+// Style: frosted-aero
+// Description: Airy translucent aesthetic inspired by classic Aero and liquid glass with deep ambient blur.
+
+// SECTION: layout
+gaps 16
+
+focus-ring {
+    width 1
+    active-color "@wallust-accent@"
+    inactive-color "@wallust-inactive@"
+}
+
+border {
+    off
+}
+
+shadow {
+    on
+    softness 50
+    spread 8
+    offset x=0 y=8
+    color "#00000077"
+}
+
+// SECTION: rules
+window-rule {
+    geometry-corner-radius 18
+    clip-to-geometry true
+    opacity 0.88
+}
+
+window-rule {
+    match is-focused=false
+    opacity 0.78
+}
+
+window-rule {
+    match app-id=r#"^mpv$"#
+    match app-id=r#"^org\.gnome\.Papers$"#
+    match app-id=r#"^org\.kde\.okular$"#
+    opacity 1.0
+}

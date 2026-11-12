@@ -47,5 +47,8 @@
     # OpenAI Codex CLI (`codex`), modern Rust release from
     # ../../../overlays/codex.nix (25.05 only carries an obsolete 0.1.x pre-release).
     codex
+
+    # Niri window style switcher (modern-glass, frosted-aero, minimal-clean, etc.)
+    niri-style
   ];
 }

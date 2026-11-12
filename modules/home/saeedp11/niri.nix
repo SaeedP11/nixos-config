@@ -148,6 +148,8 @@ let
       builtins.replaceStrings [ marker ] [ hostOutputs ] templateSource
     );
 
+  stylesDir = ./niri/styles;
+
   # Where the snapshot of the live output layout lives: one file per output,
   # named after it, each holding exactly one `output "NAME" { ... }` block.
   # One file per output rather than one file for all of them so that an
@@ -164,10 +166,13 @@ let
   # are the focus-ring colours the template carried before it was tokenised.
   seedColors = pkgs.writeText "niri-wallust-colors-seed.sed" ''
     s|@wallust-accent@|#A4756F|g
+    s|@wallust-accent-secondary@|#8A6560|g
     s|@wallust-inactive@|#505050|g
+    s|@wallust-bg@|#1A1A1A|g
+    s|@wallust-fg@|#EAEAEA|g
   '';
 
-  # Render ~/.config/niri/config.kdl = template + current palette + saved
+  # Render ~/.config/niri/config.kdl = template + active style + current palette + saved
   # output layout.
   #
   # Refuses to install a result that still contains a token: a truncated or
@@ -198,11 +203,55 @@ let
     tmp="$out.tmp.$$"
     mkdir -p "$(dirname "$out")"
 
-    if ! sed -f "$colors" ${template} > "$tmp"; then
-      rm -f "$tmp"
+    # Resolve active style from ~/.local/state/niri/style (default: modern-glass)
+    style_name="modern-glass"
+    style_state="$HOME/.local/state/niri/style"
+    if [ -s "$style_state" ]; then
+      cand="$(tr -d '[:space:]' < "$style_state")"
+      [ -n "$cand" ] && style_name="$cand"
+    fi
+
+    style_file="$HOME/.config/niri/styles/$style_name.kdl"
+    if [ ! -f "$style_file" ]; then
+      style_file="${stylesDir}/$style_name.kdl"
+    fi
+    if [ ! -f "$style_file" ]; then
+      style_file="${stylesDir}/modern-glass.kdl"
+    fi
+
+    # Splice active style layout decorations and window rules into the template
+    if ! awk -v style_file="$style_file" '
+      BEGIN {
+        sec = ""
+        while ((getline line < style_file) > 0) {
+          if (line ~ /^\/\/ SECTION: layout/) { sec = "layout"; continue }
+          if (line ~ /^\/\/ SECTION: rules/) { sec = "rules"; continue }
+          if (sec == "layout") { layout_lines = (layout_lines == "" ? "" : layout_lines "\n") line }
+          if (sec == "rules") { rules_lines = (rules_lines == "" ? "" : rules_lines "\n") line }
+        }
+        close(style_file)
+      }
+      /\/\/ @style-layout@/ {
+        if (layout_lines != "") print layout_lines
+        next
+      }
+      /\/\/ @style-rules@/ {
+        if (rules_lines != "") print rules_lines
+        next
+      }
+      { print }
+    ' ${template} > "$tmp.spliced"; then
+      rm -f "$tmp" "$tmp.spliced"
+      echo "niri-render-config: style splicing failed, leaving $out alone" >&2
+      exit 1
+    fi
+
+    if ! sed -f "$colors" "$tmp.spliced" > "$tmp"; then
+      rm -f "$tmp" "$tmp.spliced"
       echo "niri-render-config: sed failed, leaving $out alone" >&2
       exit 1
     fi
+    rm -f "$tmp.spliced"
 
     if grep -q '@wallust-[a-z-]*@' "$tmp"; then
       rm -f "$tmp"
@@ -373,13 +422,16 @@ in
   # the store path baked into it, so a second copy in the home directory
   # would only be something to edit by mistake.
 
-  # Fires whenever `wallust run` rewrites the sed script: wallpaper changes
-  # and darkman dark/light switches both go through it. PathChanged is
-  # IN_CLOSE_WRITE, so the unit sees a finished file rather than a partial
-  # one.
+  xdg.configFile."niri/styles".source = ./niri/styles;
+
+  # Fires whenever `wallust run` rewrites the sed script (wallpaper changes
+  # and darkman switches) or when the active window style is changed.
   systemd.user.paths.niri-render-config = {
-    Unit.Description = "Watch the wallust palette for niri";
-    Path.PathChanged = "%h/.config/niri/wallust-colors.sed";
+    Unit.Description = "Watch the wallust palette and active style for niri";
+    Path = {
+      PathChanged = "%h/.config/niri/wallust-colors.sed";
+      PathModified = "%h/.local/state/niri/style";
+    };
     Install.WantedBy = [ "graphical-session.target" ];
   };
 

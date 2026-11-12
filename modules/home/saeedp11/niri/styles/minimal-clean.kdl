@@ -1,0 +1,30 @@
+// Style: minimal-clean
+// Description: Distraction-free solid Nordic minimalism with crisp typography focus and refined 10px corners.
+
+// SECTION: layout
+gaps 10
+
+focus-ring {
+    width 2
+    active-color "@wallust-accent@"
+    inactive-color "@wallust-inactive@"
+}
+
+border {
+    off
+}
+
+shadow {
+    on
+    softness 20
+    spread 1
+    offset x=0 y=3
+    color "#00000033"
+}
+
+// SECTION: rules
+window-rule {
+    geometry-corner-radius 10
+    clip-to-geometry true
+    opacity 1.0
+}

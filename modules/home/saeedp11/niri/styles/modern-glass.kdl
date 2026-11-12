@@ -1,0 +1,43 @@
+// Style: modern-glass
+// Description: Contemporary frosted glassmorphism with subtle translucency, smooth 16px corners, and luminous edge lighting.
+
+// SECTION: layout
+gaps 14
+
+focus-ring {
+    width 2
+    active-gradient from="@wallust-accent@" to="@wallust-inactive@" angle=135 relative-to="workspace-view"
+    inactive-color "@wallust-inactive@"
+}
+
+border {
+    off
+}
+
+shadow {
+    on
+    softness 42
+    spread 4
+    offset x=0 y=6
+    color "#00000066"
+}
+
+// SECTION: rules
+window-rule {
+    geometry-corner-radius 16
+    clip-to-geometry true
+    opacity 0.93
+}
+
+window-rule {
+    match is-focused=false
+    opacity 0.85
+}
+
+// Keep media players and document viewers fully opaque
+window-rule {
+    match app-id=r#"^mpv$"#
+    match app-id=r#"^org\.gnome\.Papers$"#
+    match app-id=r#"^org\.kde\.okular$"#
+    opacity 1.0
+}
