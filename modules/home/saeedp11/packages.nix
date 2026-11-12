@@ -43,5 +43,9 @@
     # Google's Antigravity CLI (`agy`), upstream release defined in
     # ../../../pkgs/antigravity-cli.nix rather than nixpkgs' lagging one.
     antigravity-cli
+
+    # OpenAI Codex CLI (`codex`), modern Rust release from
+    # ../../../overlays/codex.nix (25.05 only carries an obsolete 0.1.x pre-release).
+    codex
   ];
 }

@@ -40,5 +40,13 @@
     '';
   };
 
+  # Shell history search. Home Manager adds the fish init (`atuin init fish`)
+  # to the managed config.fish; it does not touch the prompt, so it does not
+  # clash with the system-wide starship init.
+  programs.atuin = {
+    enable = true;
+    enableFishIntegration = true;
+  };
+
   xdg.configFile."starship.toml".source = ./starship.toml;
 }
