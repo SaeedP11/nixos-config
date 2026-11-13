@@ -1,0 +1,43 @@
+// Style: luminous-aurora
+// Description: Ethereal Northern Lights glow with dual-accent gradient ring, colored ambient halo, and 18px curves.
+
+// SECTION: layout
+gaps 16
+
+focus-ring {
+    width 3
+    active-gradient from="@wallust-accent@" to="@wallust-accent-secondary@" angle=45 relative-to="workspace-view"
+    inactive-color "@wallust-inactive@"
+}
+
+border {
+    off
+}
+
+shadow {
+    on
+    softness 48
+    spread 6
+    offset x=0 y=6
+    color "#00000085"
+}
+
+// SECTION: rules
+window-rule {
+    geometry-corner-radius 18
+    clip-to-geometry true
+    opacity 0.91
+}
+
+window-rule {
+    match is-focused=false
+    opacity 0.82
+}
+
+window-rule {
+    match app-id=r#"^mpv$"#
+    match app-id=r#"^org\.gnome\.Papers$"#
+    match app-id=r#"^org\.kde\.okular$"#
+    match app-id=r#"^org\.gnome\.Snapshot$"#
+    opacity 1.0
+}

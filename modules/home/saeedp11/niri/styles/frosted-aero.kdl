@@ -5,8 +5,8 @@
 gaps 16
 
 focus-ring {
-    width 1
-    active-color "@wallust-accent@"
+    width 2
+    active-gradient from="@wallust-accent@" to="@wallust-fg@" angle=180 relative-to="workspace-view"
     inactive-color "@wallust-inactive@"
 }
 
@@ -38,5 +38,6 @@ window-rule {
     match app-id=r#"^mpv$"#
     match app-id=r#"^org\.gnome\.Papers$"#
     match app-id=r#"^org\.kde\.okular$"#
+    match app-id=r#"^org\.gnome\.Snapshot$"#
     opacity 1.0
 }

@@ -1,0 +1,43 @@
+// Style: liquid-glass
+// Description: visionOS-inspired organic fluid glass with wide atmospheric elevation, specular glow, and 20px curves.
+
+// SECTION: layout
+gaps 18
+
+focus-ring {
+    width 2
+    active-gradient from="@wallust-accent@" to="@wallust-fg@" angle=145 relative-to="workspace-view"
+    inactive-color "@wallust-inactive@"
+}
+
+border {
+    off
+}
+
+shadow {
+    on
+    softness 56
+    spread 8
+    offset x=0 y=10
+    color "#00000060"
+}
+
+// SECTION: rules
+window-rule {
+    geometry-corner-radius 20
+    clip-to-geometry true
+    opacity 0.92
+}
+
+window-rule {
+    match is-focused=false
+    opacity 0.82
+}
+
+window-rule {
+    match app-id=r#"^mpv$"#
+    match app-id=r#"^org\.gnome\.Papers$"#
+    match app-id=r#"^org\.kde\.okular$"#
+    match app-id=r#"^org\.gnome\.Snapshot$"#
+    opacity 1.0
+}

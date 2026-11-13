@@ -1,0 +1,43 @@
+// Style: dark-obsidian
+// Description: Stealth smoked dark crystal glass with deep contrast, subtle inner luminescence, and 12px corners.
+
+// SECTION: layout
+gaps 12
+
+focus-ring {
+    width 2
+    active-color "@wallust-accent@"
+    inactive-color "@wallust-bg@"
+}
+
+border {
+    off
+}
+
+shadow {
+    on
+    softness 48
+    spread 6
+    offset x=0 y=8
+    color "#000000b0"
+}
+
+// SECTION: rules
+window-rule {
+    geometry-corner-radius 12
+    clip-to-geometry true
+    opacity 0.95
+}
+
+window-rule {
+    match is-focused=false
+    opacity 0.86
+}
+
+window-rule {
+    match app-id=r#"^mpv$"#
+    match app-id=r#"^org\.gnome\.Papers$"#
+    match app-id=r#"^org\.kde\.okular$"#
+    match app-id=r#"^org\.gnome\.Snapshot$"#
+    opacity 1.0
+}

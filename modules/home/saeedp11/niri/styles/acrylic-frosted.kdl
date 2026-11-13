@@ -1,0 +1,43 @@
+// Style: acrylic-frosted
+// Description: Fluent-inspired deep acrylic blur with 14px corners, balanced specular highlight, and multi-stop dimming.
+
+// SECTION: layout
+gaps 12
+
+focus-ring {
+    width 2
+    active-gradient from="@wallust-accent@" to="@wallust-accent-secondary@" angle=120 relative-to="workspace-view"
+    inactive-color "@wallust-inactive@"
+}
+
+border {
+    off
+}
+
+shadow {
+    on
+    softness 36
+    spread 4
+    offset x=0 y=5
+    color "#00000075"
+}
+
+// SECTION: rules
+window-rule {
+    geometry-corner-radius 14
+    clip-to-geometry true
+    opacity 0.90
+}
+
+window-rule {
+    match is-focused=false
+    opacity 0.80
+}
+
+window-rule {
+    match app-id=r#"^mpv$"#
+    match app-id=r#"^org\.gnome\.Papers$"#
+    match app-id=r#"^org\.kde\.okular$"#
+    match app-id=r#"^org\.gnome\.Snapshot$"#
+    opacity 1.0
+}

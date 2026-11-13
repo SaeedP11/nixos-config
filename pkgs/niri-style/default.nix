@@ -7,6 +7,9 @@
   lib,
   writeShellScriptBin,
   coreutils,
+  findutils,
+  gnused,
+  gawk,
   fzf,
   libnotify,
   systemd,
@@ -16,6 +19,19 @@
 writeShellScriptBin "niri-style" ''
   set -uo pipefail
 
+  export PATH="${
+    lib.makeBinPath [
+      coreutils
+      findutils
+      gnused
+      gawk
+      fzf
+      libnotify
+      systemd
+      niri
+    ]
+  }:''${PATH}"
+
   STATE_DIR="''${XDG_STATE_HOME:-$HOME/.local/state}/niri"
   STATE_FILE="$STATE_DIR/style"
   STYLES_DIR="''${XDG_CONFIG_HOME:-$HOME/.config}/niri/styles"
@@ -23,17 +39,36 @@ writeShellScriptBin "niri-style" ''
   get_current_style() {
     if [ -s "$STATE_FILE" ]; then
       local cur
-      cur="$(cat "$STATE_FILE" | tr -d '[:space:]')"
+      cur="$(tr -d '[:space:]' < "$STATE_FILE")"
       [ -n "$cur" ] && echo "$cur" && return
     fi
     echo "modern-glass"
   }
 
   get_styles() {
+    local list=""
     if [ -d "$STYLES_DIR" ]; then
-      find "$STYLES_DIR" -maxdepth 1 -name "*.kdl" -exec basename {} .kdl \; | sort
+      list="$(find -L "$STYLES_DIR" -maxdepth 1 -name "*.kdl" ! -name ".*" -exec basename {} .kdl \; | sort)"
+    fi
+    if [ -n "$list" ]; then
+      echo "$list"
     else
-      printf "%s\n" "modern-glass" "frosted-aero" "minimal-clean" "cyber-neon" "brutalist-sharp" "floating-bubble" "classic"
+      printf "%s\n" \
+        "acrylic-frosted" \
+        "brutalist-sharp" \
+        "classic" \
+        "cyber-neon" \
+        "dark-obsidian" \
+        "floating-bubble" \
+        "frosted-aero" \
+        "liquid-glass" \
+        "luminous-aurora" \
+        "minimal-clean" \
+        "modern-glass" \
+        "prism-glass" \
+        "soft-elevation" \
+        "translucent-compact" \
+        "ultra-thin-glass"
     fi
   }
 
@@ -49,13 +84,21 @@ writeShellScriptBin "niri-style" ''
       fi
     fi
     case "$style" in
-      modern-glass) echo "Contemporary frosted glassmorphism with subtle translucency and 16px corners." ;;
-      frosted-aero) echo "Airy translucent aesthetic inspired by classic Aero and liquid glass." ;;
-      minimal-clean) echo "Distraction-free solid Nordic minimalism with refined 10px corners." ;;
-      cyber-neon) echo "Dark-tech aesthetic with dual-accent gradient focus ring and colored glow." ;;
-      brutalist-sharp) echo "Raw Swiss industrial aesthetic with sharp 0px corners and bold 3px border." ;;
-      floating-bubble) echo "Soft fluid curves and generous volumetric elevation (visionOS / Sequoia)." ;;
-      classic) echo "Original repository default: 8px corners, 2px focus ring, 10px gaps." ;;
+      acrylic-frosted) echo "Fluent-inspired deep acrylic blur with 14px corners, balanced specular highlight, and multi-stop dimming." ;;
+      brutalist-sharp) echo "Raw Swiss industrial aesthetic with sharp 0px corners, bold 3px border, and hard isometric shadow." ;;
+      classic) echo "Original repository default: 8px corners, 2px focus ring, and soft 10px gaps." ;;
+      cyber-neon) echo "Dark-tech aesthetic with dual-accent gradient focus ring, colored glow, and 6px tactile corners." ;;
+      dark-obsidian) echo "Stealth smoked dark crystal glass with deep contrast, subtle inner luminescence, and 12px corners." ;;
+      floating-bubble) echo "Soft fluid curves and generous volumetric elevation inspired by visionOS and modern liquid design." ;;
+      frosted-aero) echo "Airy translucent aesthetic inspired by classic Aero and liquid glass with deep ambient blur." ;;
+      liquid-glass) echo "visionOS-inspired organic fluid glass with wide atmospheric elevation, specular glow, and 20px curves." ;;
+      luminous-aurora) echo "Ethereal Northern Lights glow with dual-accent gradient ring, colored ambient halo, and 18px curves." ;;
+      minimal-clean) echo "Distraction-free solid Nordic minimalism with crisp typography focus and refined 10px corners." ;;
+      modern-glass) echo "Contemporary frosted glassmorphism with subtle translucency, smooth 16px corners, and luminous edge lighting." ;;
+      prism-glass) echo "Refractive chromatic glass with dual-tone prism highlight, 16px corners, and dynamic elevation." ;;
+      soft-elevation) echo "Warm tactile elevation with subtle translucency, soft ambient shadow, and rounded 16px corners." ;;
+      translucent-compact) echo "Compact high-density glass with tight 6px gaps, 8px radius, and efficient tiling footprint." ;;
+      ultra-thin-glass) echo "Swiss precision 1px hairline translucent edge with refined 10px corners and clean architectural lines." ;;
       *) echo "Custom window style preset." ;;
     esac
   }
@@ -108,9 +151,9 @@ writeShellScriptBin "niri-style" ''
       local desc
       desc="$(get_style_desc "$s")"
       if [ "$s" = "$cur" ]; then
-        printf "  * \033[1;32m%-16s\033[0m %s\n" "$s" "$desc"
+        printf "  * \033[1;32m%-20s\033[0m %s\n" "$s" "$desc"
       else
-        printf "    %-16s %s\n" "$s" "$desc"
+        printf "    %-20s %s\n" "$s" "$desc"
       fi
     done
   }
@@ -147,7 +190,7 @@ writeShellScriptBin "niri-style" ''
     choice=$(for s in $(get_styles); do
       local prefix="  "
       [ "$s" = "$cur" ] && prefix="* "
-      printf "%s%-16s - %s\n" "$prefix" "$s" "$(get_style_desc "$s")"
+      printf "%s%-20s - %s\n" "$prefix" "$s" "$(get_style_desc "$s")"
     done | fzf --prompt="Select Niri Window Style: " \
                --header="Enter: apply style | ESC: cancel" \
                --reverse --height=40%) || exit 0

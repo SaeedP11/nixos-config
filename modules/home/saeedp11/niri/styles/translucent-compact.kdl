@@ -1,0 +1,43 @@
+// Style: translucent-compact
+// Description: Compact high-density glass with tight 6px gaps, 8px radius, and efficient tiling footprint.
+
+// SECTION: layout
+gaps 6
+
+focus-ring {
+    width 2
+    active-gradient from="@wallust-accent@" to="@wallust-inactive@" angle=90 relative-to="workspace-view"
+    inactive-color "@wallust-inactive@"
+}
+
+border {
+    off
+}
+
+shadow {
+    on
+    softness 24
+    spread 2
+    offset x=0 y=3
+    color "#00000066"
+}
+
+// SECTION: rules
+window-rule {
+    geometry-corner-radius 8
+    clip-to-geometry true
+    opacity 0.94
+}
+
+window-rule {
+    match is-focused=false
+    opacity 0.86
+}
+
+window-rule {
+    match app-id=r#"^mpv$"#
+    match app-id=r#"^org\.gnome\.Papers$"#
+    match app-id=r#"^org\.kde\.okular$"#
+    match app-id=r#"^org\.gnome\.Snapshot$"#
+    opacity 1.0
+}

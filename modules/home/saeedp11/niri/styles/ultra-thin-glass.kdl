@@ -1,0 +1,43 @@
+// Style: ultra-thin-glass
+// Description: Swiss precision 1px hairline translucent edge with refined 10px corners and clean architectural lines.
+
+// SECTION: layout
+gaps 10
+
+focus-ring {
+    off
+}
+
+border {
+    width 1
+    active-color "@wallust-accent@"
+    inactive-color "@wallust-inactive@"
+}
+
+shadow {
+    on
+    softness 26
+    spread 2
+    offset x=0 y=4
+    color "#00000050"
+}
+
+// SECTION: rules
+window-rule {
+    geometry-corner-radius 10
+    clip-to-geometry true
+    opacity 0.94
+}
+
+window-rule {
+    match is-focused=false
+    opacity 0.87
+}
+
+window-rule {
+    match app-id=r#"^mpv$"#
+    match app-id=r#"^org\.gnome\.Papers$"#
+    match app-id=r#"^org\.kde\.okular$"#
+    match app-id=r#"^org\.gnome\.Snapshot$"#
+    opacity 1.0
+}

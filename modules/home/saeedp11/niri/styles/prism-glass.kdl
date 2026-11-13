@@ -1,0 +1,43 @@
+// Style: prism-glass
+// Description: Refractive chromatic glass with dual-tone prism highlight, 16px corners, and dynamic elevation.
+
+// SECTION: layout
+gaps 14
+
+focus-ring {
+    width 2
+    active-gradient from="@wallust-accent-secondary@" to="@wallust-accent@" angle=210 relative-to="workspace-view"
+    inactive-color "@wallust-inactive@"
+}
+
+border {
+    off
+}
+
+shadow {
+    on
+    softness 44
+    spread 5
+    offset x=0 y=7
+    color "#00000070"
+}
+
+// SECTION: rules
+window-rule {
+    geometry-corner-radius 16
+    clip-to-geometry true
+    opacity 0.92
+}
+
+window-rule {
+    match is-focused=false
+    opacity 0.83
+}
+
+window-rule {
+    match app-id=r#"^mpv$"#
+    match app-id=r#"^org\.gnome\.Papers$"#
+    match app-id=r#"^org\.kde\.okular$"#
+    match app-id=r#"^org\.gnome\.Snapshot$"#
+    opacity 1.0
+}

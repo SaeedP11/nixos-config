@@ -1,0 +1,43 @@
+// Style: soft-elevation
+// Description: Warm tactile elevation with subtle translucency, soft ambient shadow, and rounded 16px corners.
+
+// SECTION: layout
+gaps 14
+
+focus-ring {
+    width 2
+    active-color "@wallust-accent@"
+    inactive-color "@wallust-inactive@"
+}
+
+border {
+    off
+}
+
+shadow {
+    on
+    softness 40
+    spread 4
+    offset x=0 y=6
+    color "#00000055"
+}
+
+// SECTION: rules
+window-rule {
+    geometry-corner-radius 16
+    clip-to-geometry true
+    opacity 0.96
+}
+
+window-rule {
+    match is-focused=false
+    opacity 0.89
+}
+
+window-rule {
+    match app-id=r#"^mpv$"#
+    match app-id=r#"^org\.gnome\.Papers$"#
+    match app-id=r#"^org\.kde\.okular$"#
+    match app-id=r#"^org\.gnome\.Snapshot$"#
+    opacity 1.0
+}
