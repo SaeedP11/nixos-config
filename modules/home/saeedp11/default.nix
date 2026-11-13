@@ -56,6 +56,7 @@
     ./packages.nix
     ./freecad.nix
     ./gemini.nix
+    ./audio.nix
   ];
 
   home.username = vars.username;
